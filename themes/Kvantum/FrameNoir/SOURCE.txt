@@ -1,0 +1,13 @@
+FrameNoir - Kvantum theme for Qt 5 and Qt 6 apps (installed to ~/.config/Kvantum/FrameNoir)
+
+Made from KvLibadwaitaDark, part of KvLibadwaita by GabePoel:
+  https://github.com/GabePoel/KvLibadwaita (commit 1f4e0bec44b13dabfa1fe4047aa8eeaccf2f3557)
+which is based on Colloid-kde by Vince Liuice (https://github.com/vinceliuice/Colloid-kde)
+and KvAdapta by Tsu Jan. License: GPL-3.0, see LICENSE in this folder.
+
+Changed by frameshell in October 2026 - the colours only, to the Noir colours (the
+shell's Noir theme and its GTK theme Frame-Noir): black #000000 windows and menus,
+#060606 buttons, fields and selections, a little lighter only when hovered or pressed,
+white checkboxes, radio buttons, sliders and progress bars with black marks. The shapes
+are KvLibadwaita's. ../make-frame.py makes FrameNoir.svg and FrameNoir.kvconfig from the
+original files.

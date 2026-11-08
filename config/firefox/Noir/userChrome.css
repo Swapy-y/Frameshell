@@ -1,0 +1,629 @@
+@-moz-document url(about:newtab), url(about:home) {
+  #main-button {
+    opacity: 0 !important;
+  }
+}
+
+
+
+
+:root {
+  --focus-outline-color: transparent !important;
+  --toolbar-field-focus-border-color: transparent !important;
+}
+
+
+#urlbar[focused="true"] > #urlbar-background,
+#urlbar[focused="true"] > .urlbar-background,
+#searchbar:focus-within {
+  outline: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+
+
+
+:root, .urlbarView {
+  
+  --urlbarview-background-color-selected: #030303 !important;
+  --urlbarview-background-color-hover: #030303 !important;
+  --urlbarview-text-color-selected: #ffffff !important;
+  
+  
+  --urlbarView-highlight-background: #030303 !important;
+  --urlbarView-hover-background: #030303 !important;
+  --urlbarView-highlight-color: #ffffff !important;
+}
+
+
+.urlbarView-row[selected] > .urlbarView-row-inner,
+.urlbarView-row-inner[selected] {
+  background-color: #030303 !important;
+  color: #ffffff !important;
+}
+
+.urlbarView-row:hover > .urlbarView-row-inner,
+.urlbarView-row-inner:hover {
+  background-color: #030303 !important;
+  color: #ffffff !important;
+}
+
+
+
+
+.urlbarView-url {
+  color: #ffffff !important;
+}
+
+
+
+
+
+:root {
+  --toolbarbutton-icon-fill-attention: #ffffff !important;
+}
+
+
+#star-button,
+#star-button[starred] {
+  fill: #ffffff !important;
+}
+
+
+.urlbarView-row[type="bookmark"] .urlbarView-type-icon {
+  fill: #ffffff !important;
+}
+
+
+
+
+.urlbarView-row,
+.urlbarView-row-inner {
+  border-radius: 10px !important;
+}
+
+
+
+
+
+
+
+.searchmode-switcher {
+  display: none !important;
+  transition: opacity 150ms ease-in-out !important;
+}
+
+
+#urlbar-input {
+  margin-inline-start: 10px !important;
+}
+
+
+
+
+
+.tabbrowser-tab[label="New Tab"] .tab-icon-image,
+.tabbrowser-tab[label="New Tab"] .tab-label-container,
+.tabbrowser-tab[label="New Tab"] .tab-text,
+.tabbrowser-tab[label="New Tab"] label {
+  display: none !important;
+}
+
+
+
+
+.tab-background,
+.tab-background[selected],
+.tab-background[multiselected] {
+  box-shadow: none !important;
+}
+
+
+
+
+.tabbrowser-tab {
+  margin-top: 1px !important;
+}
+
+
+
+
+.tab-content {
+  margin-bottom: 1px !important;
+}
+
+
+
+
+#browser vbox#appcontent tabbrowser,
+#content,
+#tabbrowser-tabpanels,
+.browserContainer,
+browser[type="content-primary"],
+browser[type="content"] {
+  background-color: #222222 !important;
+}
+
+
+
+
+#TabsToolbar {
+  opacity: 1 !important;
+}
+
+
+
+
+#sidebar-search-container search-textbox,
+search-textbox {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+
+treechildren::-moz-tree-row,
+treechildren::-moz-tree-cell {
+  outline: none !important;
+  outline-style: none !important;
+}
+
+
+
+
+
+
+
+
+
+@namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
+
+
+#sidebar {
+  box-shadow: none !important;
+}
+
+
+:root {
+  --content-area-shadow: none !important;
+}
+
+#browser,
+#appcontent,
+#tabbrowser-tabbox,
+#tabbrowser-tabpanels,
+.browserSidebarContainer,
+.browserStack,
+#tabbrowser-tabbox > browser {
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+  filter: none !important;
+}
+
+.titlebar-buttonbox-container { display: none !important; }
+
+
+
+#urlbar[focused="true"] > #urlbar-background,
+#urlbar[breakout][breakout-extend] > #urlbar-background,
+#searchbar:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+
+:root {
+  --toolbar-bgcolor: #060606 !important;
+  --lwt-accent-color: #000000 !important;
+}
+#nav-bar {
+  background: #060606 !important;
+}
+
+:root {
+  --chrome-content-separator-color: #060606 !important;
+}
+
+#navigator-toolbox {
+  border-bottom: 1px solid #060606 !important;
+}
+
+#nav-bar {
+  border-bottom: none !important;
+}
+
+:root {
+  --tabs-border-color: #060606 !important;
+  --tab-selected-bgcolor: #060606 !important;
+  --lwt-selected-tab-background-color: #060606 !important;
+}
+
+
+#navigator-toolbox,
+#nav-bar,
+#TabsToolbar {
+  border-top: 1px solid #060606 !important;
+  border-top-color: #060606 !important;
+}
+
+
+#TabsToolbar,
+#titlebar {
+  background: #000000 !important;
+}
+
+.tabbrowser-tab .tab-background,
+.tabbrowser-tab[selected] .tab-background,
+.tabbrowser-tab[multiselected] .tab-background {
+  background-color: #060606 !important;
+  background-image: none !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+:root {
+  --toolbar-field-background-color: #000000 !important;
+  --toolbar-field-focus-background-color: #000000 !important;
+  --toolbar-field-border-color: #000000 !important;
+  --toolbar-field-focus-border-color: #000000 !important;
+}
+
+#urlbar-background,
+#urlbar[focused="true"] > #urlbar-background,
+#urlbar[breakout][breakout-extend] > #urlbar-background,
+#searchbar {
+  background-color: #000000 !important;
+  border: 1px solid #000000 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+
+#urlbar:hover > #urlbar-background,
+#urlbar:not([focused]):hover > #urlbar-background {
+  background-color: #000000 !important;
+  border-color: #000000 !important;
+}
+
+:root {
+  --tab-selected-bgcolor: #060606 !important;
+  --lwt-selected-tab-background-color: #060606 !important;
+}
+
+
+.tabbrowser-tab:not([selected]) .tab-background {
+  background-color: #000000 !important;
+  background-image: none !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+
+.tabbrowser-tab[selected] .tab-background {
+  background-color: #060606 !important;
+  background-image: none !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+
+.tabbrowser-tab[multiselected] .tab-background {
+  background-color: #060606 !important;
+}
+
+
+.tabbrowser-tab:not([selected]):hover .tab-background {
+  background-color: #030303 !important;
+}
+
+:root {
+  
+  --focus-outline: none !important;
+  --focus-outline-color: transparent !important;
+  --toolbar-field-focus-border-color: transparent !important;
+
+  
+  --urlbar-box-bgcolor: #000000 !important;
+  --urlbar-box-hover-bgcolor: #000000 !important;
+  --urlbar-box-focus-bgcolor: #000000 !important;
+  --urlbar-box-active-bgcolor: #000000 !important;
+  --urlbar-box-shadow: none !important;
+}
+
+
+#urlbar > #urlbar-background,
+#urlbar[focused] > #urlbar-background,
+#urlbar[open] > #urlbar-background,
+#urlbar[breakout][breakout-extend] > #urlbar-background,
+#urlbar[breakout][breakout-extend][open] > #urlbar-background {
+  background-color: #000000 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  outline: none !important;
+  outline-color: transparent !important;
+  border-color: #000000 !important;
+}
+
+
+#urlbar[breakout][breakout-extend],
+#urlbar-input-container,
+.urlbarView {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+
+#urlbar[breakout][breakout-extend] > #urlbar-background,
+#urlbar[open] > #urlbar-background,
+#urlbar[focused] > #urlbar-background {
+  background: #000000 !important;
+  border: 1px solid #000000 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  outline: none !important;
+}
+
+
+#urlbar[breakout-extend] .urlbarView,
+#urlbar[breakout-extend] .urlbarView-body-outer,
+#urlbar[breakout-extend] .urlbarView-body-inner,
+#urlbar[breakout-extend] .urlbarView-results,
+#urlbar[breakout-extend] #urlbar-input-container {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+
+:root {
+  --toolbar-field-focus-background-color: #000000 !important;
+  --toolbar-field-focus-border-color: #000000 !important;
+  --urlbar-box-focus-bgcolor: #000000 !important;
+}
+
+#urlbar,
+#urlbar *,
+#urlbar::before,
+#urlbar::after,
+#urlbar-container,
+#urlbar-container * {
+  box-shadow: none !important;
+  
+}
+
+
+
+
+#urlbar :not(
+  .urlbar-icon,
+  .urlbar-icon-wrapper,
+  .urlbarView-favicon,
+  .urlbarView-type-icon,
+  .urlbarView-icon,
+  .urlbarView-action-btn,
+  .searchmode-switcher-icon,
+  .urlbar-go-button,
+  image,
+  img
+) {
+  background-color: #000000 !important;
+  
+}
+
+
+#urlbar .urlbarView-row:hover > .urlbarView-row-inner,
+#urlbar .urlbarView-row[selected] > .urlbarView-row-inner {
+  background-color: #030303 !important;
+  
+}
+
+#urlbar .urlbarView-row .urlbarView-row-inner *:not(
+  .urlbarView-favicon,
+  .urlbarView-type-icon,
+  .urlbarView-icon,
+  .urlbarView-action-btn,
+  image,
+  img
+) {
+  background-color: transparent !important;
+}
+
+#urlbar * {
+  color: #e5e5e5 !important;
+}
+
+
+
+
+
+
+:root,
+:root:-moz-window-inactive {
+  
+  --toolbar-color: #e6e6e6 !important;
+  --toolbarbutton-icon-fill: #e6e6e6 !important;
+  --toolbar-field-color: #e6e6e6 !important;
+  --toolbar-field-focus-color: #e6e6e6 !important;
+  --tab-selected-textcolor: #e6e6e6 !important;
+  --lwt-text-color: #e6e6e6 !important;
+  --urlbar-icon-fill-opacity: 1 !important;
+}
+
+
+#nav-bar toolbarbutton .toolbarbutton-icon,
+#TabsToolbar toolbarbutton .toolbarbutton-icon,
+.urlbar-icon,
+.tab-close-button {
+  fill: #e6e6e6 !important;
+  color: #e6e6e6 !important;
+  opacity: 1 !important;
+}
+
+
+#back-button[disabled] .toolbarbutton-icon,
+#forward-button[disabled] .toolbarbutton-icon,
+#back-button:disabled .toolbarbutton-icon,
+#forward-button:disabled .toolbarbutton-icon {
+  fill: #5a5a5a !important;
+  opacity: 1 !important;
+}
+
+
+#urlbar-input {
+  color: #e6e6e6 !important;
+}
+#urlbar-input::placeholder {
+  color: #9b9b9b !important;
+  opacity: 1 !important;
+}
+
+
+.tab-label {
+  color: #e6e6e6 !important;
+}
+
+
+:root {
+  --border-radius-small: 18px !important;
+  --border-radius-medium: 18px !important;
+  --border-radius-large: 18px !important;
+  --toolbarbutton-border-radius: 18px !important;
+  --arrowpanel-border-radius: 18px !important;
+  --arrowpanel-menuitem-border-radius: 18px !important;
+  --tab-border-radius: 18px !important;
+}
+
+
+toolbarbutton,
+.toolbarbutton-1,
+.subviewbutton,
+.tab-background,
+.tab-icon-overlay,
+.tab-close-button,
+#urlbar-background,
+.urlbarView-row,
+.urlbarView-row-inner,
+.urlbar-page-action,
+.urlbar-icon,
+#identity-box,
+.panel-arrowcontent,
+menupopup,
+panel,
+menuitem,
+menu,
+button,
+.search-one-offs button {
+  border-radius: 18px !important;
+}
+
+
+:root #urlbar[open] .urlbarView,
+:root #urlbar:focus-within .urlbarView {
+  border-radius: 0 0 18px 18px !important;
+}
+
+
+#pageAction-urlbar-shareURL,
+#pageAction-panel-shareURL,
+#share-button,
+#urlbar-share-button,
+#urlbar .urlbar-page-action[id*="share" i] {
+  display: none !important;
+}
+
+
+#sidebar-button,
+#sidebar-button-container {
+  display: none !important;
+}
+
+
+#alltabs-button,
+#TabsToolbar #alltabs-button {
+  display: none !important;
+}
+
+
+#fxa-toolbar-menu-button,
+#appMenu-fxa-label2 {
+  display: none !important;
+}
+
+
+#nav-bar [id*="vpn" i],
+#nav-bar [class*="vpn" i],
+#TabsToolbar [id*="vpn" i] {
+  display: none !important;
+}
+
+
+#ipprotection-button,
+toolbarbutton[widget-id="ipprotection-button"],
+#nav-bar toolbarbutton[id^="ipprotection"] {
+  display: none !important;
+}
+
+  
+  
+#tabbrowser-tabs {
+  margin-left: 28px !important;
+}
+
+
+#fullscreen-warning,
+.pointerlockfswarning {
+  display: none !important;
+}
+
+
+:root[inFullscreen] #navigator-toolbox,
+:root[inFullscreen] #navigator-toolbox[fullscreenShouldAnimate],
+:root[inFullscreen] #nav-bar,
+:root[inFullscreen] #TabsToolbar,
+:root[inFullscreen] #titlebar {
+  transition: none !important;
+  animation: none !important;
+}
+
+
+:root {
+  --sidebar-background-color: #060606 !important;
+  --sidebar-border-color: transparent !important;
+}
+
+#browser,
+#sidebar-main,
+sidebar-main,
+#sidebar-splitter,
+#sidebar-launcher-splitter {
+  background-color: #060606 !important;
+  border-color: transparent !important;
+}
+
+#browser vbox#appcontent tabbrowser,
+#content,
+#tabbrowser-tabpanels,
+.browserContainer,
+browser[type="content-primary"],
+browser[type="content"] {
+  background-color: #060606 !important;
+}
+
+
+
+
+
+#tabs-newtab-button:hover > .toolbarbutton-icon,
+#new-tab-button:hover > .toolbarbutton-icon {
+  background-color: #030303 !important;
+}
+
+
+#tabs-newtab-button:hover:active > .toolbarbutton-icon,
+#new-tab-button:hover:active > .toolbarbutton-icon {
+  background-color: #030303 !important;
+}

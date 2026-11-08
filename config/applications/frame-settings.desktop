@@ -1,0 +1,12 @@
+[Desktop Entry]
+# frameshell: the shell's Settings app (modules/Settings.qml). install.sh puts this file in
+# ~/.local/share/applications; it opens the window (or brings it to the front).
+Type=Application
+Name=Settings
+Comment=Settings of the shell: the island and the dock
+Keywords=frame;frameshell;island;dock;auto hide;preferences;
+Icon=frame-settings
+Exec=qs -c frame ipc call ui settings
+Terminal=false
+StartupNotify=false
+Categories=Settings;

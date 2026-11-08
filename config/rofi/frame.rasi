@@ -1,0 +1,94 @@
+/* Frame - rofi theme  ->  ~/.config/rofi/frame.rasi
+   Same look as the shell: #1a1a1a panel, 2px #313131 border, #2a2a2a selection.
+   (Used by `rofi -show drun`, the backup launcher.) */
+
+* {
+    bg:        #1a1a1aff;
+    bg-alt:    #2a2a2aff;
+    outline:   #313131ff;
+    fg:        #ffffffff;
+    fg-dim:    #8c8c8cff;
+    accent:    #ffffffff;
+
+    background-color: transparent;
+    text-color:       @fg;
+    font:             "Clarity City Medium 13";
+}
+
+window {
+    location:         center;
+    anchor:           center;
+    width:            580px;
+    background-color: @bg;
+    border:           2px;          /* = the shell's frame border (2px by default) */
+    border-color:     @outline;
+    border-radius:    22px;
+}
+
+mainbox {
+    padding:  14px;
+    spacing:  12px;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    background-color: @bg-alt;
+    border-radius:    14px;
+    padding:          13px 16px;
+    spacing:          10px;
+    children:         [ entry ];
+}
+
+entry {
+    placeholder:       "Search apps…";
+    placeholder-color: @fg-dim;
+    cursor:            text;
+}
+
+listview {
+    lines:        8;
+    columns:      1;
+    fixed-height: true;
+    scrollbar:    false;
+    spacing:      4px;
+    cycle:        true;
+}
+
+element {
+    padding:       9px 12px;
+    spacing:       14px;
+    border-radius: 14px;
+    cursor:        pointer;
+}
+
+element normal.normal,
+element alternate.normal {
+    background-color: transparent;
+    text-color:       @fg-dim;
+}
+
+element selected.normal {
+    background-color: @bg-alt;
+    text-color:       @fg;
+}
+
+element-icon {
+    size:           34px;
+    vertical-align: 0.5;
+}
+
+element-text {
+    vertical-align: 0.5;
+    text-color:     inherit;
+    highlight:      bold #ffffff;
+}
+
+message {
+    padding:       10px 14px;
+    border-radius: 14px;
+    background-color: @bg-alt;
+}
+
+textbox {
+    text-color: @fg-dim;
+}

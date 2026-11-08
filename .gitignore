@@ -1,0 +1,11 @@
+# editor / OS clutter
+*.swp
+*~
+.DS_Store
+.vscode/
+.idea/
+# Python
+__pycache__/
+*.pyc
+# local test output
+*.log

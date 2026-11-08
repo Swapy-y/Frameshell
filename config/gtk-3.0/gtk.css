@@ -1,0 +1,18 @@
+/* Frame - GTK 3  (goes to ~/.config/gtk-3.0/gtk.css)
+   No minimise / maximise / close buttons in the title bars (Hyprland handles the windows).
+   Most apps don't make them at all (hyprland.lua sets the button layout to none); these
+   rules hide the ones that still do. The colours come from the Frame theme, not from here.
+   (No "-gtk-icon-size" as in gtk-4.0/gtk.css: GTK 3 doesn't know it and would print a
+   warning in every app. GTK 3 can't shrink the icon, so a button hidden this way still
+   takes its icon's space and still reacts to a click: hence the button layout.) */
+windowcontrols > button,
+headerbar .titlebutton {
+min-width: 0;
+min-height: 0;
+padding: 0;
+margin: 0;
+border: none;
+background: none;
+box-shadow: none;
+opacity: 0;
+}

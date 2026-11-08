@@ -1,0 +1,23 @@
+/* Frame - GTK 4  (goes to ~/.config/gtk-4.0/gtk.css)
+   libadwaita apps (GNOME apps, most new GTK 4 apps) never load a GTK theme, but every
+   GTK 4 app loads this file: it gives them the Frame theme's colours.
+   The colours themselves are in ~/.local/share/themes/Frame/gtk-4.0/colors.css
+   (the theme switcher, scripts/theme.sh, points the line below at Frame-Noir or
+   Frame-Mocha for the shell's Noir and Mocha themes). */
+@import url("../../.local/share/themes/Frame/gtk-4.0/colors.css");
+
+/* No minimise / maximise / close buttons in the title bars (Hyprland handles the windows).
+   Most apps don't make them at all (hyprland.lua sets the button layout to none); these
+   rules hide the ones that still do: invisible and no size, so nothing is left to click. */
+windowcontrols > button,
+headerbar .titlebutton {
+min-width: 0;
+min-height: 0;
+padding: 0;
+margin: 0;
+border: none;
+background: none;
+box-shadow: none;
+opacity: 0;
+-gtk-icon-size: 0;
+}

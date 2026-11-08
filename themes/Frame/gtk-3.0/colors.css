@@ -1,0 +1,250 @@
+/* Frame - colours for GTK 3 apps (Thunar, file pickers, Firefox's dialogs ...)
+   ->  ~/.local/share/themes/Frame/gtk-3.0/colors.css
+
+   The shell's palette (Config.qml): #1a1a1a panels, #222222 hover, #2a2a2a selected,
+   #313131 outlines, white text, #8c8c8c dim text, white main buttons with dark text,
+   #ff6b6b for errors, #ffb454 for warnings. gtk.css loads adw-gtk3-dark first; this file
+   only replaces its colours (and fixes the few spots a white accent needs).
+   The GTK 4 copy of these values is ../gtk-4.0/colors.css: change both to keep them alike.
+   Restart an app to see a change. */
+
+/* ── accent: white, like the shell's main buttons, with dark text on it ── */
+@define-color accent_bg_color #ffffff;
+@define-color accent_fg_color #1a1a1a;
+@define-color accent_color #ffffff;
+
+/* ── states ── */
+@define-color destructive_bg_color #ff6b6b;
+@define-color destructive_fg_color #1a1a1a;
+@define-color destructive_color #ff6b6b;
+@define-color success_bg_color #8fd694;
+@define-color success_fg_color #1a1a1a;
+@define-color success_color #8fd694;
+@define-color warning_bg_color #ffb454;
+@define-color warning_fg_color #1a1a1a;
+@define-color warning_color #ffb454;
+@define-color error_bg_color #ff6b6b;
+@define-color error_fg_color #1a1a1a;
+@define-color error_color #ff6b6b;
+
+/* ── surfaces ── */
+@define-color window_bg_color #1a1a1a;
+@define-color window_fg_color #ffffff;
+@define-color view_bg_color #1a1a1a;
+@define-color view_fg_color #ffffff;
+@define-color headerbar_bg_color #1a1a1a;
+@define-color headerbar_fg_color #ffffff;
+@define-color headerbar_border_color #ffffff;
+@define-color headerbar_backdrop_color #1a1a1a;
+@define-color headerbar_shade_color #313131;
+@define-color headerbar_darker_shade_color #313131;
+@define-color sidebar_bg_color #1f1f1f;
+@define-color sidebar_fg_color #ffffff;
+@define-color sidebar_backdrop_color #1f1f1f;
+@define-color sidebar_shade_color rgba(0, 0, 0, 0.25);
+@define-color sidebar_border_color #313131;
+@define-color secondary_sidebar_bg_color #1c1c1c;
+@define-color secondary_sidebar_fg_color #ffffff;
+@define-color secondary_sidebar_backdrop_color #1c1c1c;
+@define-color secondary_sidebar_shade_color rgba(0, 0, 0, 0.25);
+@define-color secondary_sidebar_border_color #313131;
+@define-color card_bg_color #222222;
+@define-color card_fg_color #ffffff;
+@define-color card_shade_color rgba(0, 0, 0, 0.36);
+@define-color dialog_bg_color #1a1a1a;
+@define-color dialog_fg_color #ffffff;
+@define-color popover_bg_color #1a1a1a;
+@define-color popover_fg_color #ffffff;
+@define-color popover_shade_color rgba(0, 0, 0, 0.25);
+@define-color thumbnail_bg_color #222222;
+@define-color thumbnail_fg_color #ffffff;
+@define-color shade_color rgba(0, 0, 0, 0.36);
+@define-color scrollbar_outline_color rgba(0, 0, 0, 0.5);
+
+/* ── selected files and rows: grey with white text, not a white block ──
+   Thunar paints its selection itself with theme_selected_bg_color: #3a3a3a while its
+   window is active, half as strong (#2a2a2a, the shell's "selected") while it is not. */
+@define-color theme_selected_bg_color #3a3a3a;
+@define-color theme_selected_fg_color #ffffff;
+@define-color theme_unfocused_selected_bg_color #3a3a3a;
+@define-color theme_unfocused_selected_fg_color #ffffff;
+
+treeview.view:selected,
+treeview.view:selected:focus,
+.view:selected,
+.view:selected:focus,
+iconview:selected,
+iconview:selected:focus,
+flowbox flowboxchild:selected {
+  background-color: @theme_selected_bg_color;
+}
+placessidebar row:selected {
+  color: @window_fg_color;
+}
+
+/* ── selected text (fields, text views, labels, terminals, Firefox): the shell's text
+   selection grey #3e3e3e (textSelection in Config.qml) with the normal text colour.
+   (adw-gtk3: white at 25 %, labels and terminals a white block.) A field with an error
+   or a warning keeps its red / yellow. ── */
+headerbar entry selection,
+.titlebar entry selection,
+entry selection,
+spinbutton:not(.vertical) selection,
+.view text selection:focus,
+iconview text selection:focus,
+.view text selection,
+iconview text selection,
+textview text selection:focus,
+textview text selection,
+label selection,
+.terminal selection,
+.terminal text selection,
+#MozillaGtkWidget.background selection:focus,
+#MozillaGtkWidget.background selection {
+  background-color: #3e3e3e;
+  color: @window_fg_color;
+}
+/* Thunar tints selected icons with the view's colour while its window is not focused,
+   which turns them almost black on a dark theme: keep them as they are */
+.thunar .standard-view .view:active {
+  background-color: transparent;
+}
+
+/* ── links: the blue of the Qt palette (white would look like plain text) ──
+   adw-gtk3 colours links in many states; each of its selectors is repeated here. */
+@define-color frame_link_color #6aa3d9;
+@define-color frame_visited_color #b48ead;
+
+button:link > label,
+button:link,
+*:link,
+button:link > label:active,
+*:link:active,
+*:selected button:link > label:active,
+*:selected *:link:active,
+button:link > label:backdrop,
+*:link:backdrop:backdrop:hover,
+*:link:backdrop:backdrop:hover:selected,
+*:link:backdrop,
+button:link > label:selected,
+*:selected button:link > label,
+*:link:selected,
+*:selected *:link {
+  color: @frame_link_color;
+}
+button:visited > label,
+button:visited,
+button:link > label:visited,
+button:visited > label:visited,
+*:visited,
+*:visited:backdrop,
+*:link:visited,
+*:selected button:link > label:visited,
+*:selected button:visited > label:visited,
+*:selected button:visited,
+*:selected *:link:visited,
+button:visited > label:active,
+button:active:visited,
+*:selected button:visited > label:active,
+*:selected button:active:visited,
+button:visited > label:backdrop,
+button:backdrop:visited,
+button:visited > label:selected,
+button:selected:visited,
+*:selected button:visited > label {
+  color: @frame_visited_color;
+}
+button:link > label:hover,
+button:visited > label:hover,
+button:hover:visited,
+*:link:hover,
+*:selected button:link > label:hover,
+*:selected button:visited > label:hover,
+*:selected button:hover:visited,
+*:selected *:link:hover {
+  color: mix(@frame_link_color, white, 0.25);
+}
+
+/* ── spots where adw-gtk3 puts white on the accent; with a white accent they need dark ── */
+/* main buttons (Open, Save, OK ...): white with dark text, like "Authenticate" in the shell */
+button.suggested-action,
+button.suggested-action:hover,
+button.suggested-action:active,
+button.suggested-action:checked {
+  color: @accent_fg_color;
+}
+button.suggested-action {
+  background-color: @accent_bg_color;
+}
+button.suggested-action:hover {
+  background-color: mix(@accent_bg_color, @accent_fg_color, 0.08);
+}
+button.suggested-action:active,
+button.suggested-action:checked {
+  background-color: mix(@accent_bg_color, @accent_fg_color, 0.18);
+}
+button.suggested-action:active:hover,
+button.suggested-action:checked:hover {
+  background-color: mix(@accent_bg_color, @accent_fg_color, 0.22);
+}
+button.suggested-action:disabled:active,
+button.suggested-action:disabled:checked {
+  color: alpha(@accent_fg_color, 0.5);
+}
+/* a dark knob on the "on" switch */
+switch:checked slider,
+switch:checked:hover slider {
+  background-color: @accent_fg_color;
+}
+/* the key-press field of shortcut editors */
+treeview.view acceleditor > label {
+  color: @accent_fg_color;
+}
+/* ticked photo checkboxes */
+.view.content-view.check:checked:not(list),
+.content-view:not(list) check:checked {
+  color: @accent_fg_color;
+}
+/* info and question bars: a shell grey instead of a mid grey with low-contrast buttons */
+infobar.info > revealer > box,
+infobar.question > revealer > box {
+  background-color: #2a2a2a;
+}
+infobar.action.info:hover > revealer > box,
+infobar.action.question:hover > revealer > box {
+  background-color: #313131;
+}
+infobar.info button,
+infobar.question button {
+  background-color: alpha(currentColor, 0.1);
+}
+infobar.info button:hover,
+infobar.question button:hover {
+  background-color: alpha(currentColor, 0.15);
+}
+infobar.info button:checked,
+infobar.info button:active,
+infobar.question button:checked,
+infobar.question button:active {
+  background-color: alpha(currentColor, 0.3);
+}
+
+/* ── popovers and menus: the shell's #313131 outline ── */
+popover.background,
+.csd popover.background {
+  border-color: #313131;
+}
+menu,
+.menu,
+.context-menu,
+.csd menu,
+.csd .menu,
+.csd .context-menu {
+  border: 1px solid #313131;
+}
+
+/* ── tooltips: a shell card instead of a see-through black box ── */
+tooltip.background {
+  background-color: #1a1a1a;
+  border-color: #313131;
+}

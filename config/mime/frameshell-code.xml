@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Frame - file types the system does not know as code  ->  ~/.local/share/mime/packages/
+     Without these, files like .tsx, .vue, .zig, Dockerfile or config files (.conf, .ini,
+     .env, .gitignore, .bashrc ...) count as plain text (and open in GNOME Text Editor, not VS Code). install.sh copies this file and runs update-mime-database. -->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="text/x-typescript">
+    <sub-class-of type="text/plain"/>
+    <comment>TypeScript source code</comment>
+    <glob pattern="*.ts"/>
+    <glob pattern="*.mts"/>
+    <glob pattern="*.cts"/>
+  </mime-type>
+  <mime-type type="text/x-tsx">
+    <sub-class-of type="text/plain"/>
+    <comment>TypeScript JSX source code</comment>
+    <glob pattern="*.tsx"/>
+  </mime-type>
+  <mime-type type="text/x-jsx">
+    <sub-class-of type="text/plain"/>
+    <comment>JavaScript JSX source code</comment>
+    <glob pattern="*.jsx"/>
+  </mime-type>
+  <mime-type type="text/x-vue">
+    <sub-class-of type="text/plain"/>
+    <comment>Vue component</comment>
+    <glob pattern="*.vue"/>
+  </mime-type>
+  <mime-type type="text/x-svelte">
+    <sub-class-of type="text/plain"/>
+    <comment>Svelte component</comment>
+    <glob pattern="*.svelte"/>
+  </mime-type>
+  <mime-type type="text/x-zig">
+    <sub-class-of type="text/plain"/>
+    <comment>Zig source code</comment>
+    <glob pattern="*.zig"/>
+    <glob pattern="*.zon"/>
+  </mime-type>
+  <mime-type type="text/x-swift">
+    <sub-class-of type="text/plain"/>
+    <comment>Swift source code</comment>
+    <glob pattern="*.swift"/>
+  </mime-type>
+  <mime-type type="text/x-r">
+    <sub-class-of type="text/plain"/>
+    <comment>R source code</comment>
+    <glob pattern="*.r"/>
+    <glob pattern="*.R" case-sensitive="true"/>
+  </mime-type>
+  <mime-type type="text/x-nix">
+    <sub-class-of type="text/plain"/>
+    <comment>Nix expression</comment>
+    <glob pattern="*.nix"/>
+  </mime-type>
+  <mime-type type="text/x-terraform">
+    <sub-class-of type="text/plain"/>
+    <comment>Terraform / HCL configuration</comment>
+    <glob pattern="*.tf"/>
+    <glob pattern="*.tfvars"/>
+    <glob pattern="*.hcl"/>
+  </mime-type>
+  <mime-type type="text/x-graphql">
+    <sub-class-of type="text/plain"/>
+    <comment>GraphQL schema</comment>
+    <glob pattern="*.graphql"/>
+    <glob pattern="*.gql"/>
+  </mime-type>
+  <mime-type type="text/x-protobuf">
+    <sub-class-of type="text/plain"/>
+    <comment>Protocol Buffers definition</comment>
+    <glob pattern="*.proto"/>
+  </mime-type>
+  <mime-type type="text/x-dockerfile">
+    <sub-class-of type="text/plain"/>
+    <comment>Dockerfile</comment>
+    <glob pattern="Dockerfile"/>
+    <glob pattern="Containerfile"/>
+    <glob pattern="*.dockerfile"/>
+  </mime-type>
+  <mime-type type="text/x-vim">
+    <sub-class-of type="text/plain"/>
+    <comment>Vim script</comment>
+    <glob pattern="*.vim"/>
+  </mime-type>
+  <mime-type type="text/x-jsonc">
+    <sub-class-of type="text/plain"/>
+    <comment>JSON with comments</comment>
+    <glob pattern="*.jsonc"/>
+  </mime-type>
+  <mime-type type="text/x-config">
+    <sub-class-of type="text/plain"/>
+    <comment>configuration file</comment>
+    <glob pattern="*.conf"/>
+    <glob pattern="*.cfg"/>
+    <glob pattern="*.cnf"/>
+    <glob pattern="*.ini"/>
+    <glob pattern="*.config"/>
+    <glob pattern="*.properties"/>
+    <glob pattern="*.rules"/>
+    <glob pattern="*.prefs"/>
+    <glob pattern="*.env"/>
+    <glob pattern=".env"/>
+    <glob pattern=".env.*"/>
+    <glob pattern="*.rasi"/>
+    <glob pattern="*.kdl"/>
+    <glob pattern="*.ron"/>
+    <glob pattern="*.qss"/>
+    <glob pattern="config"/>
+    <glob pattern=".gitignore"/>
+    <glob pattern=".gitattributes"/>
+    <glob pattern=".gitmodules"/>
+    <glob pattern=".gitconfig"/>
+    <glob pattern=".editorconfig"/>
+    <glob pattern=".dockerignore"/>
+    <glob pattern=".npmrc"/>
+    <glob pattern=".yarnrc"/>
+    <glob pattern=".prettierrc"/>
+    <glob pattern=".eslintrc"/>
+    <glob pattern=".bashrc"/>
+    <glob pattern=".bash_profile"/>
+    <glob pattern=".bash_logout"/>
+    <glob pattern=".zshrc"/>
+    <glob pattern=".zprofile"/>
+    <glob pattern=".zshenv"/>
+    <glob pattern=".profile"/>
+    <glob pattern=".inputrc"/>
+    <glob pattern=".xinitrc"/>
+    <glob pattern=".xprofile"/>
+    <glob pattern=".Xresources"/>
+    <glob pattern=".tmux.conf"/>
+    <glob pattern=".vimrc"/>
+  </mime-type>
+  <!-- extra names for types the system already has -->
+  <mime-type type="text/x-kotlin">
+    <glob pattern="*.kts"/>
+  </mime-type>
+  <mime-type type="application/x-shellscript">
+    <glob pattern="*.zsh"/>
+  </mime-type>
+</mime-info>

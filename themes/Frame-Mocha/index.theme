@@ -1,0 +1,6 @@
+[X-GNOME-Metatheme]
+Name=Frame-Mocha
+Type=X-GNOME-Metatheme
+Comment=The frameshell Mocha colours on top of adw-gtk3-dark
+Encoding=UTF-8
+GtkTheme=Frame-Mocha

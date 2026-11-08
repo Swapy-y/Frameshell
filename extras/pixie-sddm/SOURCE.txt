@@ -1,0 +1,28 @@
+Pixie SDDM by xCaptaiN09 - MIT License (see LICENSE)
+https://github.com/xCaptaiN09/pixie-sddm
+Copied from commit 1e1a863761f742e8d509d569382b17c112e29fdc.
+Left out: the author's avatar (assets/avatar.jpg), screenshots and the Nix files.
+Changed by frameshell, to match the shell:
+  theme.conf  the desktop wallpaper (assets/wallpaper.png, copied there by
+              install.sh) and the shell's greys instead of Pixie's green
+  Main.qml    four new theme.conf keys: accentTextColor, the colour of the
+              arrow on the round button (Pixie: always white); two more,
+              cornerColor (the date and the power icons and labels) and
+              fieldColor (the password field's border and the round
+              button), the accent when empty or with autoColor=true;
+              errorColor, the card after a wrong password (Pixie:
+              #442222); the date
+              and the power icons sit on one line, each as far from the top
+              as from its side of the screen (edgeGap, 38 px); the screen
+              fades in from black and, after a successful login, back to
+              black (the `curtain` rectangle); the card says "Caps Lock is
+              on" (keyboard.capsLock) instead of "Num Lock is on", fading in
+              and out
+  components/PowerBar.qml  icons and labels centred by their ink, so
+              they line up with the date
+  components/Clock.qml     tabular digits (font feature "tnum"), so the
+              hours stand exactly above the minutes; minutes in the
+              hours' colour (white); theme.conf hourColor / minuteColor
+              (empty or autoColor=true: the colour made from the accent)
+Everything else is unchanged.
+install.sh copies this folder to /usr/share/sddm/themes/pixie.

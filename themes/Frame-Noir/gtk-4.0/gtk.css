@@ -1,0 +1,6 @@
+/* Frame-Noir - GTK 4 theme  ->  ~/.local/share/themes/Frame-Noir/gtk-4.0/gtk.css
+   For GTK 4 apps that are not libadwaita apps: the libadwaita look from adw-gtk3-dark
+   (package adw-gtk-theme) with the colours from colors.css next to this file.
+   libadwaita apps never read a theme: ~/.config/gtk-4.0/gtk.css loads colors.css for them. */
+@import url("file:///usr/share/themes/adw-gtk3-dark/gtk-4.0/gtk.css");
+@import url("colors.css");

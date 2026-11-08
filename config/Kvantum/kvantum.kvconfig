@@ -1,0 +1,7 @@
+; Frame - Kvantum (goes to ~/.config/Kvantum/kvantum.kvconfig)
+; Kvantum draws the buttons, fields, menus ... of Qt 5 and Qt 6 apps (qt5ct / qt6ct pick it as
+; their style). This picks its Frame theme, which is in ~/.config/Kvantum/Frame.
+; Kvantum Manager (kvantummanager) can switch to another theme.
+
+[General]
+theme=Frame

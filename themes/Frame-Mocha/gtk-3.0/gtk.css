@@ -1,0 +1,5 @@
+/* Frame-Mocha - GTK 3 theme  ->  ~/.local/share/themes/Frame-Mocha/gtk-3.0/gtk.css
+   The shapes come from adw-gtk3-dark (package adw-gtk-theme), the colours from
+   colors.css next to this file. To change a colour, edit colors.css and restart the app. */
+@import url("file:///usr/share/themes/adw-gtk3-dark/gtk-3.0/gtk.css");
+@import url("colors.css");

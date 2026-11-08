@@ -1,0 +1,45 @@
+@-moz-document url(about:newtab), url(about:home) {
+  .open-customization-button {
+    opacity: 0 !important;
+    transition: opacity 0.2s ease;
+  }
+
+  .open-customization-button:hover {
+    opacity: 1 !important;
+  }
+}
+
+
+
+
+
+
+
+@-moz-document url(about:newtab), url(about:home) {
+  .search-wrapper content-search-handoff-ui {
+    
+    --content-search-handoff-ui-background-color: #181825 !important;
+    
+    
+    --content-search-handoff-ui-border-width: 1px !important;
+    --content-search-handoff-ui-unfocused-border-color: transparent !important;
+    --content-search-handoff-ui-fakefocus-border-color: #ffffff !important;
+    
+    
+    --content-search-handoff-ui-fakefocus-box-shadow-inner: transparent !important;
+    --content-search-handoff-ui-fakefocus-box-shadow-outer: transparent !important;
+    --box-shadow-level-3: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+
+    
+    --newtab-search-icon: url("chrome://global/skin/icons/search-glass.svg") !important;
+  }
+}
+
+
+@-moz-document url(about:newtab), url(about:home) {
+  :root {
+    --newtab-background-color: #1e1e2e !important;
+  }
+}

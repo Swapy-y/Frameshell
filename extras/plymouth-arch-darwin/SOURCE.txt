@@ -1,0 +1,4 @@
+Arch-Darwin plymouth theme by ArmoredVortex - MIT License (see LICENSE)
+https://github.com/armoredvortex/plymouth-theme-arch-darwin
+Copied unchanged from commit 232c87ca5822a3fccc025510c1630e577ed0e0f6.
+install.sh copies it to /usr/share/plymouth/themes/arch-darwin.

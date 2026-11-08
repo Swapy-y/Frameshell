@@ -1,0 +1,57 @@
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/master/doc/json_schema.json",
+  "logo": {
+  "type": "builtin",
+  "source": "arch",
+  "padding": {
+    "left": 8,
+    "right": 8,
+    "top": 1
+  },
+  "color": {
+    "1": "#86b9ee",
+    "2": "#86b9ee",
+    "3": "#86b9ee",
+    "4": "#86b9ee",
+    "5": "#86b9ee",
+    "6": "#86b9ee"
+  }
+},
+  "display": {
+    "color": { "keys": "#86b9ee", "title": "#86b9ee" }
+  },
+  "modules": [
+  "break",
+    "title",
+    "separator",
+    "os",
+    "host",
+    "kernel",
+    "uptime",
+    "packages",
+    "shell",
+{
+      "type": "display",
+      "key": "Display"
+    },
+    "theme",
+    "icons",
+    "cursor",
+    "terminal",
+{
+      "type": "cpu",
+      "key": "CPU"
+    },
+    "gpu",
+    "memory",
+    "break",
+{
+      "type": "custom",
+      "format": "{##1b1b1b}███{##f16162}███{##7cba87}███{##ddc64c}███{##6396bf}███{##bd6def}███{##49bac9}███{##bebebe}███{#}"
+    },
+    {
+      "type": "custom",
+      "format": "{##808080}███{##ff8984}███{##97d5a0}███{##f9e364}███{##7eb1d9}███{##d68efe}███{##49bac9}███{##c4c4c4}███{#}"
+    }
+  ]
+}

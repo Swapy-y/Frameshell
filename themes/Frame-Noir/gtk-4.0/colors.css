@@ -1,0 +1,378 @@
+/* Frame-Noir - colours for GTK 4 and libadwaita apps (pavucontrol, GNOME apps, file pickers ...)
+   ->  ~/.local/share/themes/Frame-Noir/gtk-4.0/colors.css
+
+   The shell's Noir theme: black #000000 windows, #060606 cards, fields, buttons and menus, white text,
+   #8c8c8c dim text, white main buttons with black text, #ff6b6b for errors, #ffb454
+   for warnings.
+   Loaded by the Frame-Noir theme (plain GTK 4 apps) and, while Noir is the shell's theme,
+   by ~/.config/gtk-4.0/gtk.css (libadwaita apps, which ignore themes; scripts/theme.sh
+   points it here). Made by themes/make-themes.py from themes/Frame (what each rule is
+   for: see the comments there): change the palette in make-themes.py and run it again
+   (an edit here is lost then). Restart an app to see a change. */
+
+@define-color accent_bg_color #ffffff;
+@define-color accent_fg_color #000000;
+@define-color accent_color #ffffff;
+@define-color destructive_bg_color #ff6b6b;
+@define-color destructive_fg_color #000000;
+@define-color destructive_color #ff6b6b;
+@define-color success_bg_color #8fd694;
+@define-color success_fg_color #000000;
+@define-color success_color #8fd694;
+@define-color warning_bg_color #ffb454;
+@define-color warning_fg_color #000000;
+@define-color warning_color #ffb454;
+@define-color error_bg_color #ff6b6b;
+@define-color error_fg_color #000000;
+@define-color error_color #ff6b6b;
+@define-color window_bg_color #000000;
+@define-color window_fg_color #ffffff;
+@define-color view_bg_color #000000;
+@define-color view_fg_color #ffffff;
+@define-color headerbar_bg_color #000000;
+@define-color headerbar_fg_color #ffffff;
+@define-color headerbar_border_color #ffffff;
+@define-color headerbar_backdrop_color #000000;
+@define-color headerbar_shade_color #060606;
+@define-color headerbar_darker_shade_color #060606;
+@define-color sidebar_bg_color #000000;
+@define-color sidebar_fg_color #ffffff;
+@define-color sidebar_backdrop_color #000000;
+@define-color sidebar_shade_color rgba(0, 0, 0, 0.25);
+@define-color sidebar_border_color #060606;
+@define-color secondary_sidebar_bg_color #000000;
+@define-color secondary_sidebar_fg_color #ffffff;
+@define-color secondary_sidebar_backdrop_color #000000;
+@define-color secondary_sidebar_shade_color rgba(0, 0, 0, 0.25);
+@define-color secondary_sidebar_border_color #060606;
+@define-color card_bg_color #060606;
+@define-color card_fg_color #ffffff;
+@define-color card_shade_color rgba(0, 0, 0, 0.36);
+@define-color dialog_bg_color #000000;
+@define-color dialog_fg_color #ffffff;
+@define-color popover_bg_color #060606;
+@define-color popover_fg_color #ffffff;
+@define-color popover_shade_color rgba(0, 0, 0, 0.25);
+@define-color thumbnail_bg_color #060606;
+@define-color thumbnail_fg_color #ffffff;
+@define-color shade_color rgba(0, 0, 0, 0.36);
+@define-color scrollbar_outline_color rgba(0, 0, 0, 0.5);
+
+:root {
+  --accent-bg-color: #ffffff;
+  --accent-fg-color: #000000;
+  --accent-color: #ffffff;
+  --destructive-bg-color: #ff6b6b;
+  --destructive-fg-color: #000000;
+  --destructive-color: #ff6b6b;
+  --success-bg-color: #8fd694;
+  --success-fg-color: #000000;
+  --success-color: #8fd694;
+  --warning-bg-color: #ffb454;
+  --warning-fg-color: #000000;
+  --warning-color: #ffb454;
+  --error-bg-color: #ff6b6b;
+  --error-fg-color: #000000;
+  --error-color: #ff6b6b;
+  --window-bg-color: #000000;
+  --window-fg-color: #ffffff;
+  --view-bg-color: #000000;
+  --view-fg-color: #ffffff;
+  --headerbar-bg-color: #000000;
+  --headerbar-fg-color: #ffffff;
+  --headerbar-border-color: #ffffff;
+  --headerbar-backdrop-color: #000000;
+  --headerbar-shade-color: #060606;
+  --headerbar-darker-shade-color: #060606;
+  --sidebar-bg-color: #000000;
+  --sidebar-fg-color: #ffffff;
+  --sidebar-backdrop-color: #000000;
+  --sidebar-shade-color: rgba(0, 0, 0, 0.25);
+  --sidebar-border-color: #060606;
+  --secondary-sidebar-bg-color: #000000;
+  --secondary-sidebar-fg-color: #ffffff;
+  --secondary-sidebar-backdrop-color: #000000;
+  --secondary-sidebar-shade-color: rgba(0, 0, 0, 0.25);
+  --secondary-sidebar-border-color: #060606;
+  --card-bg-color: #060606;
+  --card-fg-color: #ffffff;
+  --card-shade-color: rgba(0, 0, 0, 0.36);
+  --dialog-bg-color: #000000;
+  --dialog-fg-color: #ffffff;
+  --popover-bg-color: #060606;
+  --popover-fg-color: #ffffff;
+  --popover-shade-color: rgba(0, 0, 0, 0.25);
+  --thumbnail-bg-color: #060606;
+  --thumbnail-fg-color: #ffffff;
+  --shade-color: rgba(0, 0, 0, 0.36);
+  --scrollbar-outline-color: rgba(0, 0, 0, 0.5);
+  --overview-bg-color: #000000;
+  --overview-fg-color: #ffffff;
+  --active-toggle-bg-color: rgba(255, 255, 255, 0.2);
+  --active-toggle-fg-color: #ffffff;
+  --frame-link-color: #6aa3d9;
+  --frame-visited-color: #b48ead;
+}
+
+link,
+button.link {
+  color: var(--frame-link-color);
+}
+link:visited,
+button.link:visited {
+  color: var(--frame-visited-color);
+}
+link:hover,
+button.link:hover {
+  color: color-mix(in srgb, var(--frame-link-color) 75%, white);
+}
+link:active,
+button.link:active {
+  color: var(--frame-link-color);
+}
+
+switch:checked > slider,
+switch:checked:hover > slider,
+switch:checked:active > slider {
+  background-color: var(--accent-fg-color);
+}
+
+selection,
+selection:focus-within,
+.background.chromium selection,
+.background.chromium selection:focus {
+  background-color: #222222;
+  color: var(--window-fg-color);
+}
+
+toast {
+  background-color: #000000;
+}
+
+infobar.info > revealer > box,
+infobar.question > revealer > box {
+  background-color: #060606;
+}
+
+popover > contents,
+popover > arrow {
+  border-color: #161616;
+}
+
+tooltip.background {
+  background-color: #060606;
+  border-color: #161616;
+}
+
+banner > revealer > widget,
+banner > revealer > widget:backdrop {
+  background-color: #000000;
+}
+
+/* ── Noir: buttons and fields #060606 (libadwaita makes them white at 10 %) ── */
+button:not(.flat):not(.suggested-action):not(.destructive-action):not(.osd):not(.circular):not(.pill),
+splitbutton:not(.flat) > button,
+splitbutton:not(.flat) > menubutton > button,
+spinbutton,
+entry,
+dropdown > button {
+  background-color: #060606;
+}
+button:not(.flat):not(.suggested-action):not(.destructive-action):not(.osd):not(.circular):not(.pill):hover,
+splitbutton:not(.flat) > button:hover,
+splitbutton:not(.flat) > menubutton > button:hover {
+  background-color: #0d0d0d;
+}
+button:not(.flat):not(.suggested-action):not(.destructive-action):not(.osd):not(.circular):not(.pill):active,
+button:not(.flat):not(.suggested-action):not(.destructive-action):not(.osd):not(.circular):not(.pill):checked {
+  background-color: #161616;
+}
+spinbutton > text,
+spinbutton > button {
+  background-color: transparent;
+}
+/* ── Noir: the row, file or sidebar entry under the pointer #060606 (libadwaita: white
+   at 4 %, sidebars 7 %), a little lighter pressed ── */
+row.activatable:hover,
+row.activatable.has-open-popup,
+.navigation-sidebar row.activatable:hover,
+.navigation-sidebar row.activatable.has-open-popup,
+.navigation-sidebar child.activatable:hover,
+.navigation-sidebar child.activatable.has-open-popup,
+.navigation-sidebar flowboxchild:hover,
+.navigation-sidebar flowboxchild.has-open-popup,
+gridview > child.activatable:hover,
+flowbox > flowboxchild:hover {
+  background-color: #060606;
+}
+row.activatable:active,
+.navigation-sidebar row.activatable:active,
+.navigation-sidebar child.activatable:active,
+.navigation-sidebar flowboxchild:active,
+gridview > child.activatable:active,
+flowbox > flowboxchild:active {
+  background-color: #0d0d0d;
+}
+/* ── Noir: selected rows, files and sidebar entries #060606 (libadwaita tints them
+   with the accent at 25 %, sidebars with white at 10 %), a little lighter under the
+   pointer and pressed ── */
+.view:selected,
+.view:selected:focus,
+row:selected,
+listview > row:selected,
+columnview > listview > row:selected,
+.navigation-sidebar row:selected,
+gridview > child:selected,
+flowbox > flowboxchild:selected {
+  background-color: #060606;
+}
+row.activatable:selected:hover,
+row.activatable:selected.has-open-popup,
+.navigation-sidebar row.activatable:selected:hover,
+gridview > child.activatable:selected:hover,
+flowbox > flowboxchild:selected:hover {
+  background-color: #0d0d0d;
+}
+row.activatable:selected:active,
+.navigation-sidebar row.activatable:selected:active,
+gridview > child.activatable:selected:active,
+flowbox > flowboxchild:selected:active {
+  background-color: #161616;
+}
+/* popovers, cards and boxed lists are #060606 themselves, so a selected row would vanish
+   there: white at 10 %, 13 % under the pointer, 19 % pressed (libadwaita's sidebars) */
+popover row:selected,
+.card row:selected,
+.boxed-list > row:selected,
+.boxed-list-separate > row:selected,
+list.content > row:selected {
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
+}
+popover row.activatable:selected:hover,
+popover row.activatable:selected.has-open-popup,
+.card row.activatable:selected:hover,
+.card row.activatable:selected.has-open-popup,
+.boxed-list > row.activatable:selected:hover,
+.boxed-list > row.activatable:selected.has-open-popup,
+.boxed-list-separate > row.activatable:selected:hover,
+.boxed-list-separate > row.activatable:selected.has-open-popup,
+list.content > row.activatable:selected:hover,
+list.content > row.activatable:selected.has-open-popup {
+  background-color: color-mix(in srgb, currentColor 13%, transparent);
+}
+popover row.activatable:selected:active,
+.card row.activatable:selected:active,
+.boxed-list > row.activatable:selected:active,
+.boxed-list-separate > row.activatable:selected:active,
+list.content > row.activatable:selected:active {
+  background-color: color-mix(in srgb, currentColor 19%, transparent);
+}
+/* there the row under the pointer as libadwaita has it too, so it stays visible (and on
+   the see-through on-screen panels) */
+popover row.activatable:hover,
+popover row.activatable.has-open-popup,
+.card row.activatable:hover,
+.card row.activatable.has-open-popup {
+  background-color: color-mix(in srgb, currentColor 4%, transparent);
+}
+popover row.activatable:active,
+.card row.activatable:active {
+  background-color: color-mix(in srgb, currentColor 8%, transparent);
+}
+.osd row.activatable:hover,
+.osd row.activatable.has-open-popup {
+  background-color: color-mix(in srgb, currentColor 7%, transparent);
+}
+.osd row.activatable:active {
+  background-color: color-mix(in srgb, currentColor 16%, transparent);
+}
+.osd row.activatable:selected:hover,
+.osd row.activatable:selected.has-open-popup {
+  background-color: color-mix(in srgb, currentColor 13%, transparent);
+}
+.osd row.activatable:selected:active {
+  background-color: color-mix(in srgb, currentColor 19%, transparent);
+}
+row.entry:not(:selected).activatable.focused:hover,
+row.entry:not(:selected).activatable.focused:active,
+row.spin:not(:selected).activatable.focused:hover,
+row.spin:not(:selected).activatable.focused:active {
+  background-color: transparent;
+}
+list.boxed-list-separate > row.expander row.header:not(:selected).activatable:hover,
+list.boxed-list > row:not(:selected).activatable:hover,
+list.content > row:not(:selected).activatable:hover,
+list.boxed-list > row.expander row.header:not(:selected).activatable:hover,
+list.content > row.expander row.header:not(:selected).activatable:hover,
+row.expander list.nested > row:not(:selected).activatable:hover,
+list.boxed-list-separate > row.expander row.header:not(:selected).activatable.has-open-popup,
+list.boxed-list > row:not(:selected).activatable.has-open-popup,
+list.content > row:not(:selected).activatable.has-open-popup,
+list.boxed-list > row.expander row.header:not(:selected).activatable.has-open-popup,
+list.content > row.expander row.header:not(:selected).activatable.has-open-popup,
+row.expander list.nested > row:not(:selected).activatable.has-open-popup {
+  background-color: color-mix(in srgb, currentColor 3%, transparent);
+}
+list.boxed-list-separate > row.expander row.header:not(:selected).activatable:active,
+list.boxed-list > row:not(:selected).activatable:active,
+list.content > row:not(:selected).activatable:active,
+list.boxed-list > row.expander row.header:not(:selected).activatable:active,
+list.content > row.expander row.header:not(:selected).activatable:active,
+row.expander list.nested > row:not(:selected).activatable:active {
+  background-color: color-mix(in srgb, currentColor 8%, transparent);
+}
+list.boxed-list-separate > row:not(.expander):not(:selected).activatable:hover,
+list.boxed-list-separate > row:not(.expander):not(:selected).activatable.has-open-popup {
+  background-color: var(--card-bg-color);
+  background-image: image(color-mix(in srgb, currentColor 3%, transparent));
+}
+list.boxed-list-separate > row:not(.expander):not(:selected).activatable:active {
+  background-color: var(--card-bg-color);
+  background-image: image(color-mix(in srgb, currentColor 8%, transparent));
+}
+list.boxed-list-separate > row.entry:not(:selected).activatable.focused:hover,
+list.boxed-list-separate > row.entry:not(:selected).activatable.focused:active,
+list.boxed-list-separate > row.spin:not(:selected).activatable.focused:hover,
+list.boxed-list-separate > row.spin:not(:selected).activatable.focused:active {
+  background-color: var(--card-bg-color);
+  background-image: none;
+}
+/* menus and drop-down lists exactly as libadwaita has them: no colour for the selected
+   row (the check mark shows it), white at 10 % under the pointer, 19 % pressed */
+popover.menu list > row:selected,
+popover.menu listview > row:selected {
+  background: none;
+}
+popover.menu list > row:hover,
+popover.menu list > row:hover:selected.activatable,
+popover.menu listview > row:hover,
+popover.menu listview > row:hover:selected.activatable {
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
+}
+popover.menu list > row:active,
+popover.menu list > row:active:selected.activatable,
+popover.menu listview > row:active,
+popover.menu listview > row:active:selected.activatable {
+  background-color: color-mix(in srgb, currentColor 19%, transparent);
+}
+popover.menu list > row.has-open-popup,
+popover.menu list > row.has-open-popup:selected.activatable,
+popover.menu listview > row.has-open-popup,
+popover.menu listview > row.has-open-popup:selected.activatable {
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+/* on a #060606 card or boxed list a #060606 button would vanish: one step lighter */
+.card button:not(.flat):not(.suggested-action):not(.destructive-action):not(.osd):not(.circular):not(.pill),
+.boxed-list button:not(.flat):not(.suggested-action):not(.destructive-action):not(.osd):not(.circular):not(.pill) {
+  background-color: #0d0d0d;
+}
+.card button:not(.flat):not(.suggested-action):not(.destructive-action):not(.osd):not(.circular):not(.pill):hover,
+.boxed-list button:not(.flat):not(.suggested-action):not(.destructive-action):not(.osd):not(.circular):not(.pill):hover {
+  background-color: #161616;
+}
+/* Nautilus's path bar (the folder buttons at the top) one colour: #060606 like the buttons
+   in it (Nautilus makes the bar white at 10 % and its buttons see-through) */
+.nautilus-pathbar {
+  background-color: #060606;
+}

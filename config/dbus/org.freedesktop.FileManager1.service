@@ -1,0 +1,6 @@
+# Frame - Nautilus answers "show this file in the file manager" (a browser's "Show in folder"
+# and the like). A copy in ~/.local/share/dbus-1/services wins over the
+# ones other file managers install system-wide, so it is always Nautilus.
+[D-BUS Service]
+Name=org.freedesktop.FileManager1
+Exec=/usr/bin/nautilus --gapplication-service

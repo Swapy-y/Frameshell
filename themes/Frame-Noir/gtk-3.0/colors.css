@@ -1,0 +1,315 @@
+/* Frame-Noir - colours for GTK 3 apps (Thunar, file pickers, Firefox's dialogs ...)
+   ->  ~/.local/share/themes/Frame-Noir/gtk-3.0/colors.css
+
+   The shell's Noir theme: black #000000 windows, #060606 cards, fields, buttons and menus, white text,
+   #8c8c8c dim text, white main buttons with black text, #ff6b6b for errors, #ffb454
+   for warnings.
+   gtk.css loads adw-gtk3-dark first; this file only replaces its colours.
+   Made by themes/make-themes.py from themes/Frame (what each rule is for: see the
+   comments there): change the palette in make-themes.py and run it again (an edit
+   here is lost then). Restart an app to see a change. */
+
+@define-color accent_bg_color #ffffff;
+@define-color accent_fg_color #000000;
+@define-color accent_color #ffffff;
+
+@define-color destructive_bg_color #ff6b6b;
+@define-color destructive_fg_color #000000;
+@define-color destructive_color #ff6b6b;
+@define-color success_bg_color #8fd694;
+@define-color success_fg_color #000000;
+@define-color success_color #8fd694;
+@define-color warning_bg_color #ffb454;
+@define-color warning_fg_color #000000;
+@define-color warning_color #ffb454;
+@define-color error_bg_color #ff6b6b;
+@define-color error_fg_color #000000;
+@define-color error_color #ff6b6b;
+
+@define-color window_bg_color #000000;
+@define-color window_fg_color #ffffff;
+@define-color view_bg_color #000000;
+@define-color view_fg_color #ffffff;
+@define-color headerbar_bg_color #000000;
+@define-color headerbar_fg_color #ffffff;
+@define-color headerbar_border_color #ffffff;
+@define-color headerbar_backdrop_color #000000;
+@define-color headerbar_shade_color #060606;
+@define-color headerbar_darker_shade_color #060606;
+@define-color sidebar_bg_color #000000;
+@define-color sidebar_fg_color #ffffff;
+@define-color sidebar_backdrop_color #000000;
+@define-color sidebar_shade_color rgba(0, 0, 0, 0.25);
+@define-color sidebar_border_color #060606;
+@define-color secondary_sidebar_bg_color #000000;
+@define-color secondary_sidebar_fg_color #ffffff;
+@define-color secondary_sidebar_backdrop_color #000000;
+@define-color secondary_sidebar_shade_color rgba(0, 0, 0, 0.25);
+@define-color secondary_sidebar_border_color #060606;
+@define-color card_bg_color #060606;
+@define-color card_fg_color #ffffff;
+@define-color card_shade_color rgba(0, 0, 0, 0.36);
+@define-color dialog_bg_color #000000;
+@define-color dialog_fg_color #ffffff;
+@define-color popover_bg_color #060606;
+@define-color popover_fg_color #ffffff;
+@define-color popover_shade_color rgba(0, 0, 0, 0.25);
+@define-color thumbnail_bg_color #060606;
+@define-color thumbnail_fg_color #ffffff;
+@define-color shade_color rgba(0, 0, 0, 0.36);
+@define-color scrollbar_outline_color rgba(0, 0, 0, 0.5);
+
+@define-color theme_selected_bg_color #060606;
+@define-color theme_selected_fg_color #ffffff;
+@define-color theme_unfocused_selected_bg_color #060606;
+@define-color theme_unfocused_selected_fg_color #ffffff;
+
+treeview.view:selected,
+treeview.view:selected:focus,
+.view:selected,
+.view:selected:focus,
+iconview:selected,
+iconview:selected:focus,
+flowbox flowboxchild:selected {
+  background-color: @theme_selected_bg_color;
+}
+placessidebar row:selected {
+  color: @window_fg_color;
+}
+
+headerbar entry selection,
+.titlebar entry selection,
+entry selection,
+spinbutton:not(.vertical) selection,
+.view text selection:focus,
+iconview text selection:focus,
+.view text selection,
+iconview text selection,
+textview text selection:focus,
+textview text selection,
+label selection,
+.terminal selection,
+.terminal text selection,
+#MozillaGtkWidget.background selection:focus,
+#MozillaGtkWidget.background selection {
+  background-color: #222222;
+  color: @window_fg_color;
+}
+.thunar .standard-view .view:active {
+  background-color: transparent;
+}
+
+@define-color frame_link_color #6aa3d9;
+@define-color frame_visited_color #b48ead;
+
+button:link > label,
+button:link,
+*:link,
+button:link > label:active,
+*:link:active,
+*:selected button:link > label:active,
+*:selected *:link:active,
+button:link > label:backdrop,
+*:link:backdrop:backdrop:hover,
+*:link:backdrop:backdrop:hover:selected,
+*:link:backdrop,
+button:link > label:selected,
+*:selected button:link > label,
+*:link:selected,
+*:selected *:link {
+  color: @frame_link_color;
+}
+button:visited > label,
+button:visited,
+button:link > label:visited,
+button:visited > label:visited,
+*:visited,
+*:visited:backdrop,
+*:link:visited,
+*:selected button:link > label:visited,
+*:selected button:visited > label:visited,
+*:selected button:visited,
+*:selected *:link:visited,
+button:visited > label:active,
+button:active:visited,
+*:selected button:visited > label:active,
+*:selected button:active:visited,
+button:visited > label:backdrop,
+button:backdrop:visited,
+button:visited > label:selected,
+button:selected:visited,
+*:selected button:visited > label {
+  color: @frame_visited_color;
+}
+button:link > label:hover,
+button:visited > label:hover,
+button:hover:visited,
+*:link:hover,
+*:selected button:link > label:hover,
+*:selected button:visited > label:hover,
+*:selected button:hover:visited,
+*:selected *:link:hover {
+  color: mix(@frame_link_color, white, 0.25);
+}
+
+button.suggested-action,
+button.suggested-action:hover,
+button.suggested-action:active,
+button.suggested-action:checked {
+  color: @accent_fg_color;
+}
+button.suggested-action {
+  background-color: @accent_bg_color;
+}
+button.suggested-action:hover {
+  background-color: mix(@accent_bg_color, @accent_fg_color, 0.08);
+}
+button.suggested-action:active,
+button.suggested-action:checked {
+  background-color: mix(@accent_bg_color, @accent_fg_color, 0.18);
+}
+button.suggested-action:active:hover,
+button.suggested-action:checked:hover {
+  background-color: mix(@accent_bg_color, @accent_fg_color, 0.22);
+}
+button.suggested-action:disabled:active,
+button.suggested-action:disabled:checked {
+  color: alpha(@accent_fg_color, 0.5);
+}
+switch:checked slider,
+switch:checked:hover slider {
+  background-color: @accent_fg_color;
+}
+treeview.view acceleditor > label {
+  color: @accent_fg_color;
+}
+.view.content-view.check:checked:not(list),
+.content-view:not(list) check:checked {
+  color: @accent_fg_color;
+}
+infobar.info > revealer > box,
+infobar.question > revealer > box {
+  background-color: #060606;
+}
+infobar.action.info:hover > revealer > box,
+infobar.action.question:hover > revealer > box {
+  background-color: #0d0d0d;
+}
+infobar.info button,
+infobar.question button {
+  background-color: alpha(currentColor, 0.1);
+}
+infobar.info button:hover,
+infobar.question button:hover {
+  background-color: alpha(currentColor, 0.15);
+}
+infobar.info button:checked,
+infobar.info button:active,
+infobar.question button:checked,
+infobar.question button:active {
+  background-color: alpha(currentColor, 0.3);
+}
+
+popover.background,
+.csd popover.background {
+  border-color: #161616;
+}
+menu,
+.menu,
+.context-menu,
+.csd menu,
+.csd .menu,
+.csd .context-menu {
+  border: 1px solid #161616;
+}
+
+tooltip.background {
+  background-color: #060606;
+  border-color: #161616;
+}
+
+/* ── Noir: buttons and fields #060606 (adw-gtk3 makes them white at 10 %) ── */
+button:not(.flat):not(.suggested-action):not(.destructive-action):not(.osd):not(.titlebutton),
+spinbutton:not(.vertical),
+entry,
+combobox button.combo {
+  background-color: #060606;
+}
+button:not(.flat):not(.suggested-action):not(.destructive-action):not(.osd):not(.titlebutton):hover {
+  background-color: #0d0d0d;
+}
+button:not(.flat):not(.suggested-action):not(.destructive-action):not(.osd):not(.titlebutton):active,
+button:not(.flat):not(.suggested-action):not(.destructive-action):not(.osd):not(.titlebutton):checked {
+  background-color: #161616;
+}
+spinbutton:not(.vertical) entry,
+spinbutton:not(.vertical) button {
+  background-color: transparent;
+}
+spinbutton:disabled:not(.vertical),
+entry:disabled {
+  background-color: #060606;
+}
+/* ── Noir: the row under the pointer #060606 (adw-gtk3: white at 7 %, file lists 4 %),
+   a little lighter pressed ── */
+row.activatable:hover,
+row.activatable.has-open-popup,
+treeview.view:not(:backdrop):not(:selected):hover {
+  background-color: #060606;
+}
+row.activatable:active {
+  background-color: #0d0d0d;
+}
+/* ── Noir: selected list rows #060606 like selected files (adw-gtk3: white at 10 %) ── */
+row:selected,
+row.activatable:selected,
+row.activatable:selected:backdrop {
+  background-color: #060606;
+}
+row.activatable:selected:hover,
+row.activatable:selected.has-open-popup {
+  background-color: #0d0d0d;
+}
+row.activatable:selected:active {
+  background-color: #161616;
+}
+/* popovers and boxed lists are #060606 themselves, so a selected row or the row under
+   the pointer would vanish there: as adw-gtk3 has it */
+popover row:selected,
+popover row.activatable:selected,
+list.content > row:selected,
+list.content > row.activatable:selected {
+  background-color: alpha(currentColor, 0.1);
+}
+popover row.activatable:selected:active,
+list.content > row.activatable:selected:active {
+  background-color: alpha(currentColor, 0.19);
+}
+popover row.activatable:selected:hover,
+popover row.activatable:selected.has-open-popup,
+list.content > row.activatable:selected:hover,
+list.content > row.activatable:selected.has-open-popup {
+  background-color: alpha(currentColor, 0.12);
+}
+popover row.activatable:selected:backdrop,
+list.content > row.activatable:selected:backdrop {
+  background-color: alpha(currentColor, 0.07);
+}
+popover row.activatable:hover,
+popover row.activatable.has-open-popup,
+list.content > row.activatable.has-open-popup {
+  background-color: alpha(currentColor, 0.07);
+}
+popover row.activatable:active,
+list.content > row.activatable:active {
+  background-color: alpha(currentColor, 0.16);
+}
+/* on a #060606 card or boxed list a #060606 button would vanish: one step lighter */
+.card button:not(.flat):not(.suggested-action):not(.destructive-action):not(.osd):not(.titlebutton),
+.boxed-list button:not(.flat):not(.suggested-action):not(.destructive-action):not(.osd):not(.titlebutton) {
+  background-color: #0d0d0d;
+}
+.card button:not(.flat):not(.suggested-action):not(.destructive-action):not(.osd):not(.titlebutton):hover,
+.boxed-list button:not(.flat):not(.suggested-action):not(.destructive-action):not(.osd):not(.titlebutton):hover {
+  background-color: #161616;
+}

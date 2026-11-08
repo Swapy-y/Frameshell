@@ -1,0 +1,182 @@
+/* Frame - colours for GTK 4 and libadwaita apps (pavucontrol, GNOME apps, file pickers ...)
+   ->  ~/.local/share/themes/Frame/gtk-4.0/colors.css
+
+   The shell's palette (Config.qml): #1a1a1a panels, #222222 hover, #2a2a2a selected,
+   #313131 outlines, white text, white main buttons with dark text, #ff6b6b for errors,
+   #ffb454 for warnings. Loaded twice: by the Frame theme (plain GTK 4 apps) and by
+   ~/.config/gtk-4.0/gtk.css (libadwaita apps, which ignore themes).
+   The GTK 3 copy of these values is ../gtk-3.0/colors.css: change both to keep them alike.
+   Restart an app to see a change. */
+
+/* named colours (older libadwaita, adw-gtk3's GTK 4 part) */
+@define-color accent_bg_color #ffffff;
+@define-color accent_fg_color #1a1a1a;
+@define-color accent_color #ffffff;
+@define-color destructive_bg_color #ff6b6b;
+@define-color destructive_fg_color #1a1a1a;
+@define-color destructive_color #ff6b6b;
+@define-color success_bg_color #8fd694;
+@define-color success_fg_color #1a1a1a;
+@define-color success_color #8fd694;
+@define-color warning_bg_color #ffb454;
+@define-color warning_fg_color #1a1a1a;
+@define-color warning_color #ffb454;
+@define-color error_bg_color #ff6b6b;
+@define-color error_fg_color #1a1a1a;
+@define-color error_color #ff6b6b;
+@define-color window_bg_color #1a1a1a;
+@define-color window_fg_color #ffffff;
+@define-color view_bg_color #1a1a1a;
+@define-color view_fg_color #ffffff;
+@define-color headerbar_bg_color #1a1a1a;
+@define-color headerbar_fg_color #ffffff;
+@define-color headerbar_border_color #ffffff;
+@define-color headerbar_backdrop_color #1a1a1a;
+@define-color headerbar_shade_color #313131;
+@define-color headerbar_darker_shade_color #313131;
+@define-color sidebar_bg_color #1f1f1f;
+@define-color sidebar_fg_color #ffffff;
+@define-color sidebar_backdrop_color #1f1f1f;
+@define-color sidebar_shade_color rgba(0, 0, 0, 0.25);
+@define-color sidebar_border_color #313131;
+@define-color secondary_sidebar_bg_color #1c1c1c;
+@define-color secondary_sidebar_fg_color #ffffff;
+@define-color secondary_sidebar_backdrop_color #1c1c1c;
+@define-color secondary_sidebar_shade_color rgba(0, 0, 0, 0.25);
+@define-color secondary_sidebar_border_color #313131;
+@define-color card_bg_color #222222;
+@define-color card_fg_color #ffffff;
+@define-color card_shade_color rgba(0, 0, 0, 0.36);
+@define-color dialog_bg_color #1a1a1a;
+@define-color dialog_fg_color #ffffff;
+@define-color popover_bg_color #1a1a1a;
+@define-color popover_fg_color #ffffff;
+@define-color popover_shade_color rgba(0, 0, 0, 0.25);
+@define-color thumbnail_bg_color #222222;
+@define-color thumbnail_fg_color #ffffff;
+@define-color shade_color rgba(0, 0, 0, 0.36);
+@define-color scrollbar_outline_color rgba(0, 0, 0, 0.5);
+
+/* the same as CSS variables (libadwaita 1.6 and newer read these) */
+:root {
+  --accent-bg-color: #ffffff;
+  --accent-fg-color: #1a1a1a;
+  --accent-color: #ffffff;
+  --destructive-bg-color: #ff6b6b;
+  --destructive-fg-color: #1a1a1a;
+  --destructive-color: #ff6b6b;
+  --success-bg-color: #8fd694;
+  --success-fg-color: #1a1a1a;
+  --success-color: #8fd694;
+  --warning-bg-color: #ffb454;
+  --warning-fg-color: #1a1a1a;
+  --warning-color: #ffb454;
+  --error-bg-color: #ff6b6b;
+  --error-fg-color: #1a1a1a;
+  --error-color: #ff6b6b;
+  --window-bg-color: #1a1a1a;
+  --window-fg-color: #ffffff;
+  --view-bg-color: #1a1a1a;
+  --view-fg-color: #ffffff;
+  --headerbar-bg-color: #1a1a1a;
+  --headerbar-fg-color: #ffffff;
+  --headerbar-border-color: #ffffff;
+  --headerbar-backdrop-color: #1a1a1a;
+  --headerbar-shade-color: #313131;
+  --headerbar-darker-shade-color: #313131;
+  --sidebar-bg-color: #1f1f1f;
+  --sidebar-fg-color: #ffffff;
+  --sidebar-backdrop-color: #1f1f1f;
+  --sidebar-shade-color: rgba(0, 0, 0, 0.25);
+  --sidebar-border-color: #313131;
+  --secondary-sidebar-bg-color: #1c1c1c;
+  --secondary-sidebar-fg-color: #ffffff;
+  --secondary-sidebar-backdrop-color: #1c1c1c;
+  --secondary-sidebar-shade-color: rgba(0, 0, 0, 0.25);
+  --secondary-sidebar-border-color: #313131;
+  --card-bg-color: #222222;
+  --card-fg-color: #ffffff;
+  --card-shade-color: rgba(0, 0, 0, 0.36);
+  --dialog-bg-color: #1a1a1a;
+  --dialog-fg-color: #ffffff;
+  --popover-bg-color: #1a1a1a;
+  --popover-fg-color: #ffffff;
+  --popover-shade-color: rgba(0, 0, 0, 0.25);
+  --thumbnail-bg-color: #222222;
+  --thumbnail-fg-color: #ffffff;
+  --shade-color: rgba(0, 0, 0, 0.36);
+  --scrollbar-outline-color: rgba(0, 0, 0, 0.5);
+  --overview-bg-color: #1f1f1f;
+  --overview-fg-color: #ffffff;
+  --active-toggle-bg-color: rgba(255, 255, 255, 0.2);
+  --active-toggle-fg-color: #ffffff;
+  --frame-link-color: #6aa3d9;
+  --frame-visited-color: #b48ead;
+}
+
+/* links: the blue of the Qt palette (white would look like plain text) */
+link,
+button.link {
+  color: var(--frame-link-color);
+}
+link:visited,
+button.link:visited {
+  color: var(--frame-visited-color);
+}
+link:hover,
+button.link:hover {
+  color: color-mix(in srgb, var(--frame-link-color) 75%, white);
+}
+link:active,
+button.link:active {
+  color: var(--frame-link-color);
+}
+
+/* a dark knob on the white "on" switch (white on white would vanish) */
+switch:checked > slider,
+switch:checked:hover > slider,
+switch:checked:active > slider {
+  background-color: var(--accent-fg-color);
+}
+
+/* selected text (fields, text views, labels, Chromium): the shell's text selection grey
+   #3e3e3e (textSelection in Config.qml) with the normal text colour on it (libadwaita: a
+   see-through tint over the text) */
+selection,
+selection:focus-within,
+.background.chromium selection,
+.background.chromium selection:focus {
+  background-color: #3e3e3e;
+  color: var(--window-fg-color);
+}
+
+/* toasts (Nautilus's "Moved … to …" bar at the bottom): the window colour #1a1a1a
+   (libadwaita: a mid grey #505053) */
+toast {
+  background-color: #1a1a1a;
+}
+
+/* info and question bars: a shell grey (a white accent would make them mid grey) */
+infobar.info > revealer > box,
+infobar.question > revealer > box {
+  background-color: #2a2a2a;
+}
+
+/* popovers and menus: the shell's #313131 outline */
+popover > contents,
+popover > arrow {
+  border-color: #313131;
+}
+
+/* tooltips: a shell card instead of a see-through black box */
+tooltip.background {
+  background-color: #1a1a1a;
+  border-color: #313131;
+}
+
+/* banners (the bar with "Empty Trash…" in Nautilus's trash): the window colour #1a1a1a
+   (libadwaita mixes 30 % of a blue-grey into it, 15 % in an unfocused window) */
+banner > revealer > widget,
+banner > revealer > widget:backdrop {
+  background-color: #1a1a1a;
+}

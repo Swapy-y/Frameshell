@@ -714,7 +714,7 @@ install_configs() {
     run cp -f "$HERE"/config/quickshell/frame/assets/fonts/*.otf "$HERE/config/quickshell/frame/assets/fonts/LICENSE-ClarityCity.txt" "$DATA/fonts/frame/"
     command -v fc-cache >/dev/null 2>&1 && run fc-cache -f "$DATA/fonts" >/dev/null 2>&1
 
-    # wallpapers: SUPER + Left / Right switches between the pictures in this folder.
+    # wallpapers: SUPER + CTRL + Left / Right switches between the pictures in this folder.
     # The bundled ones are added; a picture of yours with the same name is kept.
     # (services/Wallpapers.qml lists them by name, `bundled`: the Settings app does not
     # offer to remove them.)
@@ -807,7 +807,7 @@ install_qt_theme() {
             sed -i "s|~/.config/|$CFG/|g" "$CFG/qt${v}ct/qt${v}ct.conf"
         fi
     done
-    # the shell's colour theme picked earlier (SUPER + Up / Down): GTK and Qt apps follow it
+    # the shell's colour theme picked earlier (SUPER + CTRL + Up / Down): GTK and Qt apps follow it
     # again (the files above are the Default theme's)
     if ((!DRY)) && [[ -s $STATE/frameshell/theme && -f $CFG/quickshell/frame/scripts/theme.sh ]]; then
         bash "$CFG/quickshell/frame/scripts/theme.sh" "$(head -n1 "$STATE/frameshell/theme")" || true
@@ -1160,7 +1160,7 @@ login_screen_setup() {
     # the desktop wallpaper as the background (theme.conf: background=assets/wallpaper.png).
     # SDDM can't read your home folder, so it gets a copy - the wallpaper you picked
     # (~/.local/state/frameshell/wallpaper), else the default. The copy belongs to you:
-    # when you pick another wallpaper (SUPER + Left / Right) the shell replaces it
+    # when you pick another wallpaper (SUPER + CTRL + Left / Right) the shell replaces it
     # (scripts/wallpaper.sh), so the login screen always shows your wallpaper.
     local wall="" picked
     picked="$(head -n1 "$STATE/frameshell/wallpaper" 2>/dev/null)"
@@ -1168,7 +1168,7 @@ login_screen_setup() {
         if [[ -n $p && -f $p ]]; then wall="$p"; break; fi
     done
     if run "${SUDO[@]}" install -Dm644 -o "$ME" -g "$(id -gn)" "$wall" "$PIXIE_DIR/assets/wallpaper.png"; then
-        note "Background of the login and lock screen: your desktop wallpaper ($wall). It follows when you switch (SUPER + Left / Right)."
+        note "Background of the login and lock screen: your desktop wallpaper ($wall). It follows when you switch (SUPER + CTRL + Left / Right)."
     else
         warn "Could not copy the wallpaper to $PIXIE_DIR/assets/wallpaper.png."
     fi

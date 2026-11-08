@@ -13,7 +13,9 @@ a dock at the bottom and panels that grow out of the edges.
 
 ## Showcase
 
-https://github.com/user-attachments/assets/PASTE-VIDEO-LINK-HERE
+
+https://github.com/user-attachments/assets/1fd0dcb7-4957-406a-8c7e-0c01d8d9855b
+
 
 ## Features
 

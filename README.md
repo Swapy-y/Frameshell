@@ -7,8 +7,6 @@
 A dark frame around a rounded wallpaper window, a notch that grows into an island,
 a dock at the bottom and panels that grow out of the edges.
 
-![Frameshell](docs/screenshots/desktop.png)
-
 </div>
 
 ## Showcase

@@ -140,8 +140,8 @@ Scope {
             key: "appearance",
             name: "Appearance",
             icon: "set-appearance",
-            description: "The borders round the windows and round the frame, the gap round the windows, the power button and the app icons.",
-            keywords: "border width thickness outline ring frame window look gap gaps space spacing margin padding icon icons pack theme yamis adwaita papirus app apps power button logo frameshell",
+            description: "The borders round the windows and round the frame, the rounding of the corners, the gap round the windows, the power button and the app icons.",
+            keywords: "border width thickness outline ring frame window look corner corners rounding round rounded radius gap gaps space spacing margin padding icon icons pack theme yamis adwaita papirus app apps power button logo frameshell",
             settings: [
                 {
                     key: "windowBorder",
@@ -160,6 +160,17 @@ Scope {
                     unit: "px",
                     name: "Frame border",
                     description: "The outline of the frame, the island, the panels and the pop-ups."
+                },
+                {
+                    key: "cornerRounding",
+                    kind: "slider",
+                    min: 20,
+                    max: 30,
+                    unit: "px",
+                    get: () => Config.cornerRounding,
+                    set: v => Config.setCornerRounding(v),
+                    name: "Corner rounding",
+                    description: "The four corners of the frame round the windows, and the corners of the windows. The island, the dock and the panels keep theirs."
                 },
                 {
                     key: "windowGap",

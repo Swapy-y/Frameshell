@@ -13,7 +13,6 @@ import qs.services
 //    qs -c frame ipc call ui close      close everything that is open
 //    qs -c frame ipc call ui settings   open the Settings app (or bring it to the front)
 //    qs -c frame ipc call ui logout     ask "Log out?"
-//    qs -c frame ipc call ui logoutFade (logging out) fade to black - scripts/power.sh
 //    qs -c frame ipc call ui cover 'DP-1' the screens a window covers like fullscreen ('' = none):
 //                                       the frame, notch and bar hide there (hyprland.lua sends
 //                                       the same as an event on Hyprland's socket, below: faster)
@@ -54,12 +53,6 @@ Scope {
             Ui.ask("logout");
         }
 
-        // logging out: the last step, the screen fades to black (scripts/power.sh)
-        function logoutFade(): void {
-            if (Ui.loggingOut)
-                Ui.logoutDark = true;
-        }
-
         // F11 on a workspace without tiling: the window covers the screen as a floating window
         // (so the others stay visible under it); Hyprland does not hide the shell for that, so
         // hyprland.lua tells which screens are covered, a space-separated list of names
@@ -69,12 +62,16 @@ Scope {
     }
 
     // ... hyprland.lua tells it at once on Hyprland's event socket (the same list):
-    // "custom>>frameshell-cover DP-1"
+    // "custom>>frameshell-cover DP-1" - or "frameshell-cover-now DP-1": a screen new in the list
+    // hides at once, without the fade (a window is about to leave Hyprland's own fullscreen there,
+    // and Hyprland shows the shell again as it does)
     Connections {
         target: Hyprland
         function onRawEvent(event) {
-            if (event.name === "custom" && event.data.startsWith("frameshell-cover"))
-                Ui.coveredScreens = event.data.slice(16).split(" ").filter(s => s.length > 0);
+            if (event.name !== "custom" || !event.data.startsWith("frameshell-cover"))
+                return;
+            const now = event.data.startsWith("frameshell-cover-now");
+            Ui.setCovered(event.data.slice(now ? 20 : 16).split(" ").filter(s => s.length > 0), now);
         }
     }
 

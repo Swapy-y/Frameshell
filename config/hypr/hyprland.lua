@@ -11,10 +11,10 @@
 --   * Windows float inside the frame with a strip of wallpaper around them, like the concept:
 --         WINDOW_GAP = 15   space around every window and between two windows (SETTINGS below;
 --                           the slider "Window gap" in the Settings app, Appearance, once you move it)
---     Border width and corner radius of the windows are NOT set here: the border's width
---     comes from the shell's Settings app (Appearance), the corners from cornerRadius in the
---     shell's Config.qml, so frame, panels and windows always match (see "BORDER AND
---     CORNERS" below). Change them there; it applies live.
+--     Border width and corner radius of the windows are NOT set here: both come from the
+--     shell's Settings app (Appearance: "Window border", "Corner rounding"; until that one is
+--     moved, cornerRadius in the shell's Config.qml), so frame and windows always match (see
+--     "BORDER AND CORNERS" below). Change them there; it applies live.
 --     A maximized window (SUPER + F) keeps the gap and the rounded corners; F11 covers the whole
 --     screen (see FULLSCREEN_LIKE_TILE).
 --
@@ -95,7 +95,8 @@ local CURSOR_SIZE  = 24
 -- shell's Settings app (Appearance, "Window border"), which keeps it in
 -- ~/.local/state/frameshell/appearance.json ("windowBorder"; 2 until you change it). The
 -- others are read from ~/.config/quickshell/frame/Config.qml:
---     cornerRadius   -> rounding    (the window corners)
+--     cornerRadius   -> rounding    (the window corners - until the Settings app's "Corner
+--                                   rounding" slider is moved: appearance.json, "cornerRounding")
 --     shadows        -> window shadows on / off (with the shell's own shadows)
 --     shadowStrength -> how dark the window shadows are
 -- So there is ONE place to change them: the Settings app / Config.qml. Saving Config.qml reloads
@@ -185,6 +186,12 @@ local BLUR_BRIGHTNESS = shell_state("blur.json", "blurBrightness", 1.0)
 local BLUR_CONTRAST   = shell_state("blur.json", "blurContrast", 0.9)
 local SHELL_OPACITY   = shell_state("blur.json", "shellOpacity", 0.8)
 local WINDOW_ROUNDING = shell_setting("cornerRadius", 30)
+do      -- the Settings app's "Corner rounding" (-1 or missing: never moved, cornerRadius stays)
+    local r = shell_state("appearance.json", "cornerRounding", -1)
+    if r >= 0 then
+        WINDOW_ROUNDING = math.floor(r + 0.5)
+    end
+end
 local SHADOWS         = shell_setting("shadows", true, "bool")
 local SHADOW_STRENGTH = shell_setting("shadowStrength", 0.6, "real")
 
@@ -427,7 +434,8 @@ hl.config({
     },
 
     decoration = {
-        rounding       = WINDOW_ROUNDING,             -- window corners = cornerRadius in Config.qml (30 = 4K, ~13 = 1080p).
+        rounding       = WINDOW_ROUNDING,             -- window corners = the Settings app's "Corner rounding" (Appearance;
+                                                      -- until it is moved, cornerRadius in Config.qml: 30 = 4K, ~13 = 1080p).
                                                       -- The border sits outside it, so a window's outer corner is
                                                       -- cornerRadius + the border's width, like the frame's corners.
         rounding_power = 2,                           -- 2 = a true circle arc
@@ -479,6 +487,125 @@ hl.config({
         no_donation_nag = true,
     },
 })
+
+
+-------------------------------
+---- EQUAL-SIZED NEW TILES ----
+-------------------------------
+
+-- Why a new tile used to come out bigger than the one it split: Hyprland cuts a tile in two equal
+-- BOXES, and only then takes the gaps off each box. A tile that touches the edge of the window area
+-- has no gap on that side (the gap to the frame is already taken off the window area: gaps_out), a
+-- tile in the middle has a gap on both sides. So the tile at the edge ends up half a gap bigger
+-- (7 or 8 px with a 15 px gap) than its neighbour - and every new tile opens at the edge again.
+-- Two tiles hardly show it; with many small tiles the 8 px are easy to see.
+--
+-- The fix: just before a new tile opens, work out which split ratio makes the two new tiles come out
+-- the same size AFTER the gaps, and hand it to dwindle as default_split_ratio (and put it back to 1.0
+-- right after, so moving windows around is not touched). It is only ever the split of the tile you
+-- are on, the window dwindle cuts in two (dwindle:use_active_for_splits, on by default), so nothing
+-- else in the layout moves. Gaps come out the same everywhere, only the sizes change. The pixel
+-- rounding that is left is at most 1 px.
+--
+-- Written for force_split = 2 (the new window is the right / lower half, set in "dwindle" above) and
+-- split_width_multiplier = 1 (a tile wider than tall is split left / right). false = off again.
+local EQUAL_TILES = true
+
+local split_ratio_now = 1.0
+
+local function set_split_ratio(ratio)
+    ratio = math.floor(ratio * 10000 + 0.5) / 10000
+    if ratio == split_ratio_now then
+        return
+    end
+    if pcall(hl.config, { dwindle = { default_split_ratio = ratio } }) then
+        split_ratio_now = ratio
+    end
+end
+
+-- where a tile is (its final position, also while it is still animating); nil if it can't tell
+local function tile_box(o)
+    local ok, at, size = pcall(function() return o.at, o.size end)
+    if not ok or type(at) ~= "table" or type(size) ~= "table" then
+        return nil
+    end
+    return { x = at.x, y = at.y, w = size.x, h = size.y }
+end
+
+-- The split ratio that makes the tile you are on and the new window (the new one gets the second
+-- half) the same size once the gaps are off. 1.0 whenever it can't tell (then dwindle splits in two
+-- equal boxes, as it always did).
+--
+-- A tile is "at the edge" when no other tile of the workspace reaches further out in that direction
+-- (the tiles fill the whole window area, so the outermost ones touch its edge).
+-- Along the split, the first half (the tile you are on) keeps its own outer gap (`first`: 0 at the
+-- edge, else the lower half of the gap) and gets the gap of the split on its far side (`hi`); the
+-- second half (the new tile) gets the gap of the split on its near side (`lo`) and the outer gap on
+-- its far side (`last`). Same size after the gaps:
+--      half_1 - first - hi  =  half_2 - lo - last        ->  ratio = 1 + (first + hi - lo - last) / size
+local function equal_split_ratio(w)
+    local ws = w.workspace
+    local active = hl.get_active_window()
+    if w.floating or not ws or not active or active.floating or active.mapped ~= true
+        or (active.fullscreen or 0) ~= 0 or active.address == w.address
+        or not active.workspace or active.workspace.id ~= ws.id then
+        return 1.0
+    end
+
+    local x0, y0, x1, y1 = math.huge, math.huge, -math.huge, -math.huge
+    local box
+    for _, o in ipairs(hl.get_workspace_windows(ws.id) or {}) do
+        if o.address ~= w.address and not o.floating and o.mapped == true and o.hidden ~= true then
+            if (o.fullscreen or 0) ~= 0 then
+                return 1.0                  -- a maximized / fullscreen window: the tiles' sizes are not up to date
+            end
+            local b = tile_box(o)
+            if b then
+                x0, y0 = math.min(x0, b.x), math.min(y0, b.y)
+                x1, y1 = math.max(x1, b.x + b.w), math.max(y1, b.y + b.h)
+                if o.address == active.address then
+                    box = b
+                end
+            end
+        end
+    end
+    if not box then
+        return 1.0
+    end
+
+    local lo = WINDOW_GAP // 2             -- the same halves as gap_config() above: left / top ...
+    local hi = WINDOW_GAP - lo             -- ... and right / bottom
+    local off_left   = (box.x - x0 <= 1) and 0 or lo
+    local off_right  = (x1 - (box.x + box.w) <= 1) and 0 or hi
+    local off_top    = (box.y - y0 <= 1) and 0 or lo
+    local off_bottom = (y1 - (box.y + box.h) <= 1) and 0 or hi
+
+    -- the tile's box, as dwindle sees it (the tile plus the gaps taken off it)
+    local box_w = box.w + off_left + off_right
+    local box_h = box.h + off_top + off_bottom
+    local size, first, last
+    if box_w > box_h then
+        size, first, last = box_w, off_left, off_right      -- split left / right
+    else
+        size, first, last = box_h, off_top, off_bottom      -- split top / bottom
+    end
+    if size <= 0 then
+        return 1.0
+    end
+    return math.max(0.1, math.min(1.9, 1 + (first + hi - lo - last) / size))
+end
+
+-- before the new window is put into the layout ...
+hl.on("window.open_early", function(w)
+    if not EQUAL_TILES then
+        return
+    end
+    local ok, ratio = pcall(equal_split_ratio, w)
+    pcall(set_split_ratio, (ok and type(ratio) == "number") and ratio or 1.0)
+end)
+-- ... and back to normal once it is in (a window that closed on the way: the next one starts again)
+hl.on("window.open",  function() pcall(set_split_ratio, 1.0) end)
+hl.on("window.close", function() pcall(set_split_ratio, 1.0) end)
 
 
 -----------------------
@@ -1340,6 +1467,19 @@ local function covers_screen(w)
     return ok and yes == true
 end
 
+-- covers_screen, or made to cover it like that here (float_fs) - also should the app no longer be
+-- told it is fullscreen: what hides the shell (cover_now)
+local function covering(w)
+    if covers_screen(w) then
+        return true
+    end
+    local ok, yes = pcall(function()
+        return float_fs[w.address] ~= nil and w.floating and w.fullscreen == 0
+            and near(box_of(w), screen_box(w.monitor))
+    end)
+    return ok and yes == true
+end
+
 local function in_float_fs(w)
     local id = window_id(w)
     return (id ~= nil and float_fs[id] ~= nil) or covers_screen(w)
@@ -1352,17 +1492,24 @@ end
 -- told only when it changes.
 local cover_sent = nil      -- the list last told to the shell
 local cover_pending = false
+local cover_hold = {}       -- [monitor name] = a number while it stays in the list for a moment (hold_cover)
 
-local function cover_now()
+-- `snap`: a screen that comes into the list hides at once, without the shell's fade
+-- ("frameshell-cover-now": for hold_cover below)
+local function cover_now(snap)
     local names = {}
     for _, m in ipairs(hl.get_monitors() or {}) do
         pcall(function()
+            if cover_hold[m.name] then
+                names[#names + 1] = m.name
+                return
+            end
             local ws = m.active_workspace
             if not ws or not untiled[ws.id] then
                 return
             end
             for _, o in ipairs(hl.get_workspace_windows(ws.id) or {}) do
-                if o.hidden ~= true and covers_screen(o) then
+                if o.hidden ~= true and covering(o) then
                     names[#names + 1] = m.name
                     return
                 end
@@ -1373,7 +1520,7 @@ local function cover_now()
     local list = table.concat(names, " ")
     if list ~= cover_sent then
         cover_sent = list
-        hl.dispatch(hl.dsp.event("frameshell-cover " .. list))
+        hl.dispatch(hl.dsp.event((snap and "frameshell-cover-now " or "frameshell-cover ") .. list))
     end
 end
 
@@ -1389,6 +1536,32 @@ local function cover_later()
     if not queued then
         cover_pending = false
     end
+end
+
+-- Screen `name` stays in the list for `ms` milliseconds - while a window there goes out of or into
+-- Hyprland's own fullscreen, which fades the shell by itself: without this the shell would show
+-- for a moment in between. `snap`: it hides at once (going out of Hyprland's fullscreen, the
+-- shell must be hidden before Hyprland shows it again). A newer hold of the same screen replaces
+-- an older one. false if it can't (no timer: it would never end).
+local hold_count = 0
+local function hold_cover(name, ms, snap)
+    if type(name) ~= "string" then
+        return false
+    end
+    hold_count = hold_count + 1
+    local n = hold_count
+    local queued = pcall(hl.timer, function()
+        if cover_hold[name] == n then
+            cover_hold[name] = nil
+            pcall(cover_now)
+        end
+    end, { timeout = ms, type = "oneshot" })
+    if not queued then
+        return false
+    end
+    cover_hold[name] = n
+    pcall(cover_now, snap)
+    return true
 end
 
 -- for events that come often (focus, workspace): only while something covers a screen
@@ -1417,6 +1590,49 @@ local function fs_props(w, on)
     set("no_shadow", "1")
 end
 
+-- Pill corners: a tiled window smaller than PILL_W x PILL_H gets corners of half its smaller side.
+-- Polled (there is no "window resized" event), so it follows resizing live.
+local PILL_W, PILL_H = 60, 60
+local POLL_MS = 40
+local applied = {}   -- [address] = rounding we set, nil = we haven't touched the window
+
+local function set_round(w, value)
+    hl.dispatch(hl.dsp.window.set_prop({ window = w, prop = "rounding", value = value }))
+end
+
+local function update_pills()
+    local seen = {}
+    for _, w in ipairs(hl.get_windows() or {}) do
+        pcall(function()
+            local id, s = w.address, w.size
+            seen[id] = true
+            if w.fullscreen ~= 0 then
+                applied[id] = nil                       -- fs_props owns the rounding now; recheck after
+                return
+            end
+            if w.floating or not w.mapped or type(s) ~= "table" then
+                if applied[id] then set_round(w, "unset"); applied[id] = nil end
+                return
+            end
+            if s.x < PILL_W or s.y < PILL_H then
+                local v = tostring(math.floor(math.min(s.x, s.y) / 2))
+                if applied[id] ~= v then              -- only talk to Hyprland when it changed
+                    set_round(w, v)
+                    applied[id] = v
+                end
+            elseif applied[id] then
+                set_round(w, "unset")
+                applied[id] = nil
+            end
+        end)
+    end
+    for id in pairs(applied) do                          -- forget closed windows (addresses get reused)
+        if not seen[id] then applied[id] = nil end
+    end
+end
+
+hl.timer(function() pcall(update_pills) end, { timeout = POLL_MS, type = "repeat" })
+
 -- F11 there. false if the monitor can't tell its size (then nothing changes).
 local function float_fullscreen(w)
     local m = w.monitor or hl.get_active_monitor()
@@ -1432,6 +1648,39 @@ local function float_fullscreen(w)
     hl.dispatch(hl.dsp.window.alter_zorder({ mode = "top", window = w }))
     float_fs[id] = rec                  -- last: the steps above must not read as "it left"
     pcall(cover_now)                    -- the shell hides at once, with the window growing
+    return true
+end
+
+-- A window in Hyprland's own fullscreen (F11 with tiling on, a video) when tiling goes off covers
+-- the screen this way instead, so the windows that were tiles under it stay under it - and show
+-- through a see-through one (under Hyprland's fullscreen a floating window can only be hidden or
+-- drawn over it). F11 again, or the app leaving fullscreen by itself, puts it on `back` (the
+-- middle, like a window opened there) - or, if it was maximized before, maximizes it (SUPER + F
+-- then puts it on `back`). The shell must be hidden already (hold_cover): Hyprland shows it again
+-- as its fullscreen ends. false if the monitor can't tell (then nothing changes).
+local function fullscreen_to_float(w, back)
+    local m = w.monitor or hl.get_active_monitor()
+    local sb, id = screen_box(m), window_id(w)
+    if not sb or not id then
+        return false
+    end
+    local from_max = w.fullscreen == 3 or fs_from_max[id] == true
+    -- floating first, then the state: a state set while it is tiled stays with the tiling
+    -- (Hyprland 0.56 keeps it there), so once floating the app would no longer be told it is
+    -- fullscreen - and the shell, which goes by that (covers_screen), would show over it.
+    -- (Hyprland floats a fullscreen window by ending its fullscreen, floating it and starting
+    -- it again.)
+    set_floating(w, true)
+    set_fullscreen_state(w, 0, 2)       -- out of Hyprland's fullscreen; the app is still told it is fullscreen
+    fs_props(w, true)
+    float_on(w, sb)
+    resync_fullscreen(w)                -- ... and may leave it by itself (Esc in a video)
+    hl.dispatch(hl.dsp.window.alter_zorder({ mode = "top", window = w }))
+    if from_max then
+        float_max[id] = back
+    end
+    float_fs[id] = { back = back, max = from_max }   -- last: the steps above must not read as "it left"
+    pcall(cover_now)
     return true
 end
 
@@ -1595,25 +1844,29 @@ hl.on("window.active", function(w, reason)
     end, { timeout = 1, type = "oneshot" })
 end)
 
-local function toggle_workspace_tiling()
-    local ws = hl.get_active_workspace()
-    if not ws then
-        return
-    end
-    local off = not untiled[ws.id]
-    untiled[ws.id] = off or nil
+-- SUPER + Page Down: tiling off / on for the workspace you are on (`ws_id`, on monitor `m`).
+-- Off: every window floats in the middle; a maximized one stays maximized and one in Hyprland's
+-- fullscreen covers the screen (both as floating windows: "Maximize / Fullscreen on a workspace
+-- without tiling" above) - in front of the others, which stay under it.
+-- On: every window is tiled again; one maximized or covering the screen like that gets Hyprland's
+-- maximize / fullscreen.
+local function toggle_workspace_tiling(ws_id, m)
+    local off = not untiled[ws_id]
+    untiled[ws_id] = off or nil
     save_untiled()
-    local box = off and untiled_box(hl.get_active_monitor())
+    local box = off and untiled_box(m)
+    local front = {}            -- tiling off: maximized / fullscreen, done after the others (in front of them)
     local maximize, fullscreen = {}, {}
-    for _, w in ipairs(hl.get_workspace_windows(ws.id) or {}) do
+    for _, w in ipairs(hl.get_workspace_windows(ws_id) or {}) do
         if off then
-            -- every window into the middle; a maximized one stays maximized (as a floating
-            -- window, "Maximize on a workspace without tiling" above) until you end that
             pcall(function()
-                if hypr_max_untiled(w) then
-                    float_max_from_fullscreen(w, box or nil)
+                if hypr_max_untiled(w) or (not w.floating and is_real_fullscreen(w)) then
+                    front[#front + 1] = w
                 elseif not w.floating then
-                    float_on(w, w.fullscreen == 0 and box or nil)
+                    if w.fullscreen ~= 0 then
+                        set_fullscreen_state(w, 0, 0)    -- fullscreen like a tile (FULLSCREEN_LIKE_TILE): out of it
+                    end
+                    float_on(w, box)
                 end
             end)
         elseif w.floating then
@@ -1622,12 +1875,39 @@ local function toggle_workspace_tiling()
             if in_float_fs(w) then
                 local rec = float_fs[window_id(w) or ""]
                 fullscreen[#fullscreen + 1] = { w = w, max = rec ~= nil and rec.max == true }
+                -- the window goes on into Hyprland's own fullscreen, which fades the shell out:
+                -- the shell stays hidden meanwhile (not told "no longer covered", or it would
+                -- fade in for a moment, over the window, just before Hyprland fades it out)
+                pcall(function()
+                    hold_cover((w.monitor or m).name, 350)
+                end)
                 pcall(float_unfullscreen, w)
             elseif at_max_box(w) then
                 maximize[#maximize + 1] = w
             end
             pcall(set_floating, w, false)
         end
+    end
+    for _, w in ipairs(front) do
+        pcall(function()
+            if hypr_max_untiled(w) then
+                float_max_from_fullscreen(w, box or nil)
+            elseif not fullscreen_to_float(w, box or nil) then
+                float_on(w, nil)
+            end
+        end)
+    end
+    if #front > 0 then
+        -- and once more a moment later, should anything have come up over them meanwhile
+        pcall(hl.timer, function()
+            for _, w in ipairs(front) do
+                pcall(function()
+                    if w.mapped == true and (at_max_box(w) or covering(w)) then
+                        hl.dispatch(hl.dsp.window.alter_zorder({ mode = "top", window = w }))
+                    end
+                end)
+            end
+        end, { timeout = 1, type = "oneshot" })
     end
     for _, w in ipairs(maximize) do
         pcall(set_fullscreen_state, w, 1, FULLSCREEN_LIKE_TILE and 0 or 1)
@@ -1640,6 +1920,43 @@ local function toggle_workspace_tiling()
             pcall(set_fullscreen_state, f.w, 2, 2)
         end
     end
+end
+
+-- The key. With a window in Hyprland's fullscreen there, tiling off waits a moment: the shell
+-- (hidden by Hyprland for it) is hidden first, at once (hold_cover), so it does not show for a
+-- moment as that fullscreen ends (fullscreen_to_float). Pressed again meanwhile: nothing.
+local TOGGLE_WAIT = 60
+local toggle_waiting = {}   -- [workspace id] = true while a press waits
+
+local function toggle_tiling_key()
+    local ws = hl.get_active_workspace()
+    local m = hl.get_active_monitor()
+    if not ws or not m or toggle_waiting[ws.id] then
+        return
+    end
+    local id = ws.id
+    if not untiled[id] then
+        local fs = false
+        for _, w in ipairs(hl.get_workspace_windows(id) or {}) do
+            pcall(function()
+                if not w.floating and is_real_fullscreen(w) then
+                    fs = true
+                end
+            end)
+        end
+        if fs and hold_cover(m.name, TOGGLE_WAIT + 400, true) then
+            toggle_waiting[id] = true
+            local queued = pcall(hl.timer, function()
+                toggle_waiting[id] = nil
+                pcall(toggle_workspace_tiling, id, m)
+            end, { timeout = TOGGLE_WAIT, type = "oneshot" })
+            if queued then
+                return
+            end
+            toggle_waiting[id] = nil
+        end
+    end
+    toggle_workspace_tiling(id, m)
 end
 
 -- windows that float on their own (dialogs, pickers: floating as they open), by address -
@@ -1658,6 +1975,20 @@ hl.on("window.open", function(w)
             local m = w.monitor or hl.get_active_monitor()
             float_on(w, w.fullscreen == 0 and untiled_box(m) or nil)
         end)
+        -- an app opened there while a window covers the screen (F11): that one leaves fullscreen,
+        -- so the new window is not hidden behind it (it stays in front: it came up as it floated)
+        for _, o in ipairs(hl.get_workspace_windows(id) or {}) do
+            pcall(function()
+                if o.address == w.address or o.mapped ~= true then
+                    return
+                end
+                if in_float_fs(o) then
+                    float_unfullscreen(o)
+                elseif is_real_fullscreen(o) then
+                    set_fullscreen_state(o, 0, 0)        -- (an app's own fullscreen there)
+                end
+            end)
+        end
     end
 end)
 
@@ -1688,13 +2019,9 @@ hl.on("window.open_early", function(w)
     end)
 end)
 
-hl.on("workspace.removed", function(ws)
-    local ok, id = pcall(function() return ws.id end)
-    if ok and id and untiled[id] then
-        untiled[id] = nil              -- a new workspace with the same number starts tiled again
-        save_untiled()
-    end
-end)
+-- Tiling off stays with the workspace number also once the workspace is empty: Hyprland removes
+-- an empty workspace you leave (moving its last window out, say) and makes it again when you go
+-- back - it is still without tiling then, until SUPER + Page Down (or Hyprland restarting).
 
 -- App switcher on SUPER + Space (drawn by the shell). Hold SUPER and tap Space to walk through
 -- the apps (most recently used first); let go of SUPER to switch. The shell notices the SUPER
@@ -1797,8 +2124,8 @@ end
 -- moment, at its own place). The moment the slide is over both are tiled for good, right
 -- where they already are, so nothing moves any more. (With two or more windows there, they
 -- make room right after the slide: floating them would lose your split sizes.)
--- A floating window keeps its place on the screen, like Hyprland does. Fullscreen and
--- maximized windows move the plain way (Hyprland can't pin them).
+-- A floating window keeps its place on the screen, like Hyprland does. A maximized or fullscreen
+-- window leaves that first (move_to_workspace), then moves like any other.
 -- carrying: window address -> {
 --   target, tiled (was it tiled), side ("l" / "r": the side of the other windows it takes),
 --   center_y (where it came from), others (tiled windows already there), anchor (address of
@@ -1826,15 +2153,145 @@ local function run_queue(id, q)
     end
 end
 
+-- Tiles under a maximized / fullscreen window ----------------------------------------
+-- While a tiled window is maximized or fullscreen, Hyprland does not lay out the other tiles of
+-- its workspace: a window that comes in, leaves or closes there leaves them as they were (a gap,
+-- a new one at a spot from before, a third narrow column) until that maximize / fullscreen ends.
+-- So for a moment it ends - the tiles are laid out - and it starts again, all in one go, so none
+-- of it shows, and the app is not told (only Hyprland's own state changes, not the one the app
+-- sees). `fn`, if given, tiles something there meanwhile.
+local laying_out = false
+local function with_tiles_laid_out(ws_id, fn)
+    if laying_out or type(ws_id) ~= "number" then
+        if fn then
+            pcall(fn)
+        end
+        return
+    end
+    local held = {}
+    for _, o in ipairs(hl.get_workspace_windows(ws_id) or {}) do
+        pcall(function()
+            if o.mapped == true and not o.floating and type(o.fullscreen) == "number" and o.fullscreen ~= 0 then
+                held[#held + 1] = { w = o, internal = o.fullscreen, client = o.fullscreen_client or 0,
+                                    from_max = o.fullscreen == 3 or fs_from_max[o.address] == true }
+            end
+        end)
+    end
+    if #held == 0 then
+        if fn then
+            pcall(fn)
+        end
+        return
+    end
+    laying_out = true
+    for _, h in ipairs(held) do
+        pcall(set_fullscreen_state, h.w, 0, h.client)
+    end
+    if fn then
+        pcall(fn)
+    end
+    for _, h in ipairs(held) do
+        pcall(function()
+            if h.w.mapped ~= true then
+                return
+            end
+            if h.from_max and h.internal >= 2 then
+                set_fullscreen_state(h.w, 1, 1)          -- maximized first: F11 goes back to it
+            end
+            set_fullscreen_state(h.w, h.internal, h.client)
+            resync_fullscreen(h.w)
+        end)
+    end
+    laying_out = false
+end
+
+-- after a tiled window came, left or closed: that workspace, if a window there is maximized /
+-- fullscreen and there are other tiles, gets them laid out (a moment later, once Hyprland is
+-- done; once for several). Only there - not every fullscreen window everywhere (a game).
+local relayout_pending = false
+local relayout_ids = {}
+local relayout_all = false
+local function relayout_later(ws_id)                 -- nil: every workspace (where unknown)
+    if ws_id == nil then
+        relayout_all = true
+    elseif type(ws_id) == "number" and ws_id > 0 then
+        relayout_ids[ws_id] = true
+    else
+        return
+    end
+    if relayout_pending then
+        return
+    end
+    relayout_pending = true
+    local queued = pcall(hl.timer, function()
+        relayout_pending = false
+        local ids, all = relayout_ids, relayout_all
+        relayout_ids, relayout_all = {}, false
+        local found, tiles = {}, {}
+        for _, o in ipairs(hl.get_windows() or {}) do
+            pcall(function()
+                local ws = o.workspace
+                if o.mapped == true and not o.floating and ws and type(ws.id) == "number" and ws.id > 0 then
+                    if o.fullscreen ~= 0 then
+                        found[ws.id] = true
+                    else
+                        tiles[ws.id] = true
+                    end
+                end
+            end)
+        end
+        for id in pairs(found) do
+            if tiles[id] and (all or ids[id]) then
+                with_tiles_laid_out(id)
+            end
+        end
+    end, { timeout = 1, type = "oneshot" })
+    if not queued then
+        relayout_pending = false
+        relayout_ids, relayout_all = {}, false
+    end
+end
+
+local seen_on = {}          -- [address] = the workspace a window was last seen on (a move: where from)
+hl.on("window.open", function(w)
+    pcall(function()
+        seen_on[w.address] = w.workspace and w.workspace.id
+        if not w.floating then
+            relayout_later(w.workspace and w.workspace.id)
+        end
+    end)
+end)
+hl.on("window.close", function(w)
+    pcall(function()
+        local id = w.workspace and w.workspace.id
+        seen_on[w.address] = nil
+        if not w.floating then
+            relayout_later(id)
+        end
+    end)
+end)
+hl.on("window.move_to_workspace", function(w, ws)
+    pcall(function()
+        local from = seen_on[w.address]
+        local to = (ws and ws.id) or (w.workspace and w.workspace.id)
+        seen_on[w.address] = to
+        relayout_later(from)                         -- (nil, not seen yet: every workspace)
+        relayout_later(to)
+    end)
+end)
+
 -- the tiled windows of workspace `ws` (but `skip`), each { win, id, box }
 local function tiled_windows(ws, skip)
     local out = {}
     for _, o in ipairs(hl.get_workspace_windows(ws) or {}) do
-        local oid = window_id(o)
-        local b = oid ~= skip and not o.floating and box_of(o)
-        if b then
-            out[#out + 1] = { win = o, id = oid, box = b }
-        end
+        pcall(function()
+            local oid = window_id(o)
+            -- (not one closing - Hyprland still lists it while it fades out - or hidden)
+            local b = oid ~= skip and o.mapped == true and o.hidden ~= true and not o.floating and box_of(o)
+            if b then
+                out[#out + 1] = { win = o, id = oid, box = b }
+            end
+        end)
     end
     return out
 end
@@ -1986,18 +2443,62 @@ end
 -- "d", under it (the edge window keeps the top half). Dwindle splits the tile under the mouse
 -- pointer, so the pointer is put on that window for this moment (and then back where it was:
 -- you don't see it move), and "preselect" picks the side.
+--
+-- Dwindle splits the window that has the focus when that one is tiled (use_active_for_splits),
+-- and the side picked with "preselect" belongs to the workspace on screen until a window is
+-- tiled there - so the window is made sure to be on that workspace and to have the focus itself
+-- (floating) first. Then where it went is checked: anywhere else (something Hyprland still had
+-- in mind), it is done once more.
+local function landed(b, a, dir)
+    if not b or not a then
+        return true
+    end
+    local function eq(x, y)
+        return math.abs(x - y) <= 3
+    end
+    if dir == "d" then
+        return eq(b.x, a.x) and eq(b.x + b.w, a.x + a.w) and eq(b.y + b.h, a.y + a.h) and b.y > a.y + a.h / 4
+    elseif dir == "l" then
+        return eq(b.x, a.x) and eq(b.y, a.y) and eq(b.y + b.h, a.y + a.h) and b.x + b.w < a.x + a.w * 3 / 4
+    else
+        return eq(b.x + b.w, a.x + a.w) and eq(b.y, a.y) and eq(b.y + b.h, a.y + a.h) and b.x > a.x + a.w / 4
+    end
+end
+
 local function tile_at_side(w, id, side, center_y, split)      -- w: window object or "address:0x…"
     local ws = hl.get_active_workspace()
-    local anchor = ws and edge_window(ws.id, side, id, center_y)
-    local cursor = anchor and hl.get_cursor_pos()
-    if anchor then
-        hl.dispatch(hl.dsp.cursor.move({ x = anchor.x + anchor.w / 2, y = anchor.y + anchor.h / 2 }))
-        hl.dispatch(hl.dsp.layout("preselect " .. (split or side)))
-    end
-    set_floating(w, false)
-    if cursor then
-        hl.dispatch(hl.dsp.cursor.move({ x = cursor.x, y = cursor.y }))
-    end
+    local win = type(w) == "string" and hl.get_window(w) or w
+    pcall(function()
+        if ws and win and win.workspace and win.workspace.id ~= ws.id then
+            hl.dispatch(hl.dsp.window.move({ window = w, workspace = ws.id, follow = false }))
+        end
+    end)
+    -- (a maximized / fullscreen window there: the tiles laid out meanwhile, so the window at the
+    -- edge is read where it really is, and the new one goes in beside it)
+    with_tiles_laid_out(ws and ws.id, function()
+        local anchor = ws and edge_window(ws.id, side, id, center_y)
+        local dir = split or side
+        local function tile()
+            local cursor = anchor and hl.get_cursor_pos()
+            if anchor then
+                hl.dispatch(hl.dsp.focus({ window = w }))
+                hl.dispatch(hl.dsp.cursor.move({ x = anchor.x + anchor.w / 2, y = anchor.y + anchor.h / 2 }))
+                hl.dispatch(hl.dsp.layout("preselect " .. dir))
+            end
+            set_floating(w, false)
+            if cursor then
+                hl.dispatch(hl.dsp.cursor.move({ x = cursor.x, y = cursor.y }))
+            end
+        end
+        tile()
+        local ok, right = pcall(function()
+            return landed(box_of(type(w) == "string" and hl.get_window(w) or w), anchor, dir)
+        end)
+        if anchor and ok and not right then
+            set_floating(w, true)
+            tile()
+        end
+    end)
 end
 
 -- 5. settle in the moment the slide (or the last glide) is over: unpin it and tile it for
@@ -2029,7 +2530,10 @@ local function schedule_settle(id, rec)
                 end
             else
                 if r.tiled and not untiled[target] then
-                    tile_at_side(sel, id, r.side, r.center_y, r.split)
+                    -- (two windows there side by side: under the one on its side - counted now,
+                    -- as they are)
+                    local split = #tiled_windows(target, id) == 2 and "d" or nil
+                    tile_at_side(sel, id, r.side, r.center_y, split)
                 end
                 run_queue(id, r.queue)
             end
@@ -2076,16 +2580,21 @@ local function move_to_workspace(w, target)
         return
     end
     local rec = carrying[id or ""]
-    -- covering the screen as a floating window (F11 with tiling off here), to a workspace with
-    -- tiling: out of it first, like below
-    if id and rec == nil and untiled[current] == true and untiled[target] ~= true and in_float_fs(w) then
-        pcall(float_unfullscreen, w)
-    end
-    -- maximized / fullscreen, to the other kind of workspace (tiling on there and off here, or
-    -- off there and on here): out of it first, then it fits in there like any window - tiled,
-    -- or floating in the middle. To the same kind it stays maximized / fullscreen (below).
-    if id and fullscreen ~= 0 and rec == nil and (untiled[current] == true) ~= (untiled[target] == true) then
-        pcall(set_fullscreen_state, w, 0, 0)
+    -- maximized / fullscreen: out of it first, then it moves like any other window - glides into its
+    -- tile there, or floats in the middle / keeps its place on the screen (workspace without tiling)
+    if id and rec == nil then
+        pcall(function()
+            if fullscreen ~= 0 then
+                set_fullscreen_state(w, 0, 0)
+                if w.fullscreen_client ~= 0 then
+                    set_fullscreen_state(w, 0, 0)    -- (maximized before F11: Hyprland keeps the app told "maximized" once)
+                end
+            elseif untiled[current] == true and in_float_fs(w) then
+                float_unfullscreen(w)               -- covering the screen (F11 with tiling off here)
+            elseif untiled[current] == true and at_max_box(w) then
+                float_unmaximize(w)                 -- maximized (SUPER + F with tiling off here)
+            end
+        end)
         local ok2, fs2, fl2 = pcall(function() return w.fullscreen, w.floating end)
         if ok2 then
             fullscreen, floating = fs2, fl2
@@ -2106,6 +2615,38 @@ local function move_to_workspace(w, target)
     local side = target > current and "l" or "r"      -- the side it comes in from
     local center_y = old.y + old.h / 2
 
+    -- into a workspace without tiling where a window covers the screen (F11 there): it goes under
+    -- that one. Carried, it would come in over it (a pinned window is drawn over every other), so
+    -- it is put there at once, where it goes (floating in the middle if it was tiled, else where
+    -- it is on the screen), under it, and the view goes there - it comes in with the workspace.
+    if untiled[target] == true then
+        local cover
+        for _, o in ipairs(hl.get_workspace_windows(target) or {}) do
+            if not cover and window_id(o) ~= id and covering(o) then
+                cover = o
+            end
+        end
+        if cover then
+            if rec then
+                carrying[id] = nil                  -- (its settling, still to come, then does nothing)
+            end
+            pcall(function()
+                if rec then
+                    hl.dispatch(hl.dsp.window.pin({ window = w, action = "disable" }))
+                    if rec.anchor then
+                        pcall(set_floating, "address:" .. rec.anchor, false)
+                    end
+                end
+                set_floating(w, true)
+                place(w, was_tiled and untiled_box(hl.get_active_monitor()) or old)
+                hl.dispatch(hl.dsp.window.move({ window = w, workspace = target, follow = false }))
+                hl.dispatch(hl.dsp.focus({ workspace = target }))
+                hl.dispatch(hl.dsp.window.alter_zorder({ mode = "top", window = cover }))
+            end)
+            return
+        end
+    end
+
     -- settling in (5.) is scheduled first, so the windows are always unpinned and tiled again,
     -- even if a step below fails
     local me = { target = target, tiled = tiled, was_tiled = was_tiled, side = side, center_y = center_y,
@@ -2119,6 +2660,16 @@ local function move_to_workspace(w, target)
             set_floating(w, true)
             place(w, old)
             hl.dispatch(hl.dsp.window.pin({ window = w, action = "enable" }))
+            local okp, pinned = pcall(function() return w.pinned end)
+            if okp and pinned == false then
+                -- Hyprland would not pin it (it still counts it as fullscreen): the plain way
+                carrying[id] = nil
+                if not floating then
+                    set_floating(w, false)
+                end
+                hl.dispatch(hl.dsp.window.move({ window = w, workspace = target }))
+                return
+            end
         elseif rec.anchor then
             -- moved on before it settled: the window that was making room tiles back
             pcall(set_floating, "address:" .. rec.anchor, false)
@@ -2137,10 +2688,17 @@ local function move_to_workspace(w, target)
             -- from - the right one moving left, the left one moving right - instead of a third
             -- narrow column beside them
             me.split = #others == 2 and "d" or nil
-            tile_at_side(w, id, side, center_y, me.split)
-            new = box_of(w) or old
-            local room = #others == 1 and box_of(others[1].win)   -- where the one window there goes
-            set_floating(w, true)
+            -- (the one window there maximized / fullscreen: it does not make room - it covers it)
+            local one_full = #others == 1 and others[1].win.fullscreen ~= 0
+            local room
+            -- (a maximized / fullscreen window there: its tiles laid out for this, also once it
+            -- floats again - see with_tiles_laid_out)
+            with_tiles_laid_out(target, function()
+                tile_at_side(w, id, side, center_y, me.split)
+                new = box_of(w) or old
+                room = #others == 1 and not one_full and box_of(others[1].win)   -- where the one window there goes
+                set_floating(w, true)
+            end)
             place(w, old)
             hl.dispatch(hl.dsp.window.pin({ window = w, action = "enable" }))
             if room then
@@ -2490,7 +3048,7 @@ bind(mod .. " + ALT + up",    hl.dsp.focus({ monitor = "u" }), { description = "
 bind(mod .. " + ALT + down",  hl.dsp.focus({ monitor = "d" }), { description = "Switch to output down" })
 
 -- Window tiling on / off for the whole workspace (Next = Page Down)
-bind(mod .. " + Next", toggle_workspace_tiling, { description = "Toggle window tiling" })
+bind(mod .. " + Next", toggle_tiling_key, { description = "Toggle window tiling" })
 
 bind(mod .. " + comma",     hl.dsp.exec_cmd(qs .. " ipc call ui calendar"),   { description = "Calendar" })
 -- the emoji picker: type to search, Enter or a click puts the emoji into the text field you were
@@ -2624,11 +3182,12 @@ hl.window_rule({
 })
 
 -- The password dialog, the shut down / log out question, the Wi-Fi / Bluetooth card, the app
--- switcher, the launcher and the emoji picker fade and zoom in by themselves; should Hyprland
--- animate them anyway, it may only fade - never slide them in from an edge.
+-- switcher, the launcher, the emoji picker and the black of logging out fade (and zoom) in by
+-- themselves; should Hyprland animate them anyway, it may only fade - never slide them in
+-- from an edge.
 hl.layer_rule({
     name      = "frame-popups-fade",
-    match     = { namespace = "^frame-(auth|confirm|network|switcher|launcher|screenshot|emoji)$" },
+    match     = { namespace = "^frame-(auth|confirm|network|switcher|launcher|screenshot|emoji|curtain)$" },
     no_anim   = true,
     animation = "fade",
 })
@@ -2651,18 +3210,18 @@ hl.layer_rule({
     no_anim = true,
 })
 
--- rofi (the backup launcher) pops up instantly
-hl.layer_rule({
-    name    = "rofi-no-anim",
-    match   = { namespace = "^rofi$" },
-    no_anim = true,
-})
-
 -- apps may not maximize themselves
 hl.window_rule({
     name  = "suppress-maximize-events",
     match = { class = ".*" },
     suppress_event = "maximize",
+})
+
+-- floating windows are never smaller than 150 x 150 px
+hl.window_rule({
+    name     = "minimum-window-size",
+    match    = { float = true },
+    min_size = { 150, 150 },
 })
 
 hl.window_rule({

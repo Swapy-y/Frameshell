@@ -5,15 +5,16 @@ import qs
 import qs.services
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  Curtain.qml - logging out. The desktop (windows, frame, bar) fades away to
-//  just the wallpaper, a little darker, like the login screen behind its clock.
-//  scripts/power.sh closes the apps behind it; right before Hyprland quits it
-//  fades to black (ipc call ui logoutFade) and the login screen fades in from
-//  black. It covers everything and takes the mouse and keyboard, so nothing
-//  can be clicked in the meantime.
+//  Curtain.qml - logging out. The whole screen (windows, frame, bar) fades to
+//  black; scripts/power.sh closes the apps behind it and quits Hyprland, and
+//  the login screen fades in from black. It covers everything and takes the
+//  mouse and keyboard, so nothing can be clicked in the meantime.
 //
-//  Shown while Ui.loggingOut is true (PowerActions.logout()). The picture is
-//  read while "Log out?" is asked, so it is there when the fade starts.
+//  Shown while Ui.loggingOut is true (PowerActions.logout()). The window is
+//  already there while "Log out?" is asked - see-through, every click goes
+//  through it - so nothing new appears when the fade starts: Hyprland animates
+//  a layer as it appears (the "frame-popups-fade" rule in hyprland.lua lets it
+//  only fade), which could slide the black in from the top.
 // ═══════════════════════════════════════════════════════════════════════════
 Scope {
     Variants {
@@ -24,7 +25,7 @@ Scope {
             required property var modelData
             screen: modelData
 
-            visible: Ui.loggingOut || shade.opacity > 0.001
+            visible: Ui.loggingOut || Ui.confirm === "logout" || shade.opacity > 0.001
 
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.namespace: "frame-curtain"
@@ -38,9 +39,20 @@ Scope {
             }
             color: "transparent"
 
-            Item {
+            // clicks go through to "Log out?" until you log out
+            mask: Ui.loggingOut ? allInput : noInput
+            Region {
+                id: allInput
+                item: shade
+            }
+            Region {
+                id: noInput
+            }
+
+            Rectangle {
                 id: shade
                 anchors.fill: parent
+                color: "black"
                 opacity: Ui.loggingOut ? 1 : 0
                 Behavior on opacity {
                     NumberAnimation {
@@ -50,47 +62,10 @@ Scope {
                     }
                 }
 
-                // black until the picture is there
-                Rectangle {
-                    anchors.fill: parent
-                    color: "black"
-                    visible: picture.status !== Image.Ready || picture.opacity < 1
-                }
-
-                Image {
-                    id: picture
-                    anchors.fill: parent
-                    source: (Ui.confirm === "logout" || Ui.loggingOut) && Wallpapers.ready ? "file://" + Wallpapers.current : ""
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                    cache: false
-                    opacity: status === Image.Ready ? 1 : 0
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: Theme.durOpen
-                            easing.type: Easing.BezierSpline
-                            easing.bezierCurve: Theme.curveStandard
-                        }
-                    }
-                }
-
-                // a little darker, like the login screen; all black at the very end
-                Rectangle {
-                    anchors.fill: parent
-                    color: "black"
-                    opacity: Ui.logoutDark ? 1 : 0.4
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: Theme.durCurtainDark
-                            easing.type: Easing.BezierSpline
-                            easing.bezierCurve: Theme.curveStandard
-                        }
-                    }
-                }
-
                 // swallow every click
                 MouseArea {
                     anchors.fill: parent
+                    enabled: Ui.loggingOut
                     hoverEnabled: true
                 }
             }

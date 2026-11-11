@@ -12,7 +12,7 @@ import qs.components
 //  over a dimmed desktop. No countdown: nothing happens until you choose.
 //
 //  Enter or the white button goes ahead; Esc, "Cancel" or a click outside the
-//  card closes it. Logging out fades the desktop to the wallpaper first
+//  card closes it. Logging out fades the screen to black first
 //  (PowerActions.logout(), modules/Curtain.qml).
 // ═══════════════════════════════════════════════════════════════════════════
 Scope {

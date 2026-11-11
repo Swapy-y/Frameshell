@@ -48,6 +48,9 @@ Singleton {
     readonly property int windowRadius: cornerRadius + border
     readonly property int earRadius: windowRadius
     readonly property int panelRadius: windowRadius
+    // ... but the four corners of the window area itself (the frame round the windows) follow
+    // the Settings app's "Corner rounding" (Config.cornerRounding), like the windows' corners
+    readonly property int frameCornerRadius: Math.max(0, Config.cornerRounding) + border
 
     // ── island (notch) ─────────────────────────────────────────────────────
     readonly property int notchW: px(340)
@@ -106,8 +109,7 @@ Singleton {
     readonly property int durDockOut: ms(170)    // ... and shrinking away (Theme.curveStandard)
     readonly property int durPopFade: ms(90)     // ... and fading in
     readonly property int hoverClose: ms(40)     // a hover panel starts closing this long after the pointer left (HoverLatch)
-    readonly property int durCurtain: ms(450)    // logging out: the desktop fading to the wallpaper (Curtain)
-    readonly property int durCurtainDark: ms(300) // ... and the wallpaper to black, right before Hyprland quits
+    readonly property int durCurtain: ms(10)     // logging out: the screen fading to black (Curtain)
     readonly property int durReveal: ms(600)     // after logging in: the desktop fading in from black (Wallpaper, Overlay)
     readonly property int durWallpaperFade: ms(600)  // a new wallpaper fading in over the old one (Wallpaper): long and even, smooth even between very different colours
     readonly property int durSlide: ms(300)      // the wallpaper switcher sliding: like Hyprland's workspaces (SLIDE_SPEED, "standard" curve in hyprland.lua)

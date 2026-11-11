@@ -15,8 +15,7 @@ Singleton {
     property bool noteEditing: false
     property bool clipboardSearching: false // typing in the clipboard's search field (modules/ClipboardPanel.qml)
     property string confirm: ""             // "shutdown" / "logout": the "Shut down?" / "Log out?" card (modules/PowerConfirm.qml)
-    property bool loggingOut: false         // the screen fades to the wallpaper and the session ends (modules/Curtain.qml, PowerActions.logout())
-    property bool logoutDark: false         // ... and right before Hyprland quits, to black (power.sh: ipc call ui logoutFade)
+    property bool loggingOut: false         // the screen fades to black and the session ends (modules/Curtain.qml, PowerActions.logout())
 
     // After logging in the whole desktop (wallpaper, frame, bar) fades in together,
     // once the wallpaper has loaded (modules/Wallpaper.qml sets these, Overlay follows).
@@ -24,10 +23,6 @@ Singleton {
     property bool revealed: false
     property bool revealInstant: false
 
-    onLoggingOutChanged: {
-        if (!loggingOut)
-            logoutDark = false;
-    }
     property string netPage: ""             // "wifi" / "bluetooth": the card in the middle of the screen (modules/NetPopup.qml)
     property bool wallpaperOpen: false      // the wallpaper switcher in the island (SUPER + CTRL + Left / Right, modules/Island.qml)
     property bool themeOpen: false          // the theme switcher in the island (SUPER + CTRL + Up / Down, the same place)
@@ -36,6 +31,13 @@ Singleton {
     // workspace without tiling, hyprland.lua: ipc call ui cover): the overlay hides there, as
     // Hyprland hides it for its own fullscreen (modules/Overlay.qml)
     property var coveredScreens: []
+    property bool coverSnap: false          // the overlay hides without its fade this once (setCovered)
+    function setCovered(screens, snap) {
+        coverSnap = snap === true;
+        coveredScreens = screens;
+        if (coverSnap)
+            Qt.callLater(() => coverSnap = false);
+    }
     signal wallpaperShown                   // ... a key was pressed: the picture it is on counts from now
     signal themeShown                       // ... the same for the theme switcher
 

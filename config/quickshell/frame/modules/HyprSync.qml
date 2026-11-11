@@ -6,7 +6,8 @@ import qs.services
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  HyprSync.qml - hands the window border's width (Config.windowBorder, the
-//  Settings app's Appearance page), cornerRadius, shadows and shadowStrength
+//  Settings app's Appearance page), the corner rounding (Config.cornerRounding,
+//  the same page; else cornerRadius), shadows and shadowStrength
 //  to Hyprland, so the window border, the window corners and the window shadows
 //  always match the frame and the panels. And the window border colours of the
 //  colour theme in use (activeHint / inactiveHint in Config.qml). And the gap
@@ -49,7 +50,7 @@ Scope {
         "hl.layer_rule({ name = 'frame-shell-blur', enabled = " + Config.shellBlur +
         ", match = { namespace = '^frame-(overlay|switcher|launcher|auth|network|confirm|emoji|osk)\\$' }, blur = true, ignore_alpha = " +
         num(Math.max(0, Config.shellAlpha - 0.05)) + " })"
-    readonly property int rounding: Math.max(0, Config.cornerRadius)
+    readonly property int rounding: Math.max(0, Config.cornerRounding)
 
     // the keyboard, the mouse and the touchpad (the Settings app's Devices page)
     readonly property string inputConf: "repeat_rate = " + Math.round(Config.repeatRate) + ", repeat_delay = " + Math.round(Config.repeatDelay) +

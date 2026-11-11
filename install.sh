@@ -200,19 +200,10 @@ install_packages() {
         warn "Skipped the system update; the package database may be stale."
     fi
 
-    # rofi: version 2.x has native Wayland support; older versions need rofi-wayland
-    local rofi_pkg="rofi" v
-    v="$(pacman -Si rofi 2>/dev/null | awk '/^Version/{print $3; exit}')"
-    if [[ -n $v ]] && (($(vercmp "${v%%-*}" 2.0.0) >= 0)); then
-        rofi_pkg="rofi"
-    elif pkg_available rofi-wayland; then
-        rofi_pkg="rofi-wayland"
-    fi
-
     local -a want=(
         # desktop
         hyprland hyprlock hypridle hyprpolkitagent xdg-desktop-portal-hyprland xdg-desktop-portal-gtk
-        quickshell "$rofi_pkg" kitty
+        quickshell kitty
         # apps
         nautilus gvfs ffmpegthumbnailer file-roller firefox gnome-text-editor celluloid mission-center
         # audio / media / hardware keys
@@ -656,8 +647,14 @@ install_configs() {
     put "$HERE/config/quickshell/frame/assets/icons/frame-settings.svg" "$DATA/icons/hicolor/scalable/apps/frame-settings.svg"
 
     # apps
-    put "$HERE/config/rofi/config.rasi" "$CFG/rofi/config.rasi"
-    put "$HERE/config/rofi/frame.rasi" "$CFG/rofi/frame.rasi"
+    # rofi's config, installed by earlier versions (the shell has its own launcher): moved to
+    # the backup folder - only the files that are ours
+    local rasi
+    for rasi in config.rasi frame.rasi; do
+        if grep -qs -m1 '^/\* Frame - rofi' "$CFG/rofi/$rasi"; then
+            backup "$CFG/rofi/$rasi"
+        fi
+    done
     # kitty: one config per colour theme (frame.conf = Default, frame-noir.conf, frame-mocha.conf);
     # kitty.conf is a link to the one of the shell's theme (scripts/theme.sh switches it, below)
     put "$HERE/config/kitty/frame.conf" "$CFG/kitty/frame.conf"
@@ -708,7 +705,7 @@ install_configs() {
     install_qt_theme
     put "$HERE/config/fontconfig/fonts.conf" "$CFG/fontconfig/fonts.conf"
 
-    # Clarity City (also bundled inside the shell, installing it makes rofi / hyprlock / GTK use it too)
+    # Clarity City (also bundled inside the shell, installing it makes hyprlock / GTK use it too)
     say "Installing the Clarity City font"
     run mkdir -p "$DATA/fonts/frame"
     run cp -f "$HERE"/config/quickshell/frame/assets/fonts/*.otf "$HERE/config/quickshell/frame/assets/fonts/LICENSE-ClarityCity.txt" "$DATA/fonts/frame/"
@@ -1493,7 +1490,7 @@ customize_yamis() {
 final_check() {
     say "Checking for the programs the config uses"
     local c miss=()
-    for c in Hyprland hyprctl qs rofi kitty nautilus gnome-text-editor celluloid missioncenter hyprlock hypridle hyprpicker wl-copy wl-paste wl-clip-persist cliphist wpctl playerctl notify-send fc-list kvantummanager zenity; do
+    for c in Hyprland hyprctl qs kitty nautilus gnome-text-editor celluloid missioncenter hyprlock hypridle hyprpicker wl-copy wl-paste wl-clip-persist cliphist wpctl playerctl notify-send fc-list kvantummanager zenity; do
         command -v "$c" >/dev/null 2>&1 || miss+=("$c")
     done
     if ((${#miss[@]})); then
@@ -1517,7 +1514,7 @@ final_check() {
     if ((!DRY)) && command -v fc-list >/dev/null 2>&1; then
         local fonts
         fonts="$(fc-list 2>/dev/null)"      # (read first: 'fc-list | grep -q' can fail under pipefail)
-        grep -qi 'Clarity City' <<<"$fonts" || warn "Clarity City not found by fontconfig (the shell bundles it, but rofi/hyprlock need it installed): run 'fc-cache -f'."
+        grep -qi 'Clarity City' <<<"$fonts" || warn "Clarity City not found by fontconfig (the shell bundles it, but hyprlock needs it installed): run 'fc-cache -f'."
     fi
 }
 

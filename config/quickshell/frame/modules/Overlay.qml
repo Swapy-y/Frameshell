@@ -69,7 +69,7 @@ Scope {
                         y: Theme.frame
                         width: Math.max(0, scene.width - 2 * Theme.frame)
                         height: Math.max(0, scene.height - Theme.frame - scene.frameBottom)
-                        radius: Theme.windowRadius
+                        radius: Theme.frameCornerRadius
                         intersection: Intersection.Subtract
                     }
                 }
@@ -206,6 +206,7 @@ Scope {
                 // as long and on the same curve as Hyprland fades it for its own fullscreen
                 property real coverOpacity: win.covered ? 0 : 1
                 Behavior on coverOpacity {
+                    enabled: !Ui.coverSnap          // hyprland.lua: "at once" (Ui.setCovered)
                     NumberAnimation {
                         duration: Theme.durCover
                         easing.type: Easing.BezierSpline
@@ -325,7 +326,7 @@ Scope {
                                 fillColor: "transparent"
                                 joinStyle: ShapePath.RoundJoin
                                 PathSvg {
-                                    path: Shapes.innerPath(scene.width, scene.height, Theme.frame, scene.frameBottom, Theme.windowRadius)
+                                    path: Shapes.innerPath(scene.width, scene.height, Theme.frame, scene.frameBottom, Theme.frameCornerRadius)
                                 }
                             }
                         }
@@ -349,7 +350,7 @@ Scope {
                                 fillColor: Config.frame
                                 fillRule: ShapePath.OddEvenFill
                                 PathSvg {
-                                    path: Shapes.ringPath(scene.width, scene.height, Theme.frame, scene.frameBottom, Theme.windowRadius)
+                                    path: Shapes.ringPath(scene.width, scene.height, Theme.frame, scene.frameBottom, Theme.frameCornerRadius)
                                 }
                             }
                         }

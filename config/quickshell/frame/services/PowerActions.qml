@@ -9,8 +9,8 @@ import qs
 //  PowerActions.qml - Shut down / restart / lock / log out.
 //  The logic lives in scripts/power.sh
 //
-//  Logging out (after "Log out?", modules/PowerConfirm.qml): the desktop fades
-//  to the wallpaper (modules/Curtain.qml), then power.sh closes every app, quits
+//  Logging out (after "Log out?", modules/PowerConfirm.qml): the screen fades
+//  to black (modules/Curtain.qml), then power.sh closes every app, quits
 //  Hyprland and ends the session, so the login screen comes back.
 // ═══════════════════════════════════════════════════════════════════════════
 Singleton {
@@ -30,7 +30,7 @@ Singleton {
     function logout() {
         if (Ui.loggingOut)
             return;
-        // this order: the curtain keeps the wallpaper it read while "Log out?" was asked
+        // this order: the curtain, there since "Log out?" was asked, stays (Curtain.qml)
         Ui.loggingOut = true;
         Ui.closePopups();
         logoutStart.restart();

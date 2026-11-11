@@ -128,7 +128,7 @@ Singleton {
         jumped();
     }
 
-    // SUPER + Right = +1, SUPER + Left = -1
+    // SUPER + CTRL + Right = +1, SUPER + CTRL + Left = -1
     function browse(direction) {
         if (count < 2)
             bumped(direction);

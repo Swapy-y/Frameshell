@@ -51,6 +51,16 @@ Singleton {
     function setWindowGap(v) {
         appearance.windowGap = Math.max(0, Math.round(v));
     }
+    // The rounding of the frame's four corners (round the window area) and of the windows'
+    // corners, in screen pixels: the slider in the Settings app (Appearance, "Corner rounding",
+    // 20 - 30 px). Kept in appearance.json too ("cornerRounding"; -1 until you move it - then
+    // cornerRadius below counts, 30), which Hyprland reads when it starts; the shell hands a
+    // change to Hyprland right away (modules/HyprSync.qml). The island, the dock and the panels
+    // keep cornerRadius.
+    readonly property int cornerRounding: appearance.cornerRounding >= 0 ? appearance.cornerRounding : cornerRadius
+    function setCornerRounding(v) {
+        appearance.cornerRounding = Math.max(0, Math.round(v));
+    }
     // true once appearance.json is read (or found missing): before that the values above are
     // only the defaults
     property bool appearanceRead: false
@@ -118,7 +128,8 @@ Singleton {
     // corner of the shell (panels, the notch, the "ears" where a panel meets the
     // frame) is derived from it, plus the border width, so everything matches.
     // 30 is tuned for a 4K screen like the concept art; use about 13 on 1080p.
-    // The windows' corners follow it too (Hyprland reads this number).
+    // The frame's four corners and the windows' corners follow it too until the
+    // Settings app's "Corner rounding" slider is moved (cornerRounding above).
     property int cornerRadius: 30
 
     // Soft shadow around the frame, the island, the panels and the pop-ups
@@ -272,7 +283,7 @@ Singleton {
         {
             name: "Noir",
             frame: "#000000",
-            outline: "#060606",
+            outline: "#000000",
             divider: "#060606",
             selected: "#060606",
             hover: "#060606",
@@ -418,8 +429,8 @@ Singleton {
         onLoadFailed: themeRead = true
     }
 
-    // the border widths and the window gap of the Settings app (Appearance): frameBorder /
-    // windowBorder / windowGap above
+    // the border widths, the window gap and the corner rounding of the Settings app
+    // (Appearance): frameBorder / windowBorder / windowGap / cornerRounding above
     FileView {
         path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/frameshell/appearance.json"
         printErrors: false
@@ -434,6 +445,7 @@ Singleton {
             property int frameBorder: 2
             property int windowBorder: 2
             property int windowGap: -1
+            property int cornerRounding: -1
         }
     }
 

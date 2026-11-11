@@ -4,13 +4,11 @@
 # ── log out ──────────────────────────────────────────────────────────────────
 # Every app is asked to close (as if you clicked its X), Hyprland quits and the
 # session ends, so the login screen comes back with nothing left running. No
-# dialog in between: the shell has already faded the desktop to the wallpaper
-# (modules/Curtain.qml), and fades it to black right before Hyprland quits.
+# dialog in between: the shell has already faded the screen to black
+# (modules/Curtain.qml).
 # An app still open after 3 s (one asking "Save changes?", say) is closed with
 # the session.
 # What happened is written to ~/.local/state/frameshell/logout.log.
-
-shell="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"     # the shell's folder (qs -p)
 
 open_windows() {
     hyprctl -j clients 2>/dev/null | grep -c '"address":'
@@ -45,13 +43,7 @@ logout_now() {
         done
         echo "  waited $((i / 10)).$((i % 10)) s for them, still open: $(open_windows)"
 
-        # 3. the shell fades the screen from the wallpaper to black, then Hyprland quits
-        #    (the old syntax as a fallback)
-        #    (qs -c frame: the shell as hyprland.lua starts it; by its folder if that fails)
-        if command -v qs >/dev/null 2>&1 &&
-            { timeout 2 qs -c frame ipc call ui logoutFade || timeout 2 qs -p "$shell" ipc call ui logoutFade; } >/dev/null 2>&1; then
-            sleep 0.35
-        fi
+        # 3. Hyprland quits (the old syntax as a fallback)
         hyprctl dispatch 'hl.dsp.exit()' 2>/dev/null | grep -q '^ok' || hyprctl dispatch exit >/dev/null 2>&1
 
         # 4. wait until Hyprland and start-hyprland are gone (up to 10 s). Nothing may

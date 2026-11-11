@@ -53,9 +53,8 @@ action="$(notify-send -a Screenshot -i "$file" -A "default=Open" -t 8000 "Screen
 
 if [ "$action" = default ]; then
     if command -v nautilus >/dev/null 2>&1; then
-        # a new window of the folder with the file selected (Nautilus opens a file's folder
-        # and selects it; --select would show it in a Nautilus window that is already open)
-        exec nautilus --new-window "$file"
+        # the folder with the file selected
+        exec nautilus --select "$file"
     fi
     # any other file manager that speaks the freedesktop "show this file" call
     gdbus call --session --dest org.freedesktop.FileManager1 \

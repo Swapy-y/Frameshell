@@ -34,6 +34,11 @@ import "../components/search.js" as Search
 //                  the power sign: Store.powerLogo), under it the icon packs of the apps
 //                  in the shell as cards - a click makes one the pack in use
 //                  (services/IconPacks.qml, Store.iconPack)
+//    "presets"     one card (services/Presets.qml): a field and Save - the settings now
+//                  become a preset under that name - and under it the presets as tiles of
+//                  one colour: "Default" and "Swapy" come with the shell, then the ones you
+//                  saved. A click makes a preset's settings the ones in use (the ones the
+//                  settings match have a white ring); the bin on one you saved deletes it
 //    "keybinds"    every shortcut Hyprland has now (hyprctl binds -j), by what it does
 //                  (the descriptions in hyprland.lua), in four cards
 //    "system"      your picture and your name - a click changes them
@@ -307,6 +312,15 @@ Scope {
             keywords: "keybind keybinds keybinding keybindings binding bindings shortcut shortcuts hotkey hotkeys key keys keyboard super combination",
             settings: [],
             extra: "keybinds"
+        },
+        {
+            key: "presets",
+            name: "Presets",
+            icon: "set-presets",
+            description: "Your look under a name - the wallpaper, the theme, Appearance, Blur and the island's and the dock's switches. Click one to use it.",
+            keywords: "preset presets profile profiles save saved load restore apply default swapy look style setup configuration rice",
+            settings: [],
+            extra: "presets"
         },
         {
             key: "system",
@@ -1093,6 +1107,12 @@ Scope {
                         }
                         Loader {
                             width: parent.width
+                            active: win.page !== null && win.page.extra === "presets"
+                            visible: active
+                            sourceComponent: presetsCard
+                        }
+                        Loader {
+                            width: parent.width
                             active: win.page !== null && win.page.extra === "keybinds"
                             visible: active
                             sourceComponent: keybindsCard
@@ -1838,6 +1858,322 @@ Scope {
                                                 hoverEnabled: true
                                                 cursorShape: Qt.PointingHandCursor
                                                 onClicked: Store.iconPack = packTile.modelData.name === IconPacks.qtTheme ? "" : packTile.modelData.name
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ── Presets ──────────────────────────────────────────────
+                // One card: "Save current settings" - a field and Save (or Enter): the settings
+                // now become a preset under that name (a name you saved before saves over it) -
+                // and under it the presets as tiles, as big as the themes' cards, all in the same
+                // colour (the frame's, like the icon packs'): its name, its theme and icon pack. The shell's two first, then yours in
+                // the order you saved them. The ones the settings match now have a white ring; a
+                // click on another makes its settings the ones in use (services/Presets.qml).
+                // Under the pointer, one you saved shows a bin in its corner, like a wallpaper
+                // you added: a click deletes it.
+                Component {
+                    id: presetsCard
+
+                    DeviceCard {
+                        id: saveCard
+                        // how the last Save went: done (dim) or why not (red)
+                        property string note: ""
+                        property bool failed: false
+
+                        function save() {
+                            const name = presetName.text.trim();
+                            const why = Presets.save(name);
+                            failed = why !== "";
+                            note = failed ? why : "Saved as “" + name + "”.";
+                            // done: the field empties (the note stays) and lets go of the keys
+                            if (!failed) {
+                                presetName.text = "";
+                                ui.forceActiveFocus();
+                            }
+                        }
+
+                        collapsible: false
+                        expanded: true
+                        title: "Save current settings"
+                        icon: "note-save"
+                        description: "The settings you have now become a preset. A name you saved before saves over it."
+
+                        Item {
+                            id: presetsBody
+                            readonly property real pad: saveCard.inset
+                            readonly property real gap: ui.thumbGap
+                            // the tiles: as big as the themes' cards
+                            readonly property real refW: Math.min(width, ui.halfCard)
+                            readonly property int refCols: Math.max(2, Math.floor((refW - 2 * pad + gap) / (Theme.px(150) + gap)))
+                            readonly property real cellW: Math.max(1, Math.floor((refW - 2 * pad - (refCols - 1) * gap) / refCols))
+                            readonly property int cols: Math.max(refCols, Math.floor((width - 2 * pad + gap) / (cellW + gap)))
+                            readonly property real cellH: Math.max(1, Math.round(cellW * 9 / 16))
+                            readonly property real tileRadius: Theme.px(12)
+                            // every tile the same colour, whatever its preset's theme: the
+                            // shell's frame colour, like the icon packs' tiles
+                            readonly property color tileColor: Config.frame
+
+                            width: saveCard.width
+                            height: presetGrid.y + presetGrid.height + pad
+
+                            Rectangle {
+                                id: nameBox
+                                x: presetsBody.pad
+                                y: Theme.px(4)
+                                width: Math.max(0, saveBtn.x - Theme.px(8) - x)
+                                height: Theme.px(36)
+                                radius: Theme.px(10)
+                                color: Config.frame
+                                border.width: Theme.border
+                                border.color: presetName.activeFocus ? Config.fieldFocus : Config.frame
+
+                                // the whole field puts the cursor in it (the text itself handles its own clicks)
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.IBeamCursor
+                                    onClicked: presetName.forceActiveFocus()
+                                }
+
+                                TextInput {
+                                    id: presetName
+                                    anchors.fill: parent
+                                    anchors.leftMargin: Theme.px(12)
+                                    anchors.rightMargin: Theme.px(12)
+                                    verticalAlignment: TextInput.AlignVCenter
+                                    color: Config.text
+                                    selectionColor: Config.textSelection
+                                    selectedTextColor: Config.text
+                                    font.family: Theme.font
+                                    font.pixelSize: Theme.px(14)
+                                    renderType: Text.QtRendering
+                                    clip: true
+                                    selectByMouse: true
+                                    maximumLength: 32
+                                    // a new name: the last note goes
+                                    onTextChanged: {
+                                        if (text.length > 0)
+                                            saveCard.note = "";
+                                    }
+                                    Keys.onReturnPressed: saveCard.save()
+                                    Keys.onEnterPressed: saveCard.save()
+                                    Keys.onEscapePressed: {
+                                        text = "";
+                                        ui.forceActiveFocus();
+                                    }
+                                }
+
+                                Txt {
+                                    anchors.fill: presetName
+                                    verticalAlignment: Text.AlignVCenter
+                                    visible: presetName.text.length === 0
+                                    text: "Name"
+                                    font.pixelSize: Theme.px(14)
+                                    color: Config.textFaint
+                                }
+                            }
+
+                            // Save: white, like the profile's
+                            Rectangle {
+                                id: saveBtn
+                                readonly property bool usable: presetName.text.trim().length > 0
+
+                                x: presetsBody.width - width - presetsBody.pad
+                                y: nameBox.y + Math.round((nameBox.height - height) / 2)
+                                width: saveLabel.implicitWidth + Theme.px(24)
+                                height: Theme.px(32)
+                                radius: Theme.px(10)
+                                color: Config.text
+                                opacity: usable ? 1 : 0.45
+                                scale: saveArea.pressed ? 0.95 : 1
+
+                                Behavior on opacity {
+                                    Anim {
+                                        duration: Theme.durFast
+                                    }
+                                }
+
+                                Txt {
+                                    id: saveLabel
+                                    anchors.centerIn: parent
+                                    text: "Save"
+                                    font.pixelSize: Theme.px(13)
+                                    font.weight: Font.Medium
+                                    color: Config.frame
+                                }
+
+                                MouseArea {
+                                    id: saveArea
+                                    anchors.fill: parent
+                                    enabled: saveBtn.usable
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: saveCard.save()
+                                }
+                            }
+
+                            Txt {
+                                id: saveNote
+                                visible: saveCard.note.length > 0
+                                x: presetsBody.pad
+                                y: nameBox.y + nameBox.height + Theme.px(10)
+                                width: presetsBody.width - 2 * presetsBody.pad
+                                wrapMode: Text.WordWrap
+                                text: saveCard.note
+                                font.pixelSize: Theme.px(12)
+                                font.weight: Font.Medium
+                                color: saveCard.failed ? Config.warning : Config.textDim
+                            }
+
+                            Grid {
+                                id: presetGrid
+                                // like the themes: from the left (a place left empty on the right)
+                                x: Math.max(presetsBody.pad, Math.round((presetsBody.width - presetsBody.cols * presetsBody.cellW - (presetsBody.cols - 1) * presetsBody.gap) / 2))
+                                y: (saveNote.visible ? saveNote.y + saveNote.height : nameBox.y + nameBox.height) + Theme.px(16)
+                                columns: presetsBody.cols
+                                spacing: presetsBody.gap
+
+                                Repeater {
+                                    model: Presets.list
+
+                                    Item {
+                                        id: presetTile
+                                        required property var modelData
+                                        readonly property var values: modelData.values
+                                        readonly property var theme: Config.themes.find(t => t.name === values.theme) || Config.themes[0]
+                                        readonly property bool isCurrent: Presets.matches(modelData)
+                                        // its theme and its icon pack ("" = the shell's own; none: one
+                                        // made by hand without it, which leaves the pack as it is)
+                                        readonly property string about: {
+                                            if (typeof values.iconPack !== "string")
+                                                return theme.name;
+                                            const n = values.iconPack || IconPacks.qtTheme;
+                                            const pack = IconPacks.packs.find(p => p.name === n);
+                                            return theme.name + " · " + (pack ? (pack.title || pack.name) : n);
+                                        }
+
+                                        width: presetsBody.cellW
+                                        height: presetsBody.cellH
+                                        scale: presetArea.pressed ? 0.96 : 1
+
+                                        Behavior on scale {
+                                            Anim {
+                                                duration: Theme.durFast
+                                                curve: Theme.curveSpring
+                                            }
+                                        }
+
+                                        // the settings match it: a 2 px white ring round it, a little
+                                        // away from the tile
+                                        Rectangle {
+                                            anchors.fill: parent
+                                            anchors.margins: -Theme.px(4)
+                                            radius: presetsBody.tileRadius + Theme.px(4)
+                                            color: "transparent"
+                                            border.width: Theme.px(2)
+                                            border.color: Config.thumbOutline
+                                            antialiasing: true
+                                            opacity: presetTile.isCurrent ? 1 : 0
+
+                                            Behavior on opacity {
+                                                Anim {
+                                                    duration: Theme.durSmall
+                                                }
+                                            }
+                                        }
+
+                                        // the tile: its name and, under it, its theme and icon pack
+                                        Rectangle {
+                                            anchors.fill: parent
+                                            radius: presetsBody.tileRadius
+                                            color: presetsBody.tileColor
+                                            antialiasing: true
+
+                                            Column {
+                                                anchors.centerIn: parent
+                                                width: parent.width - 2 * Theme.px(12)
+                                                spacing: Theme.px(4)
+
+                                                Txt {
+                                                    width: parent.width
+                                                    horizontalAlignment: Text.AlignHCenter
+                                                    elide: Text.ElideRight
+                                                    text: presetTile.modelData.name
+                                                    color: Config.text
+                                                    font.pixelSize: Theme.px(14)
+                                                    font.weight: Font.Medium
+                                                }
+                                                Txt {
+                                                    width: parent.width
+                                                    horizontalAlignment: Text.AlignHCenter
+                                                    elide: Text.ElideRight
+                                                    text: presetTile.about
+                                                    color: Config.textDim
+                                                    font.pixelSize: Theme.px(11)
+                                                    font.weight: Font.Medium
+                                                }
+                                            }
+                                        }
+
+                                        MouseArea {
+                                            id: presetArea
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: Presets.apply(presetTile.modelData)
+                                        }
+
+                                        // one you saved: a red bin on a dark circle in its corner while
+                                        // the pointer is on it - a click deletes it
+                                        Rectangle {
+                                            id: presetBin
+                                            readonly property bool shown: !presetTile.modelData.builtIn && (presetArea.containsMouse || presetBinArea.containsMouse)
+
+                                            anchors.top: parent.top
+                                            anchors.right: parent.right
+                                            anchors.margins: Theme.px(7)
+                                            width: Theme.px(26)
+                                            height: width
+                                            radius: width / 2
+                                            color: Config.frame
+                                            antialiasing: true
+                                            visible: opacity > 0
+                                            opacity: shown ? 1 : 0
+                                            scale: presetBinArea.pressed ? 0.9 : 1
+
+                                            Behavior on opacity {
+                                                Anim {
+                                                    duration: Theme.durSmall
+                                                }
+                                            }
+                                            Behavior on scale {
+                                                Anim {
+                                                    duration: Theme.durFast
+                                                    curve: Theme.curveSpring
+                                                }
+                                            }
+
+                                            // in the exact middle, like the wallpapers' bin
+                                            Icon {
+                                                readonly property int room: Math.floor((presetBin.width - Theme.px(15)) / 2)
+                                                x: room
+                                                y: room
+                                                name: "bin"
+                                                size: presetBin.width - 2 * room
+                                                color: Config.warning
+                                            }
+
+                                            MouseArea {
+                                                id: presetBinArea
+                                                anchors.fill: parent
+                                                enabled: presetBin.shown
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: Presets.remove(presetTile.modelData.name)
                                             }
                                         }
                                     }

@@ -21,7 +21,7 @@ https://github.com/user-attachments/assets/1fd0dcb7-4957-406a-8c7e-0c01d8d9855b
 - **Panels from the edges** — volume + brightness (top-left), colour picker (top-right), clipboard history (left), quick note (right), calendar (bottom-right)
 - **Own launcher, app switcher and emoji picker** — no rofi/wofi needed (`SUPER+R`, `SUPER+Space`, `SUPER+.`)
 - **Wallpaper and colour-theme switchers** in the island — three themes (Default, Noir, Catppuccin Mocha) that also restyle GTK, Qt, kitty, Firefox and the window borders
-- **Settings app** — blur, gaps, borders, corner rounding, dock / island auto-hide, pinned apps, Wi-Fi, Bluetooth, audio devices, mouse and keyboard, keybind list
+- **Settings app** — blur, gaps, borders, corner rounding, dock / island auto-hide, pinned apps, Wi-Fi, Bluetooth, audio devices, mouse and keyboard, keybind list, and **presets** that save your whole look under a name
 - **Screenshot tool** with area selection and drawing (pencil, arrow, rectangle, text)
 - **Lock screen, login screen (SDDM Pixie) and boot splash (Plymouth)** in the same style
 - Notification daemon, polkit agent and on-screen keyboard built into the shell

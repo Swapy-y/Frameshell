@@ -38,7 +38,15 @@ Singleton {
     property alias iconPack: adapter.iconPack
     property alias powerLogo: adapter.powerLogo
 
+    // While holdWrites is true a change is not written at once: a preset sets several of them in
+    // one go (services/Presets.qml), then calls write() - see Config.holdWrites for why.
+    property bool holdWrites: false
+    function write() {
+        file.writeAdapter();
+    }
+
     FileView {
+        id: file
         path: Quickshell.statePath("state.json")
         printErrors: false
         watchChanges: false
@@ -46,7 +54,10 @@ Singleton {
         // read before anything is shown: a hidden island / dock never flashes up at start
         blockLoading: true
 
-        onAdapterUpdated: writeAdapter()
+        onAdapterUpdated: {
+            if (!root.holdWrites)
+                writeAdapter();
+        }
         onLoadFailed: error => {
             // first run: create the file with the defaults
             if (error === FileViewError.FileNotFound)

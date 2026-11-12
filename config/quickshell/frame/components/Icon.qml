@@ -33,7 +33,7 @@ Item {
     // drawn 4 x as big and scaled down (smooth slanted edges)
     // (the Settings app's icons too: the curve renderer left a light dot in the
     // middle of "set-island"'s top edge)
-    readonly property bool smoothEdges: ["bluetooth", "chev-left", "chev-right", "search", "set-island", "set-dock", "set-wallpaper", "set-theme", "set-appearance", "set-blur", "set-system", "set-devices", "set-keybinds", "power-logo", "mic", "note-save", "bin", "apps", "info"].indexOf(name) >= 0
+    readonly property bool smoothEdges: ["bluetooth", "chev-left", "chev-right", "search", "set-island", "set-dock", "set-wallpaper", "set-theme", "set-appearance", "set-blur", "set-presets", "set-system", "set-devices", "set-keybinds", "power-logo", "mic", "note-save", "bin", "apps", "info"].indexOf(name) >= 0
 
     implicitWidth: size
     implicitHeight: size

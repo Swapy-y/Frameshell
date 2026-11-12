@@ -429,14 +429,29 @@ Singleton {
         onLoadFailed: themeRead = true
     }
 
+    // While holdWrites is true a change to appearance.json or blur.json is not written at once:
+    // a preset sets several of them in one go (services/Presets.qml), then calls writeSettings().
+    // A FileView writes in the background and, when a write is still going as the next one
+    // starts, reads what the first one wrote back into its adapter - so a second change made in
+    // the same moment would undo the one before it.
+    property bool holdWrites: false
+    function writeSettings() {
+        appearanceFile.writeAdapter();
+        blurFile.writeAdapter();
+    }
+
     // the border widths, the window gap and the corner rounding of the Settings app
     // (Appearance): frameBorder / windowBorder / windowGap / cornerRounding above
     FileView {
+        id: appearanceFile
         path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/frameshell/appearance.json"
         printErrors: false
         blockLoading: true
         atomicWrites: true
-        onAdapterUpdated: writeAdapter()
+        onAdapterUpdated: {
+            if (!config.holdWrites)
+                writeAdapter();
+        }
         onLoaded: config.appearanceRead = true
         onLoadFailed: config.appearanceRead = true
 
@@ -542,11 +557,15 @@ Singleton {
 
     // the blur of the Settings app (Blur): windowBlur ... shellOpacity above
     FileView {
+        id: blurFile
         path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/frameshell/blur.json"
         printErrors: false
         blockLoading: true
         atomicWrites: true
-        onAdapterUpdated: writeAdapter()
+        onAdapterUpdated: {
+            if (!config.holdWrites)
+                writeAdapter();
+        }
 
         adapter: JsonAdapter {
             id: blur

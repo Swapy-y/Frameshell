@@ -1124,6 +1124,46 @@ remove_old_autologin() {
     fi
 }
 
+# The mouse on the login screen: X11's default speed is much faster than the
+# desktop's (hyprland.lua: sensitivity -0.75, adaptive). This file gives X11
+# - SDDM draws the login screen with it - the same speed. A file of the same
+# name that frameshell didn't write and that says something else is kept as
+# 40-libinput.conf.frameshell-backup.
+MOUSE_CONF=/etc/X11/xorg.conf.d/40-libinput.conf
+
+login_mouse_speed() {
+    local conf
+    conf="$(printf '%s\n' \
+        "# Written by frameshell's install.sh: the mouse speed of the login screen" \
+        "# (SDDM draws it with X11), the same as the desktop's default." \
+        "# Delete this file to get X11's default speed back." \
+        'Section "InputClass"' \
+        '    Identifier "Pointer settings"' \
+        '    MatchIsPointer "yes"' \
+        '    Driver "libinput"' \
+        '    Option "AccelProfile" "adaptive"' \
+        '    Option "AccelSpeed" "-0.75"' \
+        'EndSection')"
+    # the same settings (comments and blank lines aside): nothing to keep
+    local -a strip=(sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d')
+    if ((DRY)); then
+        note "[dry-run] write $MOUSE_CONF (login screen mouse speed -0.75, adaptive):"
+        sed 's/^/        /' <<<"$conf"
+        return
+    fi
+    if [[ -f $MOUSE_CONF ]] && ! grep -qs "Written by frameshell" "$MOUSE_CONF" &&
+        [[ "$("${strip[@]}" "$MOUSE_CONF")" != "$("${strip[@]}" <<<"$conf")" ]]; then
+        "${SUDO[@]}" cp -a "$MOUSE_CONF" "$MOUSE_CONF.frameshell-backup" &&
+            note "Kept your $MOUSE_CONF as $MOUSE_CONF.frameshell-backup."
+    fi
+    if "${SUDO[@]}" mkdir -p "${MOUSE_CONF%/*}" &&
+        printf '%s\n' "$conf" | "${SUDO[@]}" tee "$MOUSE_CONF" >/dev/null; then
+        note "Login screen mouse speed: -0.75 (adaptive), like the desktop ($MOUSE_CONF)."
+    else
+        warn "Could not write $MOUSE_CONF: the mouse stays at X11's default speed on the login screen."
+    fi
+}
+
 login_screen_setup() {
     remove_old_autologin
     say "Login screen: SDDM with the Pixie theme (the lock screen looks the same)"
@@ -1136,10 +1176,11 @@ login_screen_setup() {
 
     # SDDM draws its login screen with X11 (xorg-server); Pixie needs Qt 6 QML + SVG;
     # xsetroot + xrdb are how SDDM gives the login screen its cursor (CursorTheme below):
-    # without them it shows the plain default cursor
+    # without them it shows the plain default cursor; xf86-input-libinput is the mouse
+    # driver its speed is set for (MOUSE_CONF below)
     local -a pk=()
     local p
-    for p in sddm qt6-declarative qt6-svg xorg-server xorg-xsetroot xorg-xrdb; do
+    for p in sddm qt6-declarative qt6-svg xorg-server xorg-xsetroot xorg-xrdb xf86-input-libinput; do
         pkg_installed "$p" || pk+=("$p")
     done
     if ((${#pk[@]})); then
@@ -1256,6 +1297,8 @@ login_screen_setup() {
     if grep -qsE '^[[:space:]]*Cursor(Theme|Size)=' /etc/sddm.conf; then
         warn "/etc/sddm.conf has its own 'CursorTheme=' or 'CursorSize=' line, which wins over $SDDM_CONF: remove it to get $theme on the login screen."
     fi
+
+    login_mouse_speed
 
     # first boot: Hyprland and you preselected (SDDM remembers your choice after that)
     local sess=""

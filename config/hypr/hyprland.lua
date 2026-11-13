@@ -1844,19 +1844,334 @@ hl.on("window.active", function(w, reason)
     end, { timeout = 1, type = "oneshot" })
 end)
 
+-- Tiling on again: the tiles come back as they were -----------------------------------
+-- When tiling goes off, the layout of the tiles is remembered (per workspace), and when it goes
+-- on again the windows are tiled back into that same layout - the same places, the same sizes -
+-- however you moved them around meanwhile. A window closed, minimized or moved to another
+-- workspace meanwhile is left out (its neighbour takes its room, as when a tile closes); a window
+-- that came in meanwhile is tiled after the others, the usual way (on the right of the focused
+-- one). Turning tiling off again remembers the layout anew. REMEMBER_TILES.on = false: off.
+--
+-- How: Hyprland can't be handed a layout, so it is built again the way dwindle builds one -
+-- one split at a time. The tiles are read as dwindle's tree of splits (every split is a straight
+-- line across its part of the screen that no window crosses), with each split's ratio. Then the
+-- first window is tiled alone (it fills the screen), and for every split, from the whole screen
+-- down to the smallest, the first window of its second half is tiled into the window that holds
+-- its whole part now, with "preselect" (right / below) and that split's ratio as
+-- default_split_ratio (the same way as "EQUAL-SIZED NEW TILES" above).
+local REMEMBER_TILES = { on = true, trees = {} }    -- on = false: off. trees: [workspace id] = the remembered tree
+local with_tiles_laid_out           -- (below: "Tiles under a maximized / fullscreen window")
+
+do
+    -- The tree of `items` ({ id, box } each, the windows' boxes) in `R`, the box dwindle gives
+    -- them all (the windows plus their gaps): a window is { id }, a split { dir = "r" (side by
+    -- side) or "d" (one above the other), ratio, a = the left / top half, b = the right / bottom
+    -- half }. nil if the windows can't be split like that (not a dwindle layout).
+    --
+    -- A split is a line across the part with the windows on one side ending exactly one gap
+    -- before the windows on the other side start - not merely a line no window crosses: two
+    -- splits a few pixels apart (the top row split at one place, the bottom row a bit further
+    -- right) leave such a line too, but there the windows are less than a gap apart. The gap
+    -- `G` is measured, not taken from the settings: the widest of those lines in the whole
+    -- screen is always a real split (so a border or a rounding can't throw it off).
+    --
+    -- The same picture can come from more than one tree (three columns are "A | (B | C)" or
+    -- "(A | B) | C"). Every line across the part that no window crosses is a possible split; the
+    -- one whose halves are closest to equal is tried first (dwindle cuts a window in two equal
+    -- halves unless you resize), on the side dwindle splits that part first (side by side when it
+    -- is wider than tall), and the next one if it would need a ratio dwindle can't take
+    -- (0.1 - 1.9) somewhere further down.
+    local budget = 0
+    local function split_tree(items, R, lo, hi, G)
+        if #items == 1 then
+            return { id = items[1].id }
+        end
+        budget = budget - 1
+        if budget < 0 then
+            return nil                              -- (a strange layout: no endless search)
+        end
+        local cuts = {}
+        for n, pos in ipairs(R.w >= R.h and { "x", "y" } or { "y", "x" }) do
+            local len = pos == "x" and "w" or "h"
+            local sorted = {}
+            for i, it in ipairs(items) do
+                sorted[i] = it
+            end
+            table.sort(sorted, function(p, q)
+                if p.box[pos] ~= q.box[pos] then
+                    return p.box[pos] < q.box[pos]
+                end
+                return p.id < q.id
+            end)
+            local far = -math.huge                  -- where the windows before the line end
+            for i = 1, #sorted - 1 do
+                far = math.max(far, sorted[i].box[pos] + sorted[i].box[len])
+                local near_edge = sorted[i + 1].box[pos]   -- the first window after it starts
+                if far <= near_edge then
+                    -- the line: the first half's windows end `hi` before it, the second's start
+                    -- `lo` after it (gaps_in); taken from both sides, so a rounding cancels out
+                    local at = (far + hi + near_edge - lo) / 2
+                    local ratio = 2 * (at - R[pos]) / R[len]
+                    cuts[#cuts + 1] = { pos = pos, len = len, at = at, ratio = ratio, n = n, i = i, sorted = sorted,
+                                        gap = near_edge - far }
+                end
+            end
+        end
+        if G == nil then                            -- the whole screen: the gap is its widest line
+            for _, c in ipairs(cuts) do
+                G = math.max(G or c.gap, c.gap)
+            end
+        end
+        table.sort(cuts, function(p, q)
+            if p.n ~= q.n then
+                return p.n < q.n
+            end
+            local dp, dq = math.abs(p.ratio - 1), math.abs(q.ratio - 1)
+            if dp ~= dq then
+                return dp < dq
+            end
+            return p.at < q.at
+        end)
+        for _, c in ipairs(cuts) do
+            if G and c.gap >= G - 1 and c.ratio >= 0.1 and c.ratio <= 1.9 then
+                local ra, rb = {}, {}
+                for k, v in pairs(R) do
+                    ra[k], rb[k] = v, v
+                end
+                ra[c.len] = c.at - R[c.pos]
+                rb[c.pos] = c.at
+                rb[c.len] = R[c.pos] + R[c.len] - c.at
+                local first, second = {}, {}
+                for k, it in ipairs(c.sorted) do
+                    if k <= c.i then
+                        first[#first + 1] = it
+                    else
+                        second[#second + 1] = it
+                    end
+                end
+                local a = split_tree(first, ra, lo, hi, G)
+                local b = a and split_tree(second, rb, lo, hi, G)
+                if b then
+                    return { dir = c.pos == "x" and "r" or "d", ratio = c.ratio, a = a, b = b }
+                end
+            end
+        end
+        return nil
+    end
+
+    -- Tiling off: remember the tiles of workspace `ws_id` as they are now (call it with the
+    -- tiles laid out)
+    function REMEMBER_TILES.remember(ws_id)
+        REMEMBER_TILES.trees[ws_id] = nil
+        if not REMEMBER_TILES.on then
+            return
+        end
+        local items = {}
+        local x0, y0, x1, y1 = math.huge, math.huge, -math.huge, -math.huge
+        for _, o in ipairs(hl.get_workspace_windows(ws_id) or {}) do
+            pcall(function()
+                local id = window_id(o)
+                local b = id and o.mapped == true and o.hidden ~= true and not o.floating and box_of(o)
+                if b and b.w > 0 and b.h > 0 then
+                    items[#items + 1] = { id = id, box = b }
+                    x0, y0 = math.min(x0, b.x), math.min(y0, b.y)
+                    x1, y1 = math.max(x1, b.x + b.w), math.max(y1, b.y + b.h)
+                end
+            end)
+        end
+        if #items == 0 then
+            return
+        end
+        -- the box dwindle lays them out in: the work area, which the gap to the frame (gaps_out)
+        -- is already taken off - a window at its edge has no gap there, only its border (every
+        -- window is inset by its border on all sides), so around them: the border
+        local okb, v = pcall(hl.get_config, "general.border_size")
+        local ring = (okb and type(v) == "number" and v >= 0) and v or WINDOW_BORDER
+        local g = WINDOW_GAP
+        local lo = math.floor(g / 2)                -- the halves of gap_config(): left / top ...
+        local hi = g - lo                           -- ... and right / bottom
+        local R = { x = x0 - ring, y = y0 - ring, w = (x1 - x0) + 2 * ring, h = (y1 - y0) + 2 * ring }
+        budget = 2000
+        local ok, tree = pcall(split_tree, items, R, lo, hi)
+        if ok and tree then
+            REMEMBER_TILES.trees[ws_id] = tree
+        end
+    end
+
+    -- the tree without the windows not in `present` (a split that lost a half is its other half,
+    -- as when a tile closes)
+    local function prune_tree(node, present)
+        if node.id then
+            return present[node.id] and node or nil
+        end
+        local a, b = prune_tree(node.a, present), prune_tree(node.b, present)
+        if a and b then
+            return { dir = node.dir, ratio = node.ratio, a = a, b = b }
+        end
+        return a or b
+    end
+
+    local function first_leaf(node)
+        while not node.id do
+            node = node.a
+        end
+        return node.id
+    end
+
+    -- a point of box `b` that no floating window of workspace `ws_id` covers (its middle if
+    -- there is none)
+    local function open_spot(ws_id, b)
+        local floats = {}
+        for _, o in ipairs(hl.get_workspace_windows(ws_id) or {}) do
+            pcall(function()
+                if o.mapped == true and o.floating and o.hidden ~= true then
+                    floats[#floats + 1] = box_of(o)
+                end
+            end)
+        end
+        local steps = { 0.5, 0.25, 0.75, 0.1, 0.9 }
+        for _, fy in ipairs(steps) do
+            for _, fx in ipairs(steps) do
+                local x, y = math.floor(b.x + b.w * fx), math.floor(b.y + b.h * fy)
+                local covered = false
+                for _, f in ipairs(floats) do
+                    if x >= f.x - 4 and x < f.x + f.w + 4 and y >= f.y - 4 and y < f.y + f.h + 4 then
+                        covered = true
+                        break
+                    end
+                end
+                if not covered then
+                    return x, y
+                end
+            end
+        end
+        return math.floor(b.x + b.w / 2), math.floor(b.y + b.h / 2)
+    end
+
+    -- Tile the floating window `new_id` into the tiled window `rep_id` (addresses): `dir` "r" =
+    -- on its right, "d" = below it, `ratio` = the split's ratio. Dwindle splits the focused tiled
+    -- window (use_active_for_splits), else the one under the pointer - so both are that window.
+    -- Then where it went is checked; anywhere else, it is done once more (as in tile_at_side).
+    local function split_into(ws_id, rep_id, new_id, dir, ratio)
+        local rep_sel, new_sel = "address:" .. rep_id, "address:" .. new_id
+        local function tile()
+            local rep = hl.get_window(rep_sel)
+            local before = rep and box_of(rep)
+            if before then
+                local x, y = open_spot(ws_id, before)
+                hl.dispatch(hl.dsp.cursor.move({ x = x, y = y }))
+            end
+            hl.dispatch(hl.dsp.focus({ window = rep_sel }))
+            hl.dispatch(hl.dsp.layout("preselect " .. dir))
+            set_split_ratio(ratio)
+            set_floating(new_sel, false)
+            return before
+        end
+        local before = tile()
+        local ok, right = pcall(function()
+            local r, n = box_of(hl.get_window(rep_sel)), box_of(hl.get_window(new_sel))
+            if not before or not r or not n then
+                return true
+            end
+            local function eq(p, q)
+                return math.abs(p - q) <= 3
+            end
+            if dir == "r" then  -- the same top and bottom; it keeps the left edge, the new one gets the right one
+                return eq(r.y, before.y) and eq(n.y, before.y) and eq(r.y + r.h, before.y + before.h)
+                    and eq(n.y + n.h, before.y + before.h) and eq(r.x, before.x)
+                    and eq(n.x + n.w, before.x + before.w) and n.x >= r.x + r.w
+            else                -- the same left and right; it keeps the top edge, the new one gets the bottom one
+                return eq(r.x, before.x) and eq(n.x, before.x) and eq(r.x + r.w, before.x + before.w)
+                    and eq(n.x + n.w, before.x + before.w) and eq(r.y, before.y)
+                    and eq(n.y + n.h, before.y + before.h) and n.y >= r.y + r.h
+            end
+        end)
+        if ok and not right then
+            set_floating(new_sel, true)
+            tile()
+        end
+    end
+
+    -- every split of `node`, from the biggest down: its second half's first window goes into
+    -- the window that holds the whole part now (its first half's first window)
+    local function rebuild(ws_id, node)
+        if node.id then
+            return
+        end
+        split_into(ws_id, first_leaf(node.a), first_leaf(node.b), node.dir, node.ratio)
+        rebuild(ws_id, node.a)
+        rebuild(ws_id, node.b)
+    end
+
+    -- Tiling on: tile `list` (the workspace's floating windows) back into the remembered layout.
+    -- The ones that weren't in it stay floating (the caller tiles them the usual way). Only on
+    -- the workspace on screen ("preselect" belongs to it) with no tiled window there yet.
+    function REMEMBER_TILES.restore(ws_id, list)
+        local tree = REMEMBER_TILES.trees[ws_id]
+        REMEMBER_TILES.trees[ws_id] = nil
+        local ws = hl.get_active_workspace()
+        if not tree or not REMEMBER_TILES.on or not ws or ws.id ~= ws_id then
+            return
+        end
+        local present = {}
+        for _, w in ipairs(list) do
+            local id = window_id(w)
+            if id then
+                present[id] = true
+            end
+        end
+        tree = prune_tree(tree, present)
+        if not tree then
+            return
+        end
+        for _, o in ipairs(hl.get_workspace_windows(ws_id) or {}) do
+            local ok, tiled = pcall(function() return o.mapped == true and not o.floating end)
+            if ok and tiled then
+                return
+            end
+        end
+        local active_id = window_id(hl.get_active_window())
+        local cursor = hl.get_cursor_pos()
+        pcall(function()
+            set_floating("address:" .. first_leaf(tree), false)    -- alone: it fills the screen
+            rebuild(ws_id, tree)
+        end)
+        pcall(set_split_ratio, 1.0)
+        -- the pointer and the focus back where they were (you don't see them move)
+        pcall(function()
+            if cursor then
+                hl.dispatch(hl.dsp.cursor.move({ x = cursor.x, y = cursor.y }))
+            end
+            if active_id and hl.get_window("address:" .. active_id) then
+                hl.dispatch(hl.dsp.focus({ window = "address:" .. active_id }))
+            end
+        end)
+    end
+
+end
+
 -- SUPER + Page Down: tiling off / on for the workspace you are on (`ws_id`, on monitor `m`).
 -- Off: every window floats in the middle; a maximized one stays maximized and one in Hyprland's
 -- fullscreen covers the screen (both as floating windows: "Maximize / Fullscreen on a workspace
 -- without tiling" above) - in front of the others, which stay under it.
--- On: every window is tiled again; one maximized or covering the screen like that gets Hyprland's
--- maximize / fullscreen.
+-- On: every window is tiled again - into the layout it had when tiling went off ("Tiling on
+-- again" above); one maximized or covering the screen like that gets Hyprland's maximize /
+-- fullscreen.
 local function toggle_workspace_tiling(ws_id, m)
     local off = not untiled[ws_id]
+    if off then
+        -- the layout to come back to (with a maximized / fullscreen window there, read with the
+        -- tiles laid out: under it Hyprland leaves them as they were)
+        pcall(with_tiles_laid_out, ws_id, function()
+            REMEMBER_TILES.remember(ws_id)
+        end)
+    end
     untiled[ws_id] = off or nil
     save_untiled()
     local box = off and untiled_box(m)
     local front = {}            -- tiling off: maximized / fullscreen, done after the others (in front of them)
     local maximize, fullscreen = {}, {}
+    local to_tile = {}          -- tiling on: the windows to tile, once all are ready
     for _, w in ipairs(hl.get_workspace_windows(ws_id) or {}) do
         if off then
             pcall(function()
@@ -1885,7 +2200,21 @@ local function toggle_workspace_tiling(ws_id, m)
             elseif at_max_box(w) then
                 maximize[#maximize + 1] = w
             end
-            pcall(set_floating, w, false)
+            to_tile[#to_tile + 1] = w
+        end
+    end
+    if not off then
+        -- back into the remembered layout; whatever wasn't in it (or is still floating should
+        -- that not work out) is tiled the usual way
+        pcall(REMEMBER_TILES.restore, ws_id, to_tile)
+        for _, w in ipairs(to_tile) do
+            pcall(function()
+                local id = window_id(w)
+                local now = id and hl.get_window("address:" .. id)
+                if now and now.floating then
+                    set_floating(now, false)
+                end
+            end)
         end
     end
     for _, w in ipairs(front) do
@@ -2047,7 +2376,11 @@ switcher_keys[switcher_next] = true
 -- Workspace to the left / right at the edge of the screen ------------------------
 -- SUPER + Left / Right focus the window to the left / right, and when there is no window
 -- that way (you are at the edge of the screen, or the workspace is empty) they go on to the
--- workspace to the left / right.
+-- workspace to the left / right. On a maximized or fullscreen (F11) window they go on to the
+-- workspace at once - not to the windows under it.
+-- Going to a workspace without tiling (SUPER + Left / Right, SUPER + 1…5) with a window maximized or
+-- covering the screen there, that window gets the focus - not the one you were on there last,
+-- which may be under it. (On a tiled workspace Hyprland does that itself.)
 -- SUPER + SHIFT + Left / Right do the same for moving: they move the window left / right, and when it
 -- is already at the edge (no window beside it that way) they carry it on to the workspace to
 -- the left / right, and you go with it. A floating window (every window on a workspace
@@ -2065,18 +2398,117 @@ local function workspace_beside(step)
     return nil
 end
 
-local function focus_or_workspace(direction, step)
-    local before = window_id(hl.get_active_window())
-    if before then
-        hl.dispatch(hl.dsp.focus({ direction = direction }))
-        if window_id(hl.get_active_window()) ~= before then
-            return                                   -- there was a window that way
+-- go_to_workspace(id): go to workspace `id` (SUPER + 1…5, SUPER + Left / Right at the edge);
+-- focus_or_workspace(direction, step): SUPER + Left / Right. (In a block: this file is near Lua's
+-- limit of 200 local names.)
+local go_to_workspace, focus_or_workspace
+do
+    -- `w` is maximized or fullscreen: Hyprland's own (on a tiled workspace, or an app's own
+    -- fullscreen), or as a floating window on a workspace without tiling (SUPER + F / F11 there)
+    local function max_or_fullscreen(w)
+        local ok, fs = pcall(function() return w.fullscreen end)
+        if ok and type(fs) == "number" and fs ~= 0 then
+            return true
+        end
+        return at_max_box(w) or in_float_fs(w)
+    end
+
+    -- On workspace `ws_id` without tiling: the window maximized or covering the screen there gets
+    -- the focus (of several, the one focused last - the one in front). Focused by a dispatch, it
+    -- also comes to the front ("window.active" above).
+    local function focus_covering_window(ws_id)
+        if not ws_id or not untiled[ws_id] then
+            return
+        end
+        local best, rank
+        for _, o in ipairs(hl.get_workspace_windows(ws_id) or {}) do
+            pcall(function()
+                if o.mapped == true and o.hidden ~= true and max_or_fullscreen(o) then
+                    local r = o.focus_history_id        -- 0 = focused last; -1 = never
+                    r = (type(r) == "number" and r >= 0) and r or math.huge
+                    if not best or r < rank then
+                        best, rank = o, r
+                    end
+                end
+            end)
+        end
+        local id = window_id(best)
+        if id and id ~= window_id(hl.get_active_window()) then
+            hl.dispatch(hl.dsp.focus({ window = "address:" .. id }))
         end
     end
-    local target = workspace_beside(step)
-    if target then
-        hl.dispatch(hl.dsp.focus({ workspace = target }))
+
+    -- go to workspace `id` (SUPER + 1…5, SUPER + Left / Right at the edge)
+    function go_to_workspace(id)
+        local ws = hl.get_active_workspace()
+        local from = ws and ws.id
+        hl.dispatch(hl.dsp.focus({ workspace = id }))
+        ws = hl.get_active_workspace()
+        if ws and ws.id == id and from ~= id then
+            pcall(focus_covering_window, id)
+        end
     end
+
+    function focus_or_workspace(direction, step)
+        local active = hl.get_active_window()
+        local before = window_id(active)
+        if before and not max_or_fullscreen(active) then
+            hl.dispatch(hl.dsp.focus({ direction = direction }))
+            if window_id(hl.get_active_window()) ~= before then
+                return                                   -- there was a window that way
+            end
+        end
+        local target = workspace_beside(step)
+        if target then
+            go_to_workspace(target)
+        end
+    end
+end
+
+-- Leaving a workspace with a maximized / fullscreen window: while the workspaces slide,
+-- Hyprland draws both of them the way it draws the one you go to - and with no maximized or
+-- fullscreen window there, that is every tile in the order they are stacked, the focused one
+-- last (render/Renderer.cpp, renderWorkspaceWindows). The maximized / fullscreen window you
+-- leave is then just a tile, often an older one, so the tiles under it were drawn over it until
+-- the slide was over. So the moment you leave, it goes to the top of the stack (alter_zorder:
+-- on its own workspace it is in front anyway, so nothing else changes). Any way of leaving:
+-- the keys, the island, the app switcher. (Hyprland's own maximize / fullscreen; on a workspace
+-- without tiling the maximized one is in front of the stack already.)
+do
+    local shown = {}            -- [monitor name] = the workspace it showed last
+    pcall(function()
+        for _, m in ipairs(hl.get_monitors() or {}) do
+            local ws = m.active_workspace
+            if m.name and ws then
+                shown[m.name] = ws.id
+            end
+        end
+    end)
+    hl.on("workspace.active", function(ws)
+        pcall(function()
+            local m = ws.monitor
+            local name = m and m.name
+            if not name or ws.special == true then
+                return
+            end
+            local prev = shown[name]
+            shown[name] = ws.id
+            if prev == ws.id then
+                return
+            end
+            -- (not known yet: every other workspace on that screen)
+            for _, o in ipairs(prev and hl.get_workspace_windows(prev) or hl.get_windows() or {}) do
+                pcall(function()
+                    local on = o.workspace and o.workspace.id
+                    local om = o.monitor and o.monitor.name
+                    if o.mapped == true and o.hidden ~= true and o.fullscreen ~= 0 and on ~= ws.id
+                        and (prev or om == name) then
+                        hl.dispatch(hl.dsp.window.alter_zorder({ mode = "top", window = o }))
+                    end
+                end)
+            end
+        end)
+    end)
 end
 
 -- true when another tiled window of the same workspace sits beside `w` in that direction
@@ -2161,7 +2593,8 @@ end
 -- of it shows, and the app is not told (only Hyprland's own state changes, not the one the app
 -- sees). `fn`, if given, tiles something there meanwhile.
 local laying_out = false
-local function with_tiles_laid_out(ws_id, fn)
+-- (declared above, at "Tiling on again": the tiling toggle reads the tiles with it)
+function with_tiles_laid_out(ws_id, fn)
     if laying_out or type(ws_id) ~= "number" then
         if fn then
             pcall(fn)
@@ -2982,17 +3415,19 @@ bind(mod .. " + J", hl.dsp.layout("togglesplit"),            { description = "To
 
 -- Move focus with SUPER + arrow keys. Left / Right go on to the workspace beside it when there
 -- is no window that way (the edge of the screen, or an empty workspace).
-bind(mod .. " + left",  function() focus_or_workspace("left", -1) end, { description = "Focus window left, at the edge: workspace to the left" })
-bind(mod .. " + right", function() focus_or_workspace("right", 1) end, { description = "Focus window right, at the edge: workspace to the right" })
+bind(mod .. " + left",  function() focus_or_workspace("left", -1) end, { description = "Focus window left, at the edge (or on a maximized / fullscreen one): workspace to the left" })
+bind(mod .. " + right", function() focus_or_workspace("right", 1) end, { description = "Focus window right, at the edge (or on a maximized / fullscreen one): workspace to the right" })
 bind(mod .. " + up",    hl.dsp.focus({ direction = "up" }),            { description = "Focus window up" })
 bind(mod .. " + down",  hl.dsp.focus({ direction = "down" }),          { description = "Focus window down" })
 
--- SUPER + 1…5 switches workspace, SUPER + SHIFT + 1…5 moves the window there (and follows it).
+-- SUPER + 1…5 switches workspace (to the window maximized or covering the screen there, on a
+-- workspace without tiling: go_to_workspace), SUPER + SHIFT + 1…5 moves the window there (and
+-- follows it).
 -- Only up to the last workspace (WORKSPACE_MAX = workspaceMax in Config.qml, 5); with 10,
 -- workspace 10 is on the 0 key.
 for i = 1, WORKSPACE_MAX do
     local key = i % 10
-    bind(mod .. " + " .. key,           hl.dsp.focus({ workspace = i }), { description = "Switch to workspace " .. i })
+    bind(mod .. " + " .. key,           function() go_to_workspace(i) end, { description = "Switch to workspace " .. i })
     bind(mod .. " + SHIFT + " .. key,   function() move_to_workspace(hl.get_active_window(), i) end, { description = "Move window to workspace " .. i })
 end
 

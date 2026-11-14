@@ -3033,6 +3033,32 @@ local function move_to_workspace(w, target)
             fullscreen, floating = fs2, fl2
         end
     end
+    -- a window maximized or fullscreen (F11) where it goes: out of it too, so the window comes in
+    -- beside it (tiled there, or floating with tiling off there) instead of under it - Hyprland's
+    -- own (a tiled workspace, or an app's own fullscreen), or the floating one with tiling off
+    -- there (F11 after SUPER + F: out of both)
+    if id then
+        for _, o in ipairs(hl.get_workspace_windows(target) or {}) do
+            pcall(function()
+                if window_id(o) == id or o.mapped ~= true then
+                    return
+                end
+                if o.fullscreen ~= 0 then
+                    set_fullscreen_state(o, 0, 0)
+                    if o.fullscreen_client ~= 0 then
+                        set_fullscreen_state(o, 0, 0)
+                    end
+                elseif untiled[target] == true and in_float_fs(o) then
+                    float_unfullscreen(o)
+                    if at_max_box(o) then
+                        float_unmaximize(o)
+                    end
+                elseif untiled[target] == true and at_max_box(o) then
+                    float_unmaximize(o)
+                end
+            end)
+        end
+    end
     local old = box_of(w)
     if not id or not old or (fullscreen ~= 0 and rec == nil) then
         hl.dispatch(hl.dsp.window.move({ window = w, workspace = target }))
@@ -3048,8 +3074,8 @@ local function move_to_workspace(w, target)
     local side = target > current and "l" or "r"      -- the side it comes in from
     local center_y = old.y + old.h / 2
 
-    -- into a workspace without tiling where a window covers the screen (F11 there): it goes under
-    -- that one. Carried, it would come in over it (a pinned window is drawn over every other), so
+    -- into a workspace without tiling where a window still covers the screen (F11 there - should
+    -- it not have come out of it above): it goes under that one. Carried, it would come in over it (a pinned window is drawn over every other), so
     -- it is put there at once, where it goes (floating in the middle if it was tiled, else where
     -- it is on the screen), under it, and the view goes there - it comes in with the workspace.
     if untiled[target] == true then
@@ -3346,18 +3372,39 @@ function frameshell_activate(address)
 end
 
 -- The hidden workspace of the minimized windows is never shown. Hyprland shows a special
--- workspace over the one you are on when a window in it is focused, and new windows would then
--- open in it - a layer of tiles over your windows. Should that ever happen, it is closed again.
+-- workspace over the one you are on when a window in it is focused - an app asking for its
+-- window, like an editor you minimized when you open a file with it - and new windows would
+-- then open in it: a layer of tiles over your windows. So it is closed again, and the window
+-- that was asked for comes back, as from the bottom bar (frameshell_restore).
+-- Closing it: HLMonitor:set_special_workspace(nil). (With no argument at all Hyprland reports an
+-- error; Hyprland 0.56.2 itself wanted { workspace = nil } and stops at a nil - so that is tried
+-- when the first did not close it.)
 hl.on("workspace.special_active", function(ws, mon)
     local ok, name = pcall(function() return ws and ws.name end)
     if ok and name == "special:minimized" and mon then
         hl.timer(function()
+            local function shown()
+                local ok2, s = pcall(function() return mon.active_special_workspace end)
+                return ok2 and s ~= nil and s.name == "special:minimized"
+            end
+            if not shown() then
+                return
+            end
+            -- the window that was asked for: the one focused in there
+            local asked
             pcall(function()
-                local shown = mon.active_special_workspace
-                if shown and shown.name == "special:minimized" then
-                    mon:set_special_workspace()
+                local w = hl.get_active_window()
+                if w and w.workspace and w.workspace.name == "special:minimized" then
+                    asked = window_id(w)
                 end
             end)
+            pcall(function() mon:set_special_workspace(nil) end)
+            if shown() then
+                pcall(function() mon:set_special_workspace({}) end)
+            end
+            if asked then
+                pcall(function() frameshell_restore(asked)() end)
+            end
         end, { timeout = 1, type = "oneshot" })
     end
 end)

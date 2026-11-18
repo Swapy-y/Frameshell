@@ -45,7 +45,7 @@ Singleton {
             "Catppuccin Mocha": "night-clouds.png",
             "Everblush": "everblush-5.png",
             "Everforest": "everforest.png",
-            "Rose Pine": "rose-pine1.png",
+            "Rose Pine": "rose-pine2.png",
             "Gruvbox": "gruvbox.png",
             "Kanagawa": "kanagawa.png",
             "Nord": "nord.png",

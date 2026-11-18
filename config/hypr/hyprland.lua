@@ -1759,9 +1759,14 @@ hl.on("workspace.active", cover_maybe)
 -- the focus - on an empty one nothing has it (unless you had clicked it: then it keeps it).
 -- SUPER + Pause on it (clicked) puts it back; so does SUPER + Pause with nothing focused (an empty
 -- workspace) or SUPER + SHIFT + Pause anywhere, for the window made sticky last (PIP.key_back).
--- Every sticky window - these, and any other pinned floating window - has its place: the first
--- in the top-right corner, the next under it and so on (a new column to the left once the screen
--- is full), each screen its own. They can't be moved or resized: dragged (SUPER + drag, or the
+-- There is one sticky window at a time: SUPER + Pause on another window while one is sticky swaps
+-- them - the sticky one goes where the other one is (into its tile, or where it floats), the other
+-- one into the corner. What a sticky window goes back to (its tile, or where it floated) is also
+-- kept in $XDG_RUNTIME_DIR/frameshell-sticky, so a reload of this file doesn't forget it (without
+-- that, one on a tiled workspace goes back into the tiles). A window pinned some other way (hyprctl)
+-- counts as sticky too; should there be more than one, each has its place: the first in the
+-- top-right corner, the next under it and so on (a new column to the left once the screen is
+-- full), each screen its own. They can't be moved or resized: dragged (SUPER + drag, or the
 -- app's own title bar) or resized - also by the app - one goes straight back to its place
 -- (PIP.arrange, every POLL_MS). One that goes back to normal or closes: the others move up.
 -- (All in one table: the main chunk of a Lua file can have only 200 local variables.)
@@ -1909,6 +1914,73 @@ function PIP.forget(id)
             table.remove(PIP.order, i)
         end
     end
+    PIP.save()
+end
+
+-- what the sticky windows go back to, kept over a reload of this file: one line each, in their
+-- order - "address 0|1 0|1 x y w h" (it floated; tiling was off where it was; "-" for no place). In $XDG_RUNTIME_DIR, so it
+-- goes with the session (the addresses do too).
+PIP.FILE = (os.getenv("XDG_RUNTIME_DIR") or "/tmp") .. "/frameshell-sticky"
+
+function PIP.save()
+    pcall(function()
+        local lines = {}
+        for _, id in ipairs(PIP.order) do
+            local r = PIP.windows[id]
+            if r then
+                local b = r.box
+                local place = "-"
+                if b and b.x and b.y and b.w and b.h then
+                    place = string.format("%d %d %d %d", math.floor(b.x + 0.5), math.floor(b.y + 0.5),
+                        math.floor(b.w + 0.5), math.floor(b.h + 0.5))
+                end
+                lines[#lines + 1] = string.format("%s %d %d %s", id, r.floating and 1 or 0, r.untiled and 1 or 0, place)
+            end
+        end
+        local part = PIP.FILE .. ".part"
+        local f = io.open(part, "w")
+        if not f then
+            return
+        end
+        f:write(table.concat(lines, "\n"), "\n")
+        f:close()
+        if not os.rename(part, PIP.FILE) then
+            os.remove(part)
+        end
+    end)
+end
+
+-- (this file loaded again: the sticky windows still there, pinned, are known again)
+function PIP.load()
+    pcall(function()
+        local f = io.open(PIP.FILE, "r")
+        if not f then
+            return
+        end
+        for line in f:lines() do
+            pcall(function()
+                local id, fl, un, rest = line:match("^(%S+) ([01]) ([01]) ?(.*)$")
+                if not id then
+                    id, fl, rest = line:match("^(%S+) ([01]) ?(.*)$")      -- (written before: no 0|1 for tiling)
+                end
+                if not id or PIP.windows[id] then
+                    return
+                end
+                local w = hl.get_window("address:" .. id)
+                if w and window_id(w) == id and w.pinned == true then
+                    local x, y, bw, bh = (rest or ""):match("^(-?%d+) (-?%d+) (%d+) (%d+)$")
+                    PIP.windows[id] = {
+                        floating = fl == "1",
+                        untiled = un == "1",
+                        box = x and { x = tonumber(x), y = tonumber(y), w = tonumber(bw), h = tonumber(bh) } or nil,
+                    }
+                    PIP.order[#PIP.order + 1] = id
+                end
+            end)
+        end
+        f:close()
+    end)
+    PIP.save()                                  -- (the ones gone are dropped)
 end
 
 -- back from picture in picture (see above)
@@ -1919,14 +1991,45 @@ function PIP.off(w)
     hl.dispatch(hl.dsp.window.set_prop({ window = w, prop = "no_focus", value = "unset" }))
     hl.dispatch(hl.dsp.window.pin({ window = w, action = "disable" }))
     local m = w.monitor or hl.get_active_monitor()
-    local ok, here = pcall(function() return w.workspace ~= nil and untiled[w.workspace.id] == true end)
-    if rec and not rec.floating and not (ok and here) then
-        set_floating(w, false)                  -- back into the tiles
+    -- The workspace it goes back to decides, as it is now (tiling may have been switched since it
+    -- went sticky): with tiling off there it floats - where it floated, else in the middle; with
+    -- tiling on it is tiled, unless it floated on a tiled workspace by itself (a dialog: rec.untiled
+    -- false) - one that floated only because tiling was off where it was goes into the tiles.
+    local ok, here = pcall(function() return untiled[PIP.workspace_of(w)] == true end)
+    local untiled_here = ok and here
+    if not untiled_here and not (rec and rec.floating and not rec.untiled) then
+        set_floating(w, false)                  -- into the tiles (also when where it was isn't known)
     else
         float_on(w, on_screen(m, rec and rec.box) or untiled_box(m))
     end
     pcall(PIP.arrange)                          -- the others move up
     hl.dispatch(hl.dsp.focus({ window = w }))   -- a normal window again: it has the focus
+end
+
+-- the workspace window `w` is on: a pinned (sticky) window is on the one shown on its screen -
+-- the one you are on, if Hyprland's own idea of it lags
+function PIP.workspace_of(w)
+    local ok, pinned, ws = pcall(function() return w.pinned == true, w.workspace end)
+    if ok and not pinned and ws and ws.id then
+        return ws.id
+    end
+    local cur = hl.get_active_workspace()
+    local okm, same = pcall(function() return not w.monitor or not cur.monitor or w.monitor.name == cur.monitor.name end)
+    if cur and (not okm or same) then
+        return cur.id
+    end
+    return ok and ws and ws.id or (cur and cur.id)
+end
+
+-- workspace `id` has no window but sticky ones (none at all, or it doesn't exist yet)
+function PIP.nothing_on(id)
+    for _, o in ipairs(hl.get_workspace_windows(id) or {}) do
+        local ok, other = pcall(function() return o.mapped == true and o.hidden ~= true and not PIP.is(o) end)
+        if ok and other then
+            return false
+        end
+    end
+    return true
 end
 
 -- the window focused last on the workspace you are on that is not sticky (nil: none)
@@ -1973,20 +2076,62 @@ function PIP.on(w)
         end
     end)
     local floating = w.floating == true
-    PIP.windows[id] = { floating = floating, box = back or (floating and box_of(w)) or nil }
+    -- one sticky window at a time: the one there now swaps places with this one - it goes where
+    -- this one is (tiled beside it - the focused window - it gets its whole tile once this one
+    -- floats off; or where this one floats), this one into the corner
+    local other = PIP.current(id)
+    if other then
+        PIP.forget(window_id(other))
+        hl.dispatch(hl.dsp.window.set_prop({ window = other, prop = "no_focus", value = "unset" }))
+        hl.dispatch(hl.dsp.window.pin({ window = other, action = "disable" }))
+        local okh, here = pcall(function() return untiled[PIP.workspace_of(w)] == true end)
+        if floating or (okh and here) then
+            float_on(other, box_of(w) or untiled_box(m))
+        else
+            set_floating(other, false)
+        end
+    end
+    local okw, was_untiled = pcall(function() return untiled[PIP.workspace_of(w)] == true end)
+    PIP.windows[id] = { floating = floating, untiled = okw and was_untiled or false,
+                        box = back or (floating and box_of(w)) or nil }
     PIP.order[#PIP.order + 1] = id
+    PIP.save()
     set_floating(w, true)
     hl.dispatch(hl.dsp.window.pin({ window = w, action = "enable" }))
     hl.dispatch(hl.dsp.window.set_prop({ window = w, prop = "no_focus", value = "1" }))
     PIP.windows[id].no_focus = true
     PIP.arrange()                               -- its place: after the others
     hl.dispatch(hl.dsp.window.alter_zorder({ mode = "top", window = w }))
-    -- the keyboard goes back to the window used last here (none: it stays until you go elsewhere)
-    local o = PIP.last_used()
+    -- the keyboard goes to the window it swapped with (in its place now), else back to the window
+    -- used last here (none: it stays until you go elsewhere)
+    local o = other or PIP.last_used()
     if o and window_id(o) then
         hl.dispatch(hl.dsp.focus({ window = "address:" .. window_id(o) }))
     end
     pcall(cover_now)
+end
+
+-- the sticky window there is now, other than window `except` (nil: none) - made sticky here
+-- first, else pinned some other way
+function PIP.current(except)
+    for i = #PIP.order, 1, -1 do
+        local id = PIP.order[i]
+        if id ~= except then
+            local ok, w = pcall(hl.get_window, "address:" .. id)
+            if ok and w and window_id(w) == id then
+                return w
+            end
+        end
+    end
+    for _, w in ipairs(hl.get_windows() or {}) do
+        local ok, yes = pcall(function()
+            return window_id(w) ~= except and w.mapped == true and w.floating and PIP.is(w)
+        end)
+        if ok and yes then
+            return w
+        end
+    end
+    return nil
 end
 
 -- the window made sticky last (nil: none)
@@ -2051,6 +2196,7 @@ hl.timer(function()
     pcall(PIP.arrange)
     pcall(PIP.update_focus)
 end, { timeout = POLL_MS, type = "repeat" })
+PIP.load()
 
 -- SUPER + F: there like that, elsewhere Hyprland's maximize (toggle_maximize above)
 local function maximize_key()
@@ -2758,11 +2904,40 @@ do
         end
     end
 
-    -- go to workspace `id` (SUPER + 1…5, SUPER + Left / Right at the edge)
+    -- go to workspace `id` (SUPER + 1…5, SUPER + Left / Right at the edge, a workspace pill in the island:
+    -- frameshell_go_workspace below)
     function go_to_workspace(id)
         local ws = hl.get_active_workspace()
         local from = ws and ws.id
+        -- With a sticky window (SUPER + Pause) on the screen a workspace with no other window isn't
+        -- empty for Hyprland, so going there would leave the focus on the window you left (the
+        -- sticky one can't take it, PIP.update_focus). So the sticky one stays behind for that
+        -- moment - the workspace is empty, nothing has the focus, as on any empty workspace - and
+        -- then comes along, sticky again, before anything is drawn (on its own screen, should the
+        -- workspace be on another one).
+        local lifted = {}
+        if from ~= id and PIP.nothing_on(id) then
+            for wid in pairs(PIP.windows) do
+                pcall(function()
+                    local w = hl.get_window("address:" .. wid)
+                    if w and window_id(w) == wid and w.pinned == true then
+                        hl.dispatch(hl.dsp.window.pin({ window = w, action = "disable" }))
+                        lifted[#lifted + 1] = w
+                    end
+                end)
+            end
+        end
         hl.dispatch(hl.dsp.focus({ workspace = id }))
+        for _, w in ipairs(lifted) do
+            pcall(function()
+                local now = hl.get_active_workspace()
+                local here = now and now.monitor and now.monitor.name
+                if now and now.id == id and (not here or not w.monitor or w.monitor.name == here) then
+                    hl.dispatch(hl.dsp.window.move({ window = w, workspace = id, follow = false }))
+                end
+            end)
+            hl.dispatch(hl.dsp.window.pin({ window = w, action = "enable" }))
+        end
         ws = hl.get_active_workspace()
         if ws and ws.id == id and from ~= id then
             pcall(focus_covering_window, id)
@@ -2919,6 +3094,15 @@ do
             end
         end)
     end)
+end
+
+-- The shell calls this for a workspace pill in the island (services/Spaces.qml):
+--   hyprctl dispatch 'frameshell_go_workspace(3)'
+-- - the same as SUPER + 3 (go_to_workspace: also with a sticky window on the screen).
+function frameshell_go_workspace(id)
+    return function()
+        pcall(go_to_workspace, tonumber(id))
+    end
 end
 
 -- true when another tiled window of the same workspace sits beside `w` in that direction

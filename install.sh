@@ -454,7 +454,8 @@ RETIRED_WALLPAPERS=(waves.png:d0f02170190780643c6bae3665eb46754d1b3ef395ef61e473
     Gruvbox/gruvbox1.png:a8f16a264f2ee53a97f016edb5cdee6ffe7eaacdbf99ece0d85d423b03e5cfaa
     Everforest/forest_stairs.png:c3a8c6c03c51a7da97ac5c9e32b2ff7c77ddba7087da50f2bae0e0b2790deb3f
     CatppuccinMocha/jellyfish.png:b3efb1124ebc28f23c925e346bf44ac5b2a37b710cdc7c0e9b3a5971ae8db231
-    Everblush/everblush.png:56ad6340543454668771ce264fe6f40eb35074a433c87f551373308c841de76f)
+    Everblush/everblush.png:56ad6340543454668771ce264fe6f40eb35074a433c87f551373308c841de76f
+    RosePine/rose-pine1.png:7eece6729d76a2013bbc1d4a6b162ad14476814e13b8802035d543296b1f7891)
 
 # The folder the cursor package really installed (the configs need its exact name).
 # find_cursor_theme [folders to look in]  (default: your icons, then the system's)

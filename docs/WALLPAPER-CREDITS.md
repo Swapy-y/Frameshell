@@ -21,7 +21,6 @@ Each colour theme has its own folder in `wallpapers/`.
 | `Everblush/everblush-5.png` | TODO | TODO |
 | `Everforest/everforest.png` | TODO | TODO |
 | `Everforest/fog_forest_1.png` | TODO | TODO |
-| `RosePine/rose-pine1.png` | TODO | TODO |
 | `RosePine/rose-pine2.png` | TODO | TODO |
 | `Gruvbox/gruvbox.png` | TODO | TODO |
 | `Kanagawa/kanagava1.png` | TODO | TODO |

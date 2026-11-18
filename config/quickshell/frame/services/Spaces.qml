@@ -82,8 +82,10 @@ Singleton {
         onTriggered: untiledFile.reload()
     }
 
+    // (hyprland.lua's frameshell_go_workspace: the same as SUPER + <number> - also with a sticky
+    // window on the screen; Hyprland's own as a fallback)
     function go(id) {
-        Hyprland.dispatch(Hyprland.usingLua ? "hl.dsp.focus({ workspace = " + id + " })" : "workspace " + id);
+        Hyprland.dispatch(Hyprland.usingLua ? "frameshell_go_workspace and frameshell_go_workspace(" + id + ") or hl.dsp.focus({ workspace = " + id + " })" : "workspace " + id);
     }
 
     // Windows open, close and move in bursts; wait a moment so Quickshell has

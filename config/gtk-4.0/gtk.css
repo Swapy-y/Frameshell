@@ -2,8 +2,8 @@
    libadwaita apps (GNOME apps, most new GTK 4 apps) never load a GTK theme, but every
    GTK 4 app loads this file: it gives them the Frame theme's colours.
    The colours themselves are in ~/.local/share/themes/Frame/gtk-4.0/colors.css
-   (the theme switcher, scripts/theme.sh, points the line below at Frame-Noir or
-   Frame-Mocha for the shell's Noir and Mocha themes). */
+   (the theme switcher, scripts/theme.sh, points the line below at Frame-Noir,
+   Frame-Nord ... for the shell's other colour themes). */
 @import url("../../.local/share/themes/Frame/gtk-4.0/colors.css");
 
 /* No minimise / maximise / close buttons in the title bars (Hyprland handles the windows).

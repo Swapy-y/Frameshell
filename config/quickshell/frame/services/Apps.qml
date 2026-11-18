@@ -69,8 +69,9 @@ Singleton {
     // { name, icon } for a toplevel. `icon` is a file path or "" when nothing was found.
     function info(t) {
         if (isSettings(t)) {
-            // its icon: install.sh puts it in ~/.local/share/icons (frame-settings.svg);
-            // until then the copy in the shell's assets
+            // its icon: the icon pack's GNOME Settings icon (org.gnome.Settings), else the shell's
+            // assets/icons/frame-settings.svg (IconPacks.qml); install.sh also puts a copy of that
+            // in ~/.local/share/icons for other launchers
             const path = IconPacks.path("frame-settings");
             return {
                 name: "Settings",

@@ -30,6 +30,8 @@
 --   SUPER + Escape      lock                       SUPER + M        log out (asks first)
 --   SUPER + CTRL + arrows   wallpaper (Left/Right) and colour theme (Up/Down) switcher
 --   SUPER + .           emoji picker               SUPER + \        on-screen keyboard
+--   SUPER + Pause       picture in picture: the window small in the top-right corner, over everything
+--                       (SUPER + SHIFT + Pause, or SUPER + Pause with nothing focused: the last one back)
 
 
 --------------------
@@ -175,16 +177,12 @@ local CURSOR_FOLLOWS_FOCUS = shell_state("system.json", "cursorFollowsFocus", tr
 -- Blur: the Settings app's Blur page, kept in ~/.local/state/frameshell/blur.json (the shell
 -- hands a change to Hyprland right away). "Apply blur to windows" blurs what is behind
 -- see-through windows (it makes no window see-through: that is the app's own setting, e.g.
--- kitty's background_opacity); "Apply blur to shell" makes the frame, the island, the panels
--- and the pop-ups see-through (SHELL_OPACITY) and blurs what is behind them (the layer rule
--- "frame-shell-blur" in WINDOW AND LAYER RULES).
+-- kitty's background_opacity). The shell itself is never see-through.
 local WINDOW_BLUR     = shell_state("blur.json", "windowBlur", true)
-local SHELL_BLUR      = shell_state("blur.json", "shellBlur", false)
 local BLUR_SIZE       = shell_state("blur.json", "blurSize", 7)
 local BLUR_PASSES     = shell_state("blur.json", "blurPasses", 2)
 local BLUR_BRIGHTNESS = shell_state("blur.json", "blurBrightness", 1.0)
 local BLUR_CONTRAST   = shell_state("blur.json", "blurContrast", 0.9)
-local SHELL_OPACITY   = shell_state("blur.json", "shellOpacity", 0.8)
 local WINDOW_ROUNDING = shell_setting("cornerRadius", 30)
 do      -- the Settings app's "Corner rounding" (-1 or missing: never moved, cornerRadius stays)
     local r = shell_state("appearance.json", "cornerRounding", -1)
@@ -338,7 +336,7 @@ local function gap_config(gap)
 end
 local GAPS = gap_config(WINDOW_GAP)
 
--- The window border colours: activeHint (the focused window) and inactiveHint (the others) of
+-- The window border colours: windowBorderActive (the focused window) and windowBorderInactive (the others) of
 -- the shell's colour theme in use - each theme in Config.qml (`themes`) has its own. Hyprland
 -- starts with the ones of the theme you picked (~/.local/state/frameshell/theme); the theme
 -- switcher (SUPER + CTRL + Up / Down) and a save of Config.qml switch them right away (the shell hands
@@ -409,9 +407,12 @@ local function theme_color(name, key)
 end
 
 local THEME = shell_theme() or "Default"
+if THEME == "Mocha" then
+    THEME = "Catppuccin Mocha"      -- the Mocha theme of earlier versions
+end
 local BORDERS = {
-    active_border   = theme_color(THEME, "activeHint") or "rgba(c4c4c4ff)",
-    inactive_border = theme_color(THEME, "inactiveHint") or "rgba(313131ff)",
+    active_border   = theme_color(THEME, "windowBorderActive") or "rgba(c4c4c4ff)",
+    inactive_border = theme_color(THEME, "windowBorderInactive") or "rgba(313131ff)",
 }
 
 hl.config({
@@ -421,7 +422,7 @@ hl.config({
         float_gaps  = GAPS.float_gaps,                -- the same for floating windows
         border_size = WINDOW_BORDER,                  -- ring around every window = "Window border" in the Settings app (0 = none)
 
-        col = {                                       -- the colours of the shell's theme: activeHint / inactiveHint in Config.qml
+        col = {                                       -- the colours of the shell's theme: windowBorderActive / windowBorderInactive in Config.qml
             active_border   = BORDERS.active_border,  -- focused window
             inactive_border = BORDERS.inactive_border,
         },
@@ -452,9 +453,9 @@ hl.config({
             color          = shadow_color(SHADOW_STRENGTH * SHADOW_ACTIVE),
             color_inactive = shadow_color(SHADOW_STRENGTH * SHADOW_INACTIVE),
         },
-        -- the Settings app's Blur page (BLUR_* above): on while windows or the shell want it
+        -- the Settings app's Blur page (BLUR_* above): on with "Apply blur to windows"
         blur   = {
-            enabled    = WINDOW_BLUR or SHELL_BLUR,
+            enabled    = WINDOW_BLUR,
             size       = BLUR_SIZE,
             passes     = BLUR_PASSES,
             brightness = BLUR_BRIGHTNESS,
@@ -1149,12 +1150,13 @@ local function close_then(action)
     end, { timeout = LAUNCHER_WAIT, type = "oneshot" })
 end
 
--- hl.bind, closing the launcher / switcher / emoji picker first
+-- hl.bind, closing the launcher / switcher / emoji picker first (hands back what hl.bind does:
+-- the number keys of "10 workspaces" switch theirs on and off, frameshell_workspaces below)
 local function bind(key, action, opts)
     if opts and (opts.mouse or opts.release) then
         return hl.bind(key, action, opts)
     end
-    hl.bind(key, function()
+    return hl.bind(key, function()
         if switcher_open and switcher_keys[action] then
             run(action)                      -- the switcher's own key: the next app
         elseif action == launcher_toggle and not switcher_open and not emoji_open then
@@ -1741,11 +1743,323 @@ end)
 hl.on("window.move_to_workspace", cover_maybe)
 hl.on("workspace.active", cover_maybe)
 
+-- Picture in picture (SUPER + Pause) ------------------------------------------------------
+-- The focused window becomes a small window in the top-right corner of the window area (16:9,
+-- PIP.WIDTH of the screen wide: a video while you do something else), floating and pinned:
+-- Hyprland shows a pinned window on every workspace and draws it above every other window -
+-- also over a fullscreen one (F11, a video's own fullscreen, a game) and over a window covering
+-- the screen with tiling off. SUPER + Pause again puts it back: into its tile, or where it floated
+-- (on a workspace without tiling: where it floated, else in the middle). Maximized or fullscreen
+-- when it goes small, it comes out of that first (back: where it was before). SUPER + F or F11 on
+-- it put it back too, then maximize it / make it fullscreen. Turning tiling on again (SUPER + Page
+-- Down) leaves it be.
+-- A sticky window takes the keyboard only from you: while the pointer is on it (a click focuses
+-- it, as any window) or while it has the focus, it can be focused; otherwise it can't ("no_focus",
+-- PIP.update_focus every POLL_MS): the focus keys skip it and a workspace you go to never gives it
+-- the focus - on an empty one nothing has it (unless you had clicked it: then it keeps it).
+-- SUPER + Pause on it (clicked) puts it back; so does SUPER + Pause with nothing focused (an empty
+-- workspace) or SUPER + SHIFT + Pause anywhere, for the window made sticky last (PIP.key_back).
+-- Every sticky window - these, and any other pinned floating window - has its place: the first
+-- in the top-right corner, the next under it and so on (a new column to the left once the screen
+-- is full), each screen its own. They can't be moved or resized: dragged (SUPER + drag, or the
+-- app's own title bar) or resized - also by the app - one goes straight back to its place
+-- (PIP.arrange, every POLL_MS). One that goes back to normal or closes: the others move up.
+-- (All in one table: the main chunk of a Lua file can have only 200 local variables.)
+local PIP = {
+    WIDTH = 0.25,               -- the width of one, as a part of the screen's
+    windows = {},               -- [address] = { floating = true / false, box = where it was }
+    order = {},                 -- their addresses, in the order they became small (their places)
+    sized = {},                 -- [address] = { want = "WxH", tried, fits }: did it take its size
+    -- is window `id` being carried to another workspace (SUPER + SHIFT + Left / Right, SUPER + SHIFT + 1 ...:
+    -- pinned for the slide, it is no sticky window)? Set with `carrying` below (move_to_workspace)
+    carried = function() return false end,
+}
+
+-- `w` is sticky: made small here, or pinned some other way (a pinned window floats)
+function PIP.is(w)
+    local id = window_id(w)
+    if id and PIP.windows[id] then
+        return true
+    end
+    local ok, pinned = pcall(function() return w.pinned end)
+    return ok and pinned == true and not PIP.carried(id)
+end
+
+-- the place of the `i`-th (0, 1, 2 ...) sticky window on monitor `m`: down from the top-right
+-- corner of the window area, a window gap apart, the window's ring inside it like a maximized
+-- window's; once a column is full, the next one to the left (nil if the monitor can't tell)
+function PIP.box(m, i)
+    local ok, b = pcall(function()
+        local a = window_area(m)
+        if not a then
+            return nil
+        end
+        local sw = screen_size(m)
+        local okr, v = pcall(hl.get_config, "general.border_size")
+        local ring = (okr and type(v) == "number" and v >= 0) and v or WINDOW_BORDER
+        local w = math.floor(math.min(sw * PIP.WIDTH, a.w - 2 * ring) + 0.5)
+        local h = math.floor(w * 9 / 16 + 0.5)
+        if w < 100 or h < 60 then
+            return nil
+        end
+        local stepX, stepY = w + 2 * ring + WINDOW_GAP, h + 2 * ring + WINDOW_GAP
+        local rows = math.max(1, math.floor((a.h + WINDOW_GAP) / stepY))
+        local col, row = math.floor((i or 0) / rows), (i or 0) % rows
+        return {
+            x = math.floor(a.x + a.w - ring - w - col * stepX + 0.5),
+            y = math.floor(a.y + ring + row * stepY + 0.5),
+            w = w, h = h,
+            col = col, ring = ring,     -- (PIP.arrange: a column left of a wider one moves over)
+        }
+    end)
+    return ok and b or nil
+end
+
+-- every sticky window to its place (see above); only the ones not there are moved
+function PIP.arrange()
+    local mine, others = {}, {}     -- [address] = window: made small here / pinned some other way
+    for _, w in ipairs(hl.get_windows() or {}) do
+        pcall(function()
+            local id = window_id(w)
+            if id and w.mapped == true and w.hidden ~= true and PIP.is(w) then
+                if PIP.windows[id] then
+                    mine[id] = w
+                elseif w.floating then
+                    others[#others + 1] = w
+                end
+            end
+        end)
+    end
+    table.sort(others, function(a, b) return (window_id(a) or "") < (window_id(b) or "") end)
+    local list = {}
+    for _, id in ipairs(PIP.order) do
+        if mine[id] then
+            list[#list + 1] = mine[id]
+        end
+    end
+    for _, w in ipairs(others) do
+        list[#list + 1] = w
+    end
+    local count = {}                -- [monitor name] = how many have their place there so far
+    local left = {}                 -- [monitor name] = { [column] = the left edge of its widest window }
+    for _, w in ipairs(list) do
+        pcall(function()
+            local m = w.monitor or hl.get_active_monitor()
+            local n = count[m.name] or 0
+            count[m.name] = n + 1
+            local b, cur, id = PIP.box(m, n), box_of(w), window_id(w)
+            if not b or not cur or not id then
+                return
+            end
+            -- one of these that is no longer pinned (moved off by something else) is pinned again,
+            -- once (should Hyprland refuse, it is not asked over and over)
+            local rec = PIP.windows[id]
+            if rec and w.pinned ~= true and not rec.repinned and w.fullscreen == 0 then
+                rec.repinned = true
+                set_floating(w, true)
+                hl.dispatch(hl.dsp.window.pin({ window = w, action = "enable" }))
+                hl.dispatch(hl.dsp.window.set_prop({ window = w, prop = "no_focus", value = "1" }))
+                rec.no_focus = true
+            elseif rec and w.pinned == true then
+                rec.repinned = nil
+            end
+            -- An app that won't be that small (its smallest size is bigger) keeps its own size,
+            -- right-aligned in its place: asked once, it never had it. One that had it is put back
+            -- to it whenever it changes (a drag, the app).
+            local want = b.w .. "x" .. b.h
+            local st = PIP.sized[id]
+            if not st or st.want ~= want then
+                st = { want = want }
+                PIP.sized[id] = st
+            end
+            local size_ok = math.abs(cur.w - b.w) <= 2 and math.abs(cur.h - b.h) <= 2
+            if size_ok then
+                st.fits = true
+            end
+            local refused = not size_ok and st.tried and not st.fits
+            local cols = left[m.name] or {}
+            left[m.name] = cols
+            -- its column's right edge: the corner's, or a window gap left of the column before
+            local right = b.x + b.w
+            if b.col > 0 and cols[b.col - 1] then
+                right = math.min(right, cols[b.col - 1] - WINDOW_GAP - 2 * b.ring)
+            end
+            local col, width = b.col, refused and cur.w or b.w
+            b = { x = right - width, y = b.y, w = width, h = refused and cur.h or b.h }
+            cols[col] = math.min(cols[col] or b.x, b.x)
+            if not near(cur, b) then
+                if not size_ok and not refused then
+                    st.tried = true
+                end
+                float_on(w, b)
+            end
+        end)
+    end
+end
+
+-- forget window `id` (back to normal, or closed)
+function PIP.forget(id)
+    if not id then
+        return
+    end
+    PIP.windows[id] = nil
+    PIP.sized[id] = nil
+    for i = #PIP.order, 1, -1 do
+        if PIP.order[i] == id then
+            table.remove(PIP.order, i)
+        end
+    end
+end
+
+-- back from picture in picture (see above)
+function PIP.off(w)
+    local id = window_id(w)
+    local rec = id and PIP.windows[id]
+    PIP.forget(id)
+    hl.dispatch(hl.dsp.window.set_prop({ window = w, prop = "no_focus", value = "unset" }))
+    hl.dispatch(hl.dsp.window.pin({ window = w, action = "disable" }))
+    local m = w.monitor or hl.get_active_monitor()
+    local ok, here = pcall(function() return w.workspace ~= nil and untiled[w.workspace.id] == true end)
+    if rec and not rec.floating and not (ok and here) then
+        set_floating(w, false)                  -- back into the tiles
+    else
+        float_on(w, on_screen(m, rec and rec.box) or untiled_box(m))
+    end
+    pcall(PIP.arrange)                          -- the others move up
+    hl.dispatch(hl.dsp.focus({ window = w }))   -- a normal window again: it has the focus
+end
+
+-- the window focused last on the workspace you are on that is not sticky (nil: none)
+function PIP.last_used()
+    local cur = hl.get_active_workspace()
+    local best, rank
+    for _, o in ipairs(cur and hl.get_workspace_windows(cur.id) or {}) do
+        pcall(function()
+            if o.mapped == true and o.hidden ~= true and not PIP.is(o) then
+                local r = o.focus_history_id        -- 0 = focused last; -1 = never
+                r = (type(r) == "number" and r >= 0) and r or math.huge
+                if not best or r < rank then
+                    best, rank = o, r
+                end
+            end
+        end)
+    end
+    return best
+end
+
+function PIP.on(w)
+    local id = window_id(w)
+    local m = w.monitor or hl.get_active_monitor()
+    if not id or not PIP.box(m, 0) then
+        return
+    end
+    -- out of maximize / fullscreen first; where it goes back to is where it was before that
+    local back = nil
+    pcall(function()
+        if in_float_fs(w) then
+            local fs = float_fs[id]
+            back = fs and not fs.max and fs.back or nil
+            float_unfullscreen(w)               -- covering the screen (F11 with tiling off)
+        end
+        if at_max_box(w) then
+            back = back or float_max[id]
+            float_max[id] = nil                 -- maximized (SUPER + F with tiling off)
+        end
+        if w.fullscreen ~= 0 then
+            set_fullscreen_state(w, 0, 0)       -- Hyprland's maximize / fullscreen
+            if w.fullscreen_client ~= 0 then
+                set_fullscreen_state(w, 0, 0)
+            end
+        end
+    end)
+    local floating = w.floating == true
+    PIP.windows[id] = { floating = floating, box = back or (floating and box_of(w)) or nil }
+    PIP.order[#PIP.order + 1] = id
+    set_floating(w, true)
+    hl.dispatch(hl.dsp.window.pin({ window = w, action = "enable" }))
+    hl.dispatch(hl.dsp.window.set_prop({ window = w, prop = "no_focus", value = "1" }))
+    PIP.windows[id].no_focus = true
+    PIP.arrange()                               -- its place: after the others
+    hl.dispatch(hl.dsp.window.alter_zorder({ mode = "top", window = w }))
+    -- the keyboard goes back to the window used last here (none: it stays until you go elsewhere)
+    local o = PIP.last_used()
+    if o and window_id(o) then
+        hl.dispatch(hl.dsp.focus({ window = "address:" .. window_id(o) }))
+    end
+    pcall(cover_now)
+end
+
+-- the window made sticky last (nil: none)
+function PIP.last_made()
+    for i = #PIP.order, 1, -1 do
+        local ok, w = pcall(hl.get_window, "address:" .. PIP.order[i])
+        if ok and w and window_id(w) == PIP.order[i] then
+            return w
+        end
+    end
+    return nil
+end
+
+-- SUPER + SHIFT + Pause: the window made sticky last goes back
+function PIP.key_back()
+    local w = PIP.last_made()
+    if w then
+        pcall(PIP.off, w)
+    end
+end
+
+function PIP.key()
+    local w = hl.get_active_window()
+    if not w then
+        PIP.key_back()                          -- nothing focused (an empty workspace): the last one back
+    elseif PIP.is(w) then
+        pcall(PIP.off, w)
+    else
+        pcall(PIP.on, w)
+    end
+end
+
+-- Each sticky window can be focused only while the pointer is on it or it has the focus (see
+-- above); without the pointer's position (an older Hyprland: no hl.get_cursor_pos) always, as any
+-- window. Only a change is handed to Hyprland.
+function PIP.update_focus()
+    local okc, c = pcall(hl.get_cursor_pos)
+    local cx = okc and type(c) == "table" and (c.x or c[1]) or nil
+    local cy = okc and type(c) == "table" and (c.y or c[2]) or nil
+    local active = window_id(hl.get_active_window())
+    for id, rec in pairs(PIP.windows) do
+        pcall(function()
+            local w = hl.get_window("address:" .. id)
+            if not w or window_id(w) ~= id then
+                return
+            end
+            local b = box_of(w)
+            local over = cx == nil or (b ~= nil and cx >= b.x and cx < b.x + b.w and cy >= b.y and cy < b.y + b.h)
+            local want = not (over or active == id)         -- no_focus while neither
+            if rec.no_focus ~= want then
+                rec.no_focus = want
+                hl.dispatch(hl.dsp.window.set_prop({ window = w, prop = "no_focus", value = want and "1" or "unset" }))
+            end
+        end)
+    end
+end
+
+hl.on("window.open_early", function(w) pcall(function() PIP.forget(w.address) end) end)   -- (addresses are reused)
+hl.on("window.close", function(w) pcall(function() PIP.forget(w.address) end) end)
+-- dragged or resized (also by the app), one closed, a screen changed: each back to its place
+hl.timer(function()
+    pcall(PIP.arrange)
+    pcall(PIP.update_focus)
+end, { timeout = POLL_MS, type = "repeat" })
+
 -- SUPER + F: there like that, elsewhere Hyprland's maximize (toggle_maximize above)
 local function maximize_key()
     local w = hl.get_active_window()
     if not w then
         return
+    end
+    if PIP.is(w) then
+        pcall(PIP.off, w)                   -- picture in picture: back first
     end
     local ok, here, state = pcall(function()
         return w.workspace ~= nil and untiled[w.workspace.id] == true, w.fullscreen
@@ -1776,6 +2090,9 @@ local function fullscreen_key()
     local w = hl.get_active_window()
     if not w then
         return
+    end
+    if PIP.is(w) then
+        pcall(PIP.off, w)                   -- picture in picture: back first
     end
     local ok, here, state = pcall(function()
         return w.workspace ~= nil and untiled[w.workspace.id] == true, w.fullscreen
@@ -2184,9 +2501,9 @@ local function toggle_workspace_tiling(ws_id, m)
                     float_on(w, box)
                 end
             end)
-        elseif w.floating then
-            -- tiled again; one maximized or covering the screen like that gets Hyprland's
-            -- maximize / fullscreen (below)
+        elseif w.floating and not PIP.is(w) then
+            -- tiled again (not one in picture in picture); one maximized or covering the screen
+            -- like that gets Hyprland's maximize / fullscreen (below)
             if in_float_fs(w) then
                 local rec = float_fs[window_id(w) or ""]
                 fullscreen[#fullscreen + 1] = { w = w, max = rec ~= nil and rec.max == true }
@@ -2385,8 +2702,11 @@ switcher_keys[switcher_next] = true
 -- is already at the edge (no window beside it that way) they carry it on to the workspace to
 -- the left / right, and you go with it. A floating window (every window on a workspace
 -- without tiling) is carried on to the workspace to the left / right at once.
--- Both stop at workspace 1 and at workspaceMax (Config.qml, 5: the last workspace).
-local WORKSPACE_MAX = math.max(1, math.min(10, shell_setting("workspaceMax", 5)))
+-- Both stop at workspace 1 and at workspaceMax (Config.qml, 5: the last workspace) - at 10 with
+-- the shell's "10 workspaces" (the Settings app's Island page, kept in
+-- ~/.local/state/frameshell/experimental.json; a switch while Hyprland runs: frameshell_workspaces).
+local WORKSPACE_MAX = shell_state("experimental.json", "tenWorkspaces", false) and 10
+    or math.max(1, math.min(10, shell_setting("workspaceMax", 5)))
 
 -- the workspace number `step` away from the current one, or nil past 1 / WORKSPACE_MAX
 local function workspace_beside(step)
@@ -2449,12 +2769,82 @@ do
         end
     end
 
+    -- Sticky windows (SUPER + Pause, PIP) never get the focus from the keys: when Hyprland's pick
+    -- that way is one, the nearest other window that way gets it instead - one beside `from` (the
+    -- two overlap the other way) first, then the closest; nil if there is none.
+    local function nearest_that_way(from, direction)
+        local fb, ws, fid = box_of(from), from.workspace, window_id(from)
+        if not fb or not ws then
+            return nil
+        end
+        local horiz = direction == "left" or direction == "right"
+        local fcx, fcy = fb.x + fb.w / 2, fb.y + fb.h / 2
+        local best, best_score
+        for _, o in ipairs(hl.get_workspace_windows(ws.id) or {}) do
+            pcall(function()
+                if window_id(o) == fid or o.mapped ~= true or o.hidden == true or PIP.is(o) then
+                    return
+                end
+                local b = box_of(o)
+                if not b then
+                    return
+                end
+                local cx, cy = b.x + b.w / 2, b.y + b.h / 2
+                local ahead                                  -- its middle is that way
+                if direction == "right" then ahead = cx > fcx
+                elseif direction == "left" then ahead = cx < fcx
+                elseif direction == "down" then ahead = cy > fcy
+                else ahead = cy < fcy end
+                if not ahead then
+                    return
+                end
+                local gap, overlap
+                if horiz then
+                    gap = direction == "right" and b.x - (fb.x + fb.w) or fb.x - (b.x + b.w)
+                    overlap = math.min(fb.y + fb.h, b.y + b.h) - math.max(fb.y, b.y)
+                else
+                    gap = direction == "down" and b.y - (fb.y + fb.h) or fb.y - (b.y + b.h)
+                    overlap = math.min(fb.x + fb.w, b.x + b.w) - math.max(fb.x, b.x)
+                end
+                local score = (overlap > 0 and 0 or 1e6) + math.max(0, gap)
+                    + (horiz and math.abs(cy - fcy) or math.abs(cx - fcx)) / 1000
+                if not best or score < best_score then
+                    best, best_score = o, score
+                end
+            end)
+        end
+        return best
+    end
+
+    -- SUPER + arrow keys: the focus that way, never onto a sticky window; true if it moved
+    function PIP.focus_that_way(direction)
+        local from = hl.get_active_window()
+        local before = window_id(from)
+        hl.dispatch(hl.dsp.focus({ direction = direction }))
+        local now = hl.get_active_window()
+        local id = window_id(now)
+        if not id or id == before then
+            return false
+        end
+        if not PIP.is(now) then
+            return true
+        end
+        local o = from and not PIP.is(from) and nearest_that_way(from, direction)
+        if o then
+            hl.dispatch(hl.dsp.focus({ window = "address:" .. window_id(o) }))
+            return true
+        end
+        if before then
+            hl.dispatch(hl.dsp.focus({ window = "address:" .. before }))   -- nothing that way after all
+        end
+        return false
+    end
+
     function focus_or_workspace(direction, step)
         local active = hl.get_active_window()
         local before = window_id(active)
         if before and not max_or_fullscreen(active) then
-            hl.dispatch(hl.dsp.focus({ direction = direction }))
-            if window_id(hl.get_active_window()) ~= before then
+            if PIP.focus_that_way(direction) then
                 return                                   -- there was a window that way
             end
         end
@@ -2464,6 +2854,26 @@ do
         end
     end
 end
+
+-- A workspace you go to (the keys, the island, the app switcher ...) with a sticky window
+-- (SUPER + Pause) still focused - sticky windows don't take the focus (no_focus), but one that
+-- had it as it went sticky keeps it until it moves: the window focused last there gets it
+-- (with none there, nothing has the focus - Hyprland won't give it to a sticky window). A window
+-- being carried there (SUPER + SHIFT + Left / Right) is no sticky one (PIP.is).
+hl.on("workspace.active", function()
+    pcall(hl.timer, function()
+        pcall(function()
+            local a = hl.get_active_window()
+            if not a or not PIP.is(a) then
+                return
+            end
+            local o = PIP.last_used()
+            if o and window_id(o) then
+                hl.dispatch(hl.dsp.focus({ window = "address:" .. window_id(o) }))
+            end
+        end)
+    end, { timeout = 1, type = "oneshot" })
+end)
 
 -- Leaving a workspace with a maximized / fullscreen window: while the workspaces slide,
 -- Hyprland draws both of them the way it draws the one you go to - and with no maximized or
@@ -2564,6 +2974,7 @@ end
 --   the one window making room, when there is exactly one), n (latest move), queue }
 local carrying = {}
 local move_or_workspace                -- (below) SUPER + SHIFT + Left / Right
+PIP.carried = function(id) return id ~= nil and carrying[id] ~= nil end
 
 -- A quick SUPER + SHIFT + Left / Right while the window is still on its way that can't be done right
 -- away (two or more windows there) waits until it has settled, so it is never lost.
@@ -3012,6 +3423,12 @@ local function move_to_workspace(w, target)
     if not ok or current == target then
         return
     end
+    -- a sticky window (SUPER + Pause) is on every workspace: it stays sticky, the view goes there
+    -- (a move would unpin it and leave it on that workspace)
+    if id and not carrying[id] and PIP.is(w) then
+        hl.dispatch(hl.dsp.focus({ workspace = target }))
+        return
+    end
     local rec = carrying[id or ""]
     -- maximized / fullscreen: out of it first, then it moves like any other window - glides into its
     -- tile there, or floats in the middle / keeps its place on the screen (workspace without tiling)
@@ -3196,6 +3613,9 @@ local minimized = {}                   -- address -> { tiles = true / false, unt
 
 local function minimize()
     local w = hl.get_active_window()
+    if w and PIP.is(w) then
+        pcall(PIP.off, w)                       -- sticky (SUPER + Pause): back first - Hyprland won't hide a pinned window
+    end
     if w then
         local box, from_fs                      -- where it fades out
         pcall(function()
@@ -3464,18 +3884,56 @@ bind(mod .. " + J", hl.dsp.layout("togglesplit"),            { description = "To
 -- is no window that way (the edge of the screen, or an empty workspace).
 bind(mod .. " + left",  function() focus_or_workspace("left", -1) end, { description = "Focus window left, at the edge (or on a maximized / fullscreen one): workspace to the left" })
 bind(mod .. " + right", function() focus_or_workspace("right", 1) end, { description = "Focus window right, at the edge (or on a maximized / fullscreen one): workspace to the right" })
-bind(mod .. " + up",    hl.dsp.focus({ direction = "up" }),            { description = "Focus window up" })
-bind(mod .. " + down",  hl.dsp.focus({ direction = "down" }),          { description = "Focus window down" })
+bind(mod .. " + up",    function() PIP.focus_that_way("up") end,       { description = "Focus window up" })
+bind(mod .. " + down",  function() PIP.focus_that_way("down") end,     { description = "Focus window down" })
 
 -- SUPER + 1…5 switches workspace (to the window maximized or covering the screen there, on a
 -- workspace without tiling: go_to_workspace), SUPER + SHIFT + 1…5 moves the window there (and
--- follows it).
--- Only up to the last workspace (WORKSPACE_MAX = workspaceMax in Config.qml, 5); with 10,
--- workspace 10 is on the 0 key.
-for i = 1, WORKSPACE_MAX do
-    local key = i % 10
-    bind(mod .. " + " .. key,           function() go_to_workspace(i) end, { description = "Switch to workspace " .. i })
-    bind(mod .. " + SHIFT + " .. key,   function() move_to_workspace(hl.get_active_window(), i) end, { description = "Move window to workspace " .. i })
+-- follows it). Only up to the last workspace (WORKSPACE_MAX = workspaceMax in Config.qml, 5;
+-- 10 with the shell's "10 workspaces"); with 10, workspace 10 is on the 0 key.
+-- "10 workspaces" switched on while Hyprland runs (the shell calls frameshell_workspaces): the
+-- keys up to 0 are bound then; switched off, the ones past workspaceMax are switched off again
+-- (and do nothing, should Hyprland not switch binds off). Until it is first switched on they
+-- are not bound at all, so they stay free for apps.
+do
+    local number_binds = {}             -- workspace -> its two binds (SUPER + key, SUPER + SHIFT + key)
+
+    local function bind_number(i)
+        if number_binds[i] then
+            return
+        end
+        local key = i % 10
+        number_binds[i] = {
+            bind(mod .. " + " .. key, function()
+                if i <= WORKSPACE_MAX then
+                    go_to_workspace(i)
+                end
+            end, { description = "Switch to workspace " .. i }),
+            bind(mod .. " + SHIFT + " .. key, function()
+                if i <= WORKSPACE_MAX then
+                    move_to_workspace(hl.get_active_window(), i)
+                end
+            end, { description = "Move window to workspace " .. i }),
+        }
+    end
+
+    for i = 1, WORKSPACE_MAX do
+        bind_number(i)
+    end
+
+    -- "10 workspaces" on (true) or off (false): SUPER + Left / Right and the number keys go up
+    -- to workspace 10, or stop at workspaceMax again (modules/HyprSync.qml of the shell)
+    function frameshell_workspaces(ten)
+        WORKSPACE_MAX = ten == true and 10 or math.max(1, math.min(10, shell_setting("workspaceMax", 5)))
+        for i = 1, 10 do
+            if i <= WORKSPACE_MAX then
+                pcall(bind_number, i)
+            end
+            for _, b in ipairs(number_binds[i] or {}) do
+                pcall(function() b:set_enabled(i <= WORKSPACE_MAX) end)
+            end
+        end
+    end
 end
 
 -- The special workspace (scratchpad)
@@ -3495,6 +3953,10 @@ bind(mod .. " + N",         hl.dsp.exec_cmd(textEditor),    { description = "Ope
 bind(mod .. " + F",         maximize_key,                   { description = "Maximize window" })
 bind("F11",                 fullscreen_key,                 { description = "Fullscreen window" })
 bind(mod .. " + H",         minimize,                       { description = "Minimize window" })
+-- picture in picture: a small window in the top-right corner, on every workspace and over a
+-- fullscreen window (a video while you work); again: back (PIP above)
+bind(mod .. " + Pause",         PIP.key,                    { description = "Picture in picture (small, on top); with nothing focused: the last one back" })
+bind(mod .. " + SHIFT + Pause", PIP.key_back,               { description = "Picture in picture: the last one back" })
 bind(mod .. " + Z", function()
     blur_live_while_moving()
     hl.dispatch(hl.dsp.window.swap({ next = true }))
@@ -3627,22 +4089,12 @@ hl.layer_rule({
 
 -- Blur (the Settings app's Blur page, BLUR_* above). The shell changes both rules by their
 -- names while it runs (modules/HyprSync.qml).
--- "Apply blur to windows" off: no window is blurred (the shell's blur still is)
+-- "Apply blur to windows" off: no window is blurred
 hl.window_rule({
     name    = "frame-window-blur",
     enabled = not WINDOW_BLUR,
     match   = { class = ".*" },
     no_blur = true,
-})
--- "Apply blur to shell" on: the frame, the island, the panels and the pop-ups - only where
--- they are about as solid as their see-through surfaces, so not their soft shadows or the
--- empty middle of the screen
-hl.layer_rule({
-    name         = "frame-shell-blur",
-    enabled      = SHELL_BLUR,
-    match        = { namespace = "^frame-(overlay|switcher|launcher|auth|network|confirm|emoji|osk)$" },
-    blur         = true,
-    ignore_alpha = math.max(0, math.max(0.3, math.min(1, SHELL_OPACITY)) - 0.05),
 })
 
 -- A maximized or fullscreen window blurs what is really under it: the other windows, kept

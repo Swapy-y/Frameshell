@@ -1,0 +1,13 @@
+FrameRosePine - Kvantum theme for Qt 5 and Qt 6 apps (installed to ~/.config/Kvantum/FrameRosePine)
+
+Made from KvLibadwaitaDark, part of KvLibadwaita by GabePoel:
+  https://github.com/GabePoel/KvLibadwaita (commit 1f4e0bec44b13dabfa1fe4047aa8eeaccf2f3557)
+which is based on Colloid-kde by Vince Liuice (https://github.com/vinceliuice/Colloid-kde)
+and KvAdapta by Tsu Jan. License: GPL-3.0, see LICENSE in this folder.
+
+Changed by frameshell in November 2026 - the colours only, to the shell's Rose Pine theme
+(its colours in Config.qml; the GTK theme Frame-RosePine has the same): #191724 windows
+and menus, #2f2c3e buttons and fields, #ebbcba checkboxes, radio buttons, sliders and
+progress bars with #191724 marks, #e0def4 for text and arrows. The shapes are
+KvLibadwaita's. ../make-frame.py makes FrameRosePine.svg and FrameRosePine.kvconfig from the original files
+(the palette: ../palettes.py).

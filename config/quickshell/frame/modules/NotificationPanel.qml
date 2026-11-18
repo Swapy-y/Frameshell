@@ -41,14 +41,14 @@ Panel {
     readonly property var c: card
 
     // ── text of the card ──────────────────────────────────────────────────
-    readonly property string headText: c ? (c.appName.length > 0 ? c.appName : c.summary) : ""
-    readonly property string bodyString: {
-        if (!c)
-            return "";
-        const first = c.appName.length > 0 ? c.summary : "";
-        const rest = c.body;
-        return first.length > 0 && rest.length > 0 ? first + "\n" + rest : (first.length > 0 ? first : rest);
-    }
+    // Laid out like Apple's notifications: a small header - the app's icon, its
+    // name in grey and "now" on the right - then the title (the summary) in
+    // semibold and the message under it. Without an app name the summary is the
+    // header (the icon and the summary, in semibold).
+    readonly property bool headIsApp: c !== null && c.appName.length > 0
+    readonly property string headText: c ? (headIsApp ? c.appName : c.summary) : ""
+    readonly property string titleString: c && headIsApp ? c.summary : ""
+    readonly property string bodyString: c ? c.body : ""
 
     // ── size ──────────────────────────────────────────────────────────────
     // 16 px all round between the card's content (the icon and the text) and its
@@ -57,25 +57,42 @@ Panel {
     // it wraps (at most Theme.notifMaxW), as tall as its lines.
     readonly property real pad: Theme.px(16)
     readonly property real maxTextW: Theme.notifMaxW - 2 * pad
-    readonly property real iconSize: Theme.px(24)
-    readonly property real iconGap: Theme.px(7)
-    readonly property real headH: Theme.px(26)
-    readonly property real bodyGap: Theme.px(4)
+    readonly property real iconSize: Theme.px(20)
+    readonly property real iconGap: Theme.px(8)
+    readonly property real headH: Theme.px(22)
+    readonly property real nowGap: Theme.px(12)       // at least this between the app's name and "now"
+    readonly property real titleGap: Theme.px(6)      // under the header
+    readonly property real bodyGap: Theme.px(1)       // between the title and the message
     // from the bottom of the text's box up to its last line's baseline: the 16 px
     // under the text count from the letters, not from the empty box under them
-    readonly property real bodyTrim: Theme.px(2)
+    readonly property real bodyTrim: Theme.px(3)
     // the last letter of a line ends a little before its box (its side bearing and
     // the rounding up): the 16 px on the right count from the letters too
     readonly property real inkTrim: Theme.px(2)
 
-    FontMetrics {
+    TextMetrics {
         id: headMetrics
-        font.family: Theme.font
-        font.pixelSize: Theme.px(20)
-        font.weight: Font.Medium
+        font: headLabel.font
+        text: root.headText
+    }
+    TextMetrics {
+        id: nowMetrics
+        font: nowLabel.font
+        text: nowLabel.text
     }
 
-    // the body laid out at the widest it may be, to find how wide its lines end up
+    // the title and the message laid out at the widest they may be, to find how
+    // wide their lines end up
+    Text {
+        id: titleMeasure
+        visible: false
+        width: root.maxTextW
+        wrapMode: Text.Wrap
+        maximumLineCount: 2
+        textFormat: Text.PlainText
+        font: titleText.font
+        text: root.titleString
+    }
     Text {
         id: bodyMeasure
         visible: false
@@ -87,16 +104,18 @@ Panel {
         text: root.bodyString
     }
 
-    readonly property real headW: iconSize + iconGap + Math.ceil(headMetrics.advanceWidth(headText))
+    readonly property bool hasTitle: titleString.length > 0
     readonly property bool hasBody: bodyString.length > 0
+    readonly property real headW: iconSize + iconGap + Math.ceil(headMetrics.advanceWidth) + (headIsApp ? nowGap + Math.ceil(nowMetrics.advanceWidth) : 0)
     // the text's boxes: as wide as the widest line (so it wraps exactly as measured)
-    readonly property real textW: Math.min(maxTextW, Math.ceil(Math.max(headW, hasBody ? bodyMeasure.contentWidth : 0)))
+    readonly property real textW: Math.min(maxTextW, Math.ceil(Math.max(headW, hasTitle ? titleMeasure.contentWidth : 0, hasBody ? bodyMeasure.contentWidth : 0)))
     // the width the card makes room for: up to where the letters end
     readonly property real inkW: textW - inkTrim
     // the header row starts a little above the 16 px: its letters (centred in the
     // row) begin 16-17 px under the edge of the screen
-    readonly property real headTop: pad - Theme.px(4)
-    readonly property real naturalH: headTop + headH + (hasBody ? bodyGap + bodyText.height - bodyTrim : 0) + pad
+    readonly property real headTop: pad - Theme.px(3)
+    readonly property real textH: (hasTitle ? titleGap + titleText.height : 0) + (hasBody ? (hasTitle ? bodyGap : titleGap) + bodyText.height : 0)
+    readonly property real naturalH: headTop + headH + textH - (hasTitle || hasBody ? bodyTrim : 0) + pad
 
     // (never narrower than its two rounded corners need)
     contentW: Shapes.clamp(inkW + 2 * pad, Math.max(Theme.notifMinW, 2 * Theme.panelRadius), Theme.notifMaxW)
@@ -116,16 +135,16 @@ Panel {
         }
     }
 
-    // header: icon + app name
-    Row {
+    // header: icon + app name (grey) + "now"
+    Item {
         id: head
         x: root.contentX
         y: root.contentY
         width: root.textW
-        spacing: root.iconGap
         height: root.headH
 
         AppIcon {
+            id: headIcon
             size: root.iconSize
             anchors.verticalCenter: parent.verticalCenter
             source: root.c ? (root.c.image.length > 0 ? root.c.image : IconPacks.path(root.c.icon)) : ""
@@ -133,28 +152,60 @@ Panel {
         }
 
         Txt {
+            id: headLabel
+            x: root.iconSize + root.iconGap
             anchors.verticalCenter: parent.verticalCenter
-            width: parent.width - root.iconSize - root.iconGap
+            width: parent.width - x - (nowLabel.visible ? root.nowGap + nowLabel.implicitWidth : 0)
             text: root.headText
-            font.pixelSize: Theme.px(20)
-            font.weight: Font.Medium
+            textFormat: Text.PlainText
+            font.pixelSize: root.headIsApp ? Theme.px(14) : Theme.px(16)
+            font.weight: root.headIsApp ? Font.Medium : Font.DemiBold
+            color: root.headIsApp ? Config.frameColors.textSecondary : Config.text
             elide: Text.ElideRight
+        }
+
+        // it is always new: the card only shows while it comes in
+        Txt {
+            id: nowLabel
+            visible: root.headIsApp
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            text: "now"
+            font.pixelSize: Theme.px(13)
+            color: Config.frameColors.textSecondary
         }
     }
 
-    // summary + body
+    // the title (the summary)
+    Txt {
+        id: titleText
+        x: root.contentX
+        y: head.y + head.height + root.titleGap
+        width: root.textW
+        visible: root.hasTitle
+        wrapMode: Text.Wrap
+        maximumLineCount: 2
+        elide: Text.ElideRight
+        textFormat: Text.PlainText
+        font.pixelSize: Theme.px(16)
+        font.weight: Font.DemiBold
+        color: Config.text
+        text: root.titleString
+    }
+
+    // the message
     Txt {
         id: bodyText
         x: root.contentX
-        y: head.y + head.height + root.bodyGap
+        y: root.hasTitle ? titleText.y + titleText.height + root.bodyGap : head.y + head.height + root.titleGap
         width: root.textW
         visible: root.hasBody
         wrapMode: Text.Wrap
         maximumLineCount: 4
         elide: Text.ElideRight
         lineHeight: 0.95
-        font.pixelSize: Theme.px(17)
-        color: Config.notificationText
+        font.pixelSize: Theme.px(16)
+        color: Config.frameColors.notificationText
         text: root.bodyString
     }
 

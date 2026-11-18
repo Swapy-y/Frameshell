@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Widgets
 import qs
@@ -9,13 +10,22 @@ import "../components/shapes.js" as Shapes
 // ═══════════════════════════════════════════════════════════════════════════
 //  Island.qml - the notch at the top centre.
 //
-//  Collapsed: workspaces · clock · signal + battery
+//  Collapsed: workspaces · clock · signal + battery - with "Glowing icons"
+//             (Settings > Appearance) the white parts of it (the workspace you are
+//             on, signal + battery) softly glow - not the clock
 //  Hovered:   grows downward and also shows the date, the round Bluetooth and
 //             Wi-Fi buttons, what is playing (picture, title, artist) with the
-//             progress bar and the media buttons, and the notifications pill.
+//             progress bar, its times and the media buttons, and the notifications
+//             capsule.
 //
 //  A click on Wi-Fi or Bluetooth opens its card in the middle of the screen
 //  (modules/NetPopup.qml).
+//
+//  Click to expand (Config.clickToExpand, the Settings app's Experimental page):
+//  the pointer on it only lets it grow a little (`peeking`; with auto hide a
+//  small block out of the top edge), none of the open island showing yet; a click
+//  on it (not on a workspace pill: that still goes to the workspace) opens it,
+//  until the pointer leaves it.
 //
 //  Auto hide (the Settings app, Store.islandAutoHide): nothing of the island
 //  sticks out of the frame (the notch shrinks into the middle of the top edge);
@@ -24,8 +34,9 @@ import "../components/shapes.js" as Shapes
 //  open island, over your windows.
 //
 //  SUPER + CTRL + Left / Right: the island grows into the wallpaper switcher - your
-//  wallpapers in a loop, the one it is on in the middle (white outline), one
-//  on each side - and slides to the previous / next one (services/
+//  wallpapers in order (no loop: it stops at the first and the last), the one it
+//  is on in the middle (white outline), one on each side - and slides to the
+//  previous / next one (services/
 //  Wallpapers.qml; while it is open the arrows alone do too). Enter makes the
 //  one in the middle the wallpaper and closes the switcher; Esc, or a click
 //  outside it, closes it and the wallpaper stays (the keyboard and the click:
@@ -47,16 +58,69 @@ Item {
     // the pointer is on the top edge of the screen above the island (auto hide)
     property bool hot: false
 
+    // ── glow of the closed notch ──────────────────────────────────────────
+    // How strongly the white parts of the closed notch glow (0 = no glow at all):
+    // "Glowing icons" (Config.glowingIcons, Settings > Appearance) - off: 0, and
+    // nothing is rendered for it. Switched, the glow fades in / out.
+    property real glowStrength: Config.glowingIcons ? 0.9 : 0
+    Behavior on glowStrength {
+        NumberAnimation {
+            duration: Theme.durSmall
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    // A soft halo behind one item (`source`; give it the item's place with
+    // anchors.fill). It is the item itself, blurred twice - a tight blur for the
+    // glow close to it and a wide one for the haze - so the glow always has the
+    // item's own colour. The item itself is not touched: it is drawn as before, on
+    // top. `amount` (0 ... 1) fades the glow; at 0 nothing is drawn or rendered.
+    component NotchGlow: Item {
+        id: glow
+        required property Item source
+        property real amount: 0
+
+        visible: amount > 0.01 && source.width > 0 && source.height > 0
+        opacity: amount
+
+        MultiEffect {
+            anchors.fill: parent
+            source: glow.source
+            blurEnabled: true
+            blurMax: Math.min(64, Math.round(Theme.px(32)))
+            blur: 0.5                       // the wide haze (about 16 px)
+        }
+        MultiEffect {
+            anchors.fill: parent
+            source: glow.source
+            blurEnabled: true
+            blurMax: Math.min(64, Math.round(Theme.px(32)))
+            blur: 0.2                       // the tight glow (about 6 px)
+        }
+    }
+
     // ── open / close ──────────────────────────────────────────────────────
     // auto hide: 0 = the notch is there, 1 = nothing is there until you hover
-    property real hidden: Store.islandAutoHide ? 1 : 0
+    // (Disable island, Store.islandDisabled: nothing is there, and hovering does nothing -
+    // the wallpaper / theme switcher still grows out of the top edge)
+    property real hidden: Store.islandHidden ? 1 : 0
     Behavior on hidden {
         PanelAnim {
-            opening: !Store.islandAutoHide
+            opening: !Store.islandHidden
         }
     }
     // the wallpaper / theme switcher takes the island's place while it is open
     readonly property bool switching: Ui.wallpaperOpen || Ui.themeOpen
+    // the launcher / switcher grows out of the notch (components/IslandSheet.qml): the
+    // top row (workspaces, clock, signal + battery) fades away first, so the notch the
+    // sheet starts from is plain black, and comes back once it has shrunk back in
+    property real handOff: Ui.islandSheets > 0 ? 0 : 1
+    Behavior on handOff {
+        NumberAnimation {
+            duration: Theme.durHandOff
+            easing.type: Easing.OutQuad
+        }
+    }
     // what the switcher shows: "wallpaper" or "theme" (kept while it closes)
     property string switchMode: "wallpaper"
     property real sw: switching ? 1 : 0        // 0 = notch, 1 = wallpaper / theme switcher
@@ -66,25 +130,36 @@ Item {
         }
     }
 
-    readonly property bool expanded: latch.open && !switching
-    property real p: expanded ? 1 : 0          // 0 = notch, 1 = full island
+    // Click to expand: the island was clicked while it peeked (until the pointer leaves it)
+    property bool clicked: false
+    readonly property bool expanded: latch.open && !switching && (!Config.clickToExpand || clicked)
+    readonly property bool peeking: Config.clickToExpand && latch.open && !clicked && !switching
+    // ... how far it grows then: 12 px taller than the notch - with auto hide (no notch) as
+    // tall as the frame's width and 14 px, like a panel's peek (components/Panel.qml)
+    readonly property real peekH: Math.max(notchHeight + Theme.px(12), Theme.edge + Theme.px(14))
+    readonly property real peekP: Shapes.clamp((peekH - notchHeight) / Math.max(1, fullH - notchHeight), 0, 0.45)
+    property real p: expanded ? 1 : (peeking ? peekP : 0)      // 0 = notch, 1 = full island
     Behavior on p {
         PanelAnim {
-            opening: root.expanded
+            opening: root.expanded || root.peeking
         }
     }
 
     // ── size ──────────────────────────────────────────────────────────────
     // the open island's height: the space under the media buttons is the same as
-    // above the picture (under the clock)
+    // above the picture (under the clock). The clock row sits in the middle of the
+    // notch (Theme.notchH).
     readonly property real lowerTop: Theme.px(56)
-    readonly property real lowerH: Theme.px(86)
+    readonly property real lowerH: Theme.px(92)
     readonly property real wantedH: lowerTop + lowerH + Theme.px(8)
 
     // the round buttons on both sides: their size, top (centred on the media
     // column) and how far the two groups' middles are from the island's middle
+    // the open island's grey buttons (off Bluetooth / Wi-Fi, the notifications capsule,
+    // the light behind a media button under the pointer)
+    readonly property color buttonGrey: "#0b0b0b"
     readonly property real buttonSize: Theme.px(42)
-    readonly property real buttonTop: Theme.px(66)
+    readonly property real buttonTop: Theme.px(70)
     readonly property real sideOffset: Theme.px(227)
 
     property real fullH: wantedH
@@ -111,11 +186,18 @@ Item {
     width: Math.round(fw)
     height: Math.round(fh)
     x: Math.round((parent.width - fw) / 2)
-    y: 0
+    // frameless (Config.framelessOutline): the whole island moves up into the frame's
+    // place, its top part off the screen - the same shape, only higher (Theme.notchShift)
+    // (in whole pixels, so its content stays sharp while it moves: the shape glides)
+    y: -Math.round(Theme.notchShift)
 
     HoverLatch {
         id: latch
-        input: hover.hovered || root.hot || openHover.hovered
+        input: !Store.islandDisabled && (hover.hovered || root.hot || openHover.hovered)
+        onOpenChanged: {
+            if (!open)
+                root.clicked = false;
+        }
     }
 
     HoverHandler {
@@ -125,11 +207,11 @@ Item {
     // While it is open, the whole open island counts as "on it", even while it is
     // still growing: the pointer can be quicker than the island (auto hide: from
     // the edge of the screen straight down to its buttons). Overlay.qml adds it to
-    // the window's input area.
+    // the window's input area. (Click to expand: only once it opens, not while it peeks.)
     readonly property Item openArea: openAreaItem
     Item {
         id: openAreaItem
-        readonly property bool on: latch.open && !root.switching
+        readonly property bool on: root.expanded
         x: Math.round((root.parent.width - root.islandWidth) / 2) - root.x
         y: 0
         width: on ? root.islandWidth : 0
@@ -143,12 +225,24 @@ Item {
     Flap {
         target: root
         fx: (root.parent.width - root.fw) / 2
-        fy: 0
+        // frameless it moves up with the frame's edge (Theme.notchShift, Theme.frameEdge):
+        // the same shape, only higher
+        fy: -Theme.notchShift
         fw: root.fw
         fh: root.fh
         fillLayer: root.fillLayer
         strokeLayer: root.strokeLayer
         attachTop: true
+    }
+
+    // Click to expand: the click that opens the peeking island - under its content, so a
+    // workspace pill still takes its own click. It takes no hover (`hover` above sees it).
+    MouseArea {
+        anchors.fill: parent
+        visible: root.peeking
+        acceptedButtons: Qt.LeftButton
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.clicked = true
     }
 
     // The content lives in a fixed-width body that is revealed by the growing
@@ -174,14 +268,17 @@ Item {
             visible: opacity > 0.01
 
             readonly property real cx: width / 2
-            // the workspaces and signal + battery: beside the notch closed, open centred over the
-            // Bluetooth + Wi-Fi buttons and the notifications pill
-            readonly property real slotOffset: Shapes.lerp(Theme.px(97), root.sideOffset, root.p)
+            // the workspaces and signal + battery: beside the clock closed, open centred over the
+            // Bluetooth + Wi-Fi buttons and the notifications capsule
+            readonly property real slotOffset: Shapes.lerp(Theme.px(91), root.sideOffset, root.p)
             readonly property real rowCenter: Theme.notchH / 2
             readonly property real lower: Shapes.clamp((root.p - 0.35) / 0.65, 0, 1)   // fades in the lower area
             // the top row (workspaces, clock, signal + battery): hidden with the island
-            // (auto hide), fading in while it grows open
-            readonly property real topRow: 1 - root.hidden * (1 - Shapes.clamp((root.p - 0.1) / 0.4, 0, 1))
+            // (auto hide), fading in while it grows open; away while a sheet grows out of it
+            readonly property real topRow: (1 - root.hidden * (1 - Shapes.clamp((root.p - 0.1) / 0.4, 0, 1))) * root.handOff
+            // the glow of the white parts of the closed notch: full while the island is closed,
+            // gone before the lower area starts to fade in (at the same point, `lower`)
+            readonly property real glow: root.glowStrength * (1 - Shapes.clamp(root.p / 0.35, 0, 1))
 
             // ── workspaces (left slot) ────────────────────────────────────────
             Item {
@@ -222,16 +319,17 @@ Item {
                 // The pills shown: Spaces.ids, and the workspace you are on at
                 // once - Spaces.ids follows a moment later (it waits until Hyprland
                 // has settled), and the pill of a workspace you go to that had none
-                // (the 5th) should not wait for it.
+                // (the 5th) should not wait for it. (10 workspaces: the pill that
+                // stands for it - the 5th on workspaces 5 ... 10, Spaces.focusedPill.)
                 readonly property var shownIds: {
                     const ids = Spaces.ids;
-                    const here = Spaces.focusedId;
+                    const here = Spaces.focusedPill;
                     return ids.indexOf(here) >= 0 || Spaces.slots.indexOf(here) < 0 ? ids : ids.concat([here]);
                 }
 
                 readonly property real restW: {
                     let w = shownIds.length * (wOff + gap);
-                    if (shownIds.indexOf(Spaces.focusedId) >= 0)
+                    if (shownIds.indexOf(Spaces.focusedPill) >= 0)
                         w += wOn - wOff;
                     return w;
                 }
@@ -257,10 +355,12 @@ Item {
                         Item {
                             id: dot
                             required property var modelData
-                            readonly property bool active: modelData === Spaces.focusedId
+                            readonly property bool active: modelData === Spaces.focusedPill
                             readonly property bool present: wsSlot.shownIds.indexOf(modelData) >= 0
-                            // the small pill's colour: a bit lighter when tiling is off there
-                            readonly property color offColor: Spaces.untiled.indexOf(modelData) >= 0 ? Config.pillUntiled : Config.iconDim
+                            // the small pill's colour: a bit lighter when tiling is off there - and
+                            // always for the 5th of "10 workspaces" (it stands for 5 ... 10)
+                            readonly property bool lighter: Spaces.untiled.indexOf(modelData) >= 0 || (Spaces.ten && modelData === Spaces.tenPills)
+                            readonly property color offColor: lighter ? Config.frameColors.workspaceUntiled : Config.frameColors.inactive
 
                             // 0 = no pill, 1 = pill; the change is animated. Just as
                             // quick as the white pill moving on (`on` below), so going to
@@ -283,25 +383,75 @@ Item {
                                 }
                             }
 
+                            // "10 workspaces": the 5th pill stands for 5 ... 10, so going from
+                            // one of them to another the white pill stays where it is - it
+                            // plays the move in place instead: it shrinks to a small pill and
+                            // grows straight back, staying white (as long as a move, both halves
+                            // together)
+                            property real dip: 0
+                            readonly property real look: on * (1 - dip)
+                            property int lastId: -1
+                            Component.onCompleted: lastId = Spaces.focusedId
+                            Connections {
+                                target: Spaces
+                                function onFocusedIdChanged() {
+                                    const was = dot.lastId;
+                                    const now = Spaces.focusedId;
+                                    dot.lastId = now;
+                                    if (Spaces.ten && dot.modelData === Spaces.tenPills && was !== now && was >= Spaces.tenPills && now >= Spaces.tenPills)
+                                        dipAnim.restart();
+                                }
+                            }
+                            SequentialAnimation {
+                                id: dipAnim
+                                NumberAnimation {
+                                    target: dot
+                                    property: "dip"
+                                    to: 1
+                                    duration: Math.round(Theme.durSmall * 0.6)
+                                    easing.type: Easing.BezierSpline
+                                    easing.bezierCurve: Theme.curveStandard
+                                }
+                                NumberAnimation {
+                                    target: dot
+                                    property: "dip"
+                                    to: 0
+                                    duration: Math.round(Theme.durSmall * 0.6)
+                                    easing.type: Easing.BezierSpline
+                                    easing.bezierCurve: Theme.curveStandard
+                                }
+                            }
+
                             // width of the pill, and of its place: the pill + the air
                             // beside it. A pill that appears or disappears grows from /
                             // shrinks to a thin line in the middle of its place (no
                             // clipping: a clipped edge moves in whole pixels and would
                             // wobble the new pill while it appears).
-                            readonly property real pillW: Shapes.lerp(wsSlot.wOff, wsSlot.wOn, on)
-                            width: (pillW + wsSlot.gap) * shown
+                            readonly property real pillW: Shapes.lerp(wsSlot.wOff, wsSlot.wOn, look)
+                            // (its place keeps the white pill's width through the dip: the
+                            // pills beside it don't move)
+                            width: (Shapes.lerp(wsSlot.wOff, wsSlot.wOn, on) + wsSlot.gap) * shown
                             height: wsSlot.rowH
                             opacity: shown
                             visible: shown > 0
 
+                            // the glow of the white pill (the workspace you are on) - it
+                            // follows the pill's colour, so the small grey ones don't glow
+                            NotchGlow {
+                                anchors.fill: pill
+                                source: pill
+                                amount: body.glow * dot.on
+                            }
+
                             Rectangle {
                                 id: pill
                                 width: dot.pillW * dot.shown
-                                height: Shapes.lerp(wsSlot.hOff, wsSlot.hOn, dot.on)
+                                height: Shapes.lerp(wsSlot.hOff, wsSlot.hOn, dot.look)
                                 // centred by hand (see above)
                                 x: (dot.width - width) / 2
-                                y: (dot.height - height) / 2 + Shapes.lerp(wsSlot.nudgeOff, wsSlot.nudgeOn, dot.on)
+                                y: (dot.height - height) / 2 + Shapes.lerp(wsSlot.nudgeOff, wsSlot.nudgeOn, dot.look)
                                 radius: width / 2
+                                // (the colour follows `on`, not the dip: the pill stays white while it dips)
                                 color: Qt.rgba(Shapes.lerp(dot.offColor.r, Config.text.r, dot.on), Shapes.lerp(dot.offColor.g, Config.text.g, dot.on), Shapes.lerp(dot.offColor.b, Config.text.b, dot.on), Shapes.lerp(dot.offColor.a, Config.text.a, dot.on))
                             }
 
@@ -319,7 +469,9 @@ Item {
             // ── clock (centre) ────────────────────────────────────────────────
             // The clock text is centred on its own, so "1:23" and "12:33" both sit
             // exactly in the middle. When the island opens, the date slides in on
-            // its right and the pair stays centred.
+            // its right and the pair stays centred. When the minute (or hour) changes,
+            // the changed digits roll: the old ones up and out, the new ones up from
+            // below (components/RollText.qml).
             Row {
                 id: clockRow
                 x: Math.round((body.width - width) / 2)
@@ -328,19 +480,18 @@ Item {
                 opacity: body.topRow
                 visible: opacity > 0.01
 
-                Txt {
+                RollText {
                     anchors.verticalCenter: parent.verticalCenter
                     text: Clock.time
-                    horizontalAlignment: Text.AlignHCenter
-                    font.pixelSize: Theme.fsClock
-                    font.weight: Font.DemiBold
+                    pixelSize: Theme.fsClock
+                    weight: Font.DemiBold
                 }
 
                 Txt {
                     anchors.verticalCenter: parent.verticalCenter
                     text: Clock.dateWords
                     font.pixelSize: Theme.fsSmall
-                    color: Config.textDim
+                    color: Config.frameColors.textSecondary
                     leftPadding: Theme.px(8)
                     width: implicitWidth * body.lower
                     opacity: body.lower
@@ -360,21 +511,32 @@ Item {
                 x: Math.round(body.cx + body.slotOffset + Theme.px(1) * root.p - width / 2)
                 y: 0
 
+                // the glow of signal + battery (the slot already fades with the top row)
+                NotchGlow {
+                    anchors.fill: statusRow
+                    source: statusRow
+                    amount: body.glow
+                }
+
                 Row {
+                    id: statusRow
                     // 1 px left of the middle (looks centred), on whole pixels
                     x: Math.round((parent.width - width) / 2) - Theme.px(1)
                     y: Math.round((parent.height - height) / 2)
                     spacing: Theme.px(7)
 
                     SignalIcon {
+                        id: signalIcon
                         anchors.verticalCenter: parent.verticalCenter
                         size: Theme.px(14)
                         level: NetSpeed.level
                     }
 
+                    // 2 px shorter than the signal icon: 1 px in from its top and its bottom
                     BatteryIcon {
                         anchors.verticalCenter: parent.verticalCenter
-                        size: Theme.px(24)
+                        size: Theme.px(28)
+                        bodyHeight: signalIcon.height - Theme.px(2)
                         level: Battery.level
                         charging: Battery.charging
                     }
@@ -382,8 +544,8 @@ Item {
             }
 
             // ── Bluetooth and Wi-Fi (left, visible when expanded) ─────────────
-            // Round buttons: white with a dark icon = on, a grey ring = off (or not
-            // available). A click opens the list of devices / networks in a card in
+            // Round buttons: white with a dark icon = on, a grey circle with a white
+            // icon = off (or not available). A click opens the list of devices / networks in a card in
             // the middle of the screen (modules/NetPopup.qml).
             Item {
                 id: netCol
@@ -405,13 +567,13 @@ Item {
                         {
                             page: "bluetooth",
                             icon: "bluetooth",
-                            size: Theme.px(22),         // 13.75 x 22
+                            size: Theme.px(28),         // the rune: about 13 x 22
                             offset: -Theme.px(28)
                         },
                         {
                             page: "wifi",
                             icon: "wifi",
-                            size: Theme.px(28),         // 28 x 22
+                            size: Theme.px(30),         // about 25 x 19
                             offset: Theme.px(28)
                         }
                     ]
@@ -425,7 +587,8 @@ Item {
                         iconSize: modelData.size
                         // off: a soft grey circle with a white icon (no ring)
                         outline: false
-                        offColor: Config.selected
+                        edge: true                       // the outline ("No outline buttons" takes it away)
+                        offColor: root.buttonGrey
                         hoverColor: offColor             // no change under the pointer
                         iconColor: Config.text
                         onClicked: Ui.toggleNet(modelData.page)
@@ -434,27 +597,31 @@ Item {
             }
 
             // ── media (centre column) ─────────────────────────────────────────
-            // What is playing (the cover or the video's picture, the title and the
-            // artist / channel), the progress bar under it and the buttons under that.
+            // Laid out like Apple's Now Playing: what is playing (the cover or the
+            // video's picture, the title and the artist / channel); under it the
+            // progress bar, the time played on its left and the whole length on its
+            // right; under that the buttons - back, play / pause, forward - in the
+            // shapes of Apple's SF Symbols.
             Item {
                 id: mediaCol
-                width: barWidth
-                height: Theme.px(75)
+                // no times beside the bar, so a narrower column, a shorter bar and smaller
+                // buttons - unless "Detailed media controls" (Config.detailedMedia) is on
+                readonly property bool minimal: !Config.detailedMedia
+                width: minimal ? Theme.px(192) : Theme.px(232)
+                height: controls.y + controls.height
                 x: Math.round(body.cx - width / 2)
                 y: Theme.px(50)
                 opacity: body.lower
                 visible: opacity > 0.01
 
-                readonly property real barWidth: Theme.px(192)
-
                 // ── now playing: picture + title + artist, centred over the bar ──
                 Item {
                     id: nowPlaying
 
-                    readonly property real coverSize: Theme.px(32)
-                    readonly property real gap: Theme.px(9)
-                    // the text is as wide as it needs, the whole row never wider than the bar
-                    readonly property real textWidth: Math.min(mediaCol.barWidth - coverSize - gap, Math.ceil(Math.max(titleText.implicitWidth, artistText.implicitWidth)))
+                    readonly property real coverSize: Theme.px(34)
+                    readonly property real gap: Theme.px(10)
+                    // the text is as wide as it needs, the whole row never wider than the column
+                    readonly property real textWidth: Math.min(mediaCol.width - coverSize - gap, Math.ceil(Math.max(titleText.implicitWidth, artistText.implicitWidth)))
 
                     // nothing loaded: "Nothing playing"; no title: the app's name
                     readonly property string title: !Media.has ? "Nothing playing" : (Media.title !== "" ? Media.title : Media.playerName)
@@ -471,8 +638,8 @@ Item {
                         id: cover
                         width: nowPlaying.coverSize
                         height: nowPlaying.coverSize
-                        radius: Theme.px(7)
-                        color: Config.selected          // no picture (yet)
+                        radius: Theme.px(8)
+                        color: Config.frameColors.inactive           // no picture (yet)
 
                         property int current: -1        // which image is shown, -1 = none
                         property int under: -1          // the one before, kept under the new one while it fades in
@@ -513,7 +680,7 @@ Item {
                             anchors.centerIn: parent
                             size: Theme.px(16)
                             name: "bt-headphones"
-                            color: Config.iconDim
+                            color: Config.frameColors.textTertiary
                             opacity: cover.current < 0 ? 1 : 0
                             Behavior on opacity {
                                 Anim {
@@ -556,18 +723,18 @@ Item {
 
                     Column {
                         x: nowPlaying.coverSize + nowPlaying.gap
-                        // centred on the picture (its ink a pixel low looks centred), on whole pixels
-                        y: Math.round((nowPlaying.coverSize - height) / 2 + Theme.px(1))
+                        // centred on the picture, on whole pixels
+                        y: Math.round((nowPlaying.coverSize - height) / 2)
                         width: nowPlaying.textWidth
-                        spacing: Theme.px(2)
+                        spacing: Theme.px(1)
 
                         Txt {
                             id: titleText
                             width: parent.width
                             text: nowPlaying.title
-                            font.pixelSize: Theme.px(12)
+                            font.pixelSize: Theme.px(13)
                             font.weight: Font.DemiBold
-                            color: Media.has ? Config.text : Config.textDim
+                            color: Media.has ? Config.text : Config.frameColors.textSecondary
                             elide: Text.ElideRight
                         }
 
@@ -576,29 +743,98 @@ Item {
                             width: parent.width
                             visible: text !== ""
                             text: nowPlaying.artist
-                            font.pixelSize: Theme.px(11)
-                            color: Config.textDim
+                            font.pixelSize: Theme.px(12)
+                            color: Config.frameColors.textSecondary
                             elide: Text.ElideRight
                         }
                     }
                 }
 
-                FSlider {
-                    x: 0
-                    y: Theme.px(39)
-                    width: mediaCol.barWidth
-                    knobSize: Theme.px(9)
-                    trackHeight: Theme.px(3)
-                    interactive: Media.player !== null && Media.player.canSeek
-                    value: Media.progress
-                    onMoved: v => Media.seekTo(v)
+                // ── progress: time played · the bar · the whole length ─────────
+                // A stream without a length has no times: the bar alone, as wide as the row.
+                Item {
+                    id: seekRow
+
+                    readonly property real length: Media.player !== null && Media.player.lengthSupported ? Math.max(0, Media.player.length) : 0
+                    readonly property bool timed: length > 0 && !mediaCol.minimal
+                    // where it is, in seconds (while you drag the bar: where you drag it to)
+                    readonly property real at: seek.shown * length
+                    // both times get the same room - as wide as the length ("0:00" for it,
+                    // its figures all the same width: the time played is never wider) -
+                    // so the bar stays in the middle and never changes its length
+                    readonly property real timeW: timed ? Math.ceil(timeMetrics.advanceWidth) : 0
+                    readonly property real timeGap: timed ? Theme.px(8) : 0
+
+                    // seconds as "m:ss" ("h:mm:ss" from an hour on)
+                    function clock(s) {
+                        const t = Math.max(0, Math.floor(s));
+                        const h = Math.floor(t / 3600);
+                        const m = Math.floor(t / 60) % 60;
+                        const two = n => (n < 10 ? "0" : "") + n;
+                        return h > 0 ? h + ":" + two(m) + ":" + two(t % 60) : m + ":" + two(t % 60);
+                    }
+
+                    width: mediaCol.width
+                    height: Theme.px(12)
+                    y: nowPlaying.height + Theme.px(7)
+
+                    TextMetrics {
+                        id: timeMetrics
+                        font: playedText.font
+                        text: seekRow.clock(seekRow.length).replace(/[0-9]/g, "0")
+                    }
+
+                    Txt {
+                        id: playedText
+                        visible: seekRow.timed
+                        x: 0
+                        width: seekRow.timeW
+                        height: parent.height
+                        horizontalAlignment: Text.AlignRight
+                        text: seekRow.clock(seekRow.at)
+                        font.pixelSize: Theme.px(11)
+                        font.weight: Font.Medium
+                        font.features: {
+                            "tnum": 1         // figures all the same width: the time doesn't wobble
+                        }
+                        color: Config.frameColors.textSecondary
+                    }
+
+                    FSlider {
+                        id: seek
+                        x: seekRow.timeW + seekRow.timeGap
+                        width: seekRow.width - 2 * x
+                        anchors.verticalCenter: parent.verticalCenter
+                        trackHeight: Theme.px(6)
+                        interactive: Media.player !== null && Media.player.canSeek
+                        value: Media.progress
+                        onMoved: v => Media.seekTo(v)
+                    }
+
+                    Txt {
+                        visible: seekRow.timed
+                        x: seekRow.width - width
+                        width: seekRow.timeW
+                        height: parent.height
+                        horizontalAlignment: Text.AlignLeft
+                        // the whole length of the song / video
+                        text: seekRow.clock(seekRow.length)
+                        font.pixelSize: playedText.font.pixelSize
+                        font.weight: playedText.font.weight
+                        font.features: playedText.font.features
+                        color: Config.frameColors.textSecondary
+                    }
                 }
 
+                // ── the buttons: back · play / pause · forward ───────────────────
+                // All three the same size: the shapes make play / pause the tallest and
+                // back / forward the widest, as in Apple's. Under the pointer a soft round
+                // light comes up behind the icon; pressed, the icon dips.
                 Row {
                     id: controls
-                    x: Math.floor((mediaCol.width - width) / 2)      // whole pixels
-                    y: Theme.px(56)
-                    spacing: Theme.px(30)
+                    x: Math.round((mediaCol.width - width) / 2)
+                    y: seekRow.y + seekRow.height + Theme.px(5)
+                    spacing: mediaCol.minimal ? Theme.px(9) : Theme.px(10)
 
                     Repeater {
                         model: ["prev", "toggle", "next"]
@@ -606,24 +842,44 @@ Item {
                         Item {
                             id: btn
                             required property string modelData
-                            width: Theme.px(23)
-                            height: Theme.px(23)
-
+                            readonly property bool main: modelData === "toggle"
                             readonly property bool available: Media.has
 
-                            Icon {
-                                anchors.centerIn: parent
-                                size: Theme.px(15)
-                                name: btn.modelData === "toggle" ? (Media.playing ? "pause" : "play") : btn.modelData
-                                color: btn.available ? Config.text : Config.iconDim
-                                opacity: btnArea.pressed ? 0.6 : 1
-                                scale: btnArea.pressed ? 0.85 : 1
+                            width: Theme.px(42)
+                            height: Theme.px(26)
+
+                            Rectangle {
+                                width: Theme.px(32)
+                                height: width
+                                x: Math.round((parent.width - width) / 2)
+                                y: Math.round((parent.height - height) / 2)
+                                radius: width / 2
+                                color: root.buttonGrey
+                                antialiasing: true
+                                opacity: btnArea.containsMouse ? 1 : 0
+                                scale: btnArea.pressed ? 0.9 : 1
 
                                 Behavior on opacity {
                                     Anim {
                                         duration: Theme.durFast
                                     }
                                 }
+                                Behavior on scale {
+                                    Anim {
+                                        duration: Theme.durFast
+                                        curve: Theme.curveSpring
+                                    }
+                                }
+                            }
+
+                            Icon {
+                                x: Math.round((parent.width - width) / 2)
+                                y: Math.round((parent.height - height) / 2)
+                                size: mediaCol.minimal ? Theme.px(18) : Theme.px(20)
+                                name: btn.main ? (Media.playing ? "pause" : "play") : btn.modelData
+                                color: btn.available ? Config.text : Config.frameColors.textTertiary
+                                scale: btnArea.pressed ? 0.86 : 1
+
                                 Behavior on scale {
                                     Anim {
                                         duration: Theme.durFast
@@ -660,55 +916,79 @@ Item {
             }
 
             // ── notifications (right) ─────────────────────────────────────────
-            // A pill: the round bell button and what it does. White circle = notifications
-            // on, grey circle = "Do not disturb". Only the round button switches it.
+            // A capsule like a tile of Apple's Control Center: the round bell at its
+            // left end - white with a dark bell = notifications on, grey with the bell
+            // struck out = "Do not disturb" - then "Notifications" and, under it, "On" /
+            // "Off". A click anywhere on it switches it.
             Item {
                 id: bellCol
                 readonly property bool on: Store.notificationsOn
 
-                width: root.buttonSize + Theme.px(8) + labelMetrics.width + Theme.px(14)
+                width: root.buttonSize + Theme.px(10) + Math.ceil(Math.max(bellTitle.implicitWidth, offMetrics.advanceWidth)) + Theme.px(18)
                 height: root.buttonSize
                 x: Math.round(body.cx + root.sideOffset - width / 2)
                 y: root.buttonTop
                 opacity: body.lower
                 visible: opacity > 0.01
 
-                // the wider of the two texts: the pill keeps its size when it switches
+                // the wider of the two states: the capsule keeps its size when it switches
                 TextMetrics {
-                    id: labelMetrics
-                    font: bellLabel.font
-                    text: "Notifications off"
+                    id: offMetrics
+                    font: bellState.font
+                    text: "Off"
                 }
 
                 Rectangle {
                     anchors.fill: parent
                     radius: height / 2
-                    color: "transparent"
-                    border.width: Theme.px(1.5)
-                    border.color: Config.selected
+                    color: root.buttonGrey
+                    border.width: Theme.outlineW            // the outline ("No outline buttons" takes it away)
+                    border.color: Theme.outlineColor
                     antialiasing: true
                 }
 
                 RingButton {
                     x: 0
                     on: bellCol.on
-                    icon: "bell-fill"
-                    iconSize: Theme.px(22)
+                    icon: bellCol.on ? "bell-fill" : "bell-off"
+                    iconSize: Theme.px(24)
                     outline: false
-                    offColor: Config.selected
-                    hoverColor: offColor             // no change under the pointer
+                    // off: see-through - the capsule (its grey, and its outline)
+                    // shows behind the bell
+                    offColor: "transparent"
+                    hoverColor: offColor
                     iconColor: Config.text
-                    onClicked: Store.notificationsOn = !Store.notificationsOn
+                    interactive: false                       // the whole capsule is the button
+                    hot: bellArea.containsMouse
+                    down: bellArea.pressed
                 }
 
-                Txt {
-                    id: bellLabel
-                    x: root.buttonSize + Theme.px(8)
+                Column {
+                    x: root.buttonSize + Theme.px(10)
                     y: Math.round((parent.height - height) / 2)
-                    text: bellCol.on ? "Notifications on" : "Notifications off"
-                    font.pixelSize: Theme.px(13)
-                    font.weight: Font.Medium
-                    color: Config.textDim
+                    spacing: 0
+
+                    Txt {
+                        id: bellTitle
+                        text: "Notifications"
+                        font.pixelSize: Theme.px(13)
+                        font.weight: Font.DemiBold
+                    }
+
+                    Txt {
+                        id: bellState
+                        text: bellCol.on ? "On" : "Off"
+                        font.pixelSize: Theme.px(12)
+                        color: Config.frameColors.textSecondary
+                    }
+                }
+
+                MouseArea {
+                    id: bellArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: Store.notificationsOn = !Store.notificationsOn
                 }
             }
         }
@@ -754,7 +1034,7 @@ Item {
                     height: Theme.px(16)
                     width: arrow ? height : Math.max(height, capText.implicitWidth + Theme.px(8))
                     radius: Theme.px(4)
-                    color: Config.selected
+                    color: Config.frameColors.inactive       // a soft grey key
 
                     Txt {
                         id: capText
@@ -783,7 +1063,7 @@ Item {
             text: hint.label
             font.pixelSize: Theme.px(11)
             font.weight: Font.Medium
-            color: Config.textDim
+            color: Config.frameColors.textSecondary
         }
     }
 
@@ -796,8 +1076,9 @@ Item {
         onTriggered: root.thumbsWanted = true
     }
 
-    // One picture / theme of the strip, placed by its place in the loop: the
-    // big one in the middle, the others beside it. What it shows goes inside it,
+    // One picture / theme of the strip, placed by its place in the list: the
+    // big one in the middle, the others beside it (none before the first or after
+    // the last: no loop). What it shows goes inside it,
     // drawn at the big size and scaled down by `shown` (on the graphics card) beside
     // the middle, so nothing is resized or redrawn while it slides; the outline is
     // drawn on top at the shown size, so it stays 2 px. A click: `picked`, with how
@@ -807,26 +1088,17 @@ Item {
 
         required property int index
         required property Item strip      // the strip it is in
-        property int n: 0                 // how many there are (each one is in the strip strip.copies(n) times)
+        property int n: 0                 // how many there are
         property bool ready: true         // false: not shown (a picture without a file)
         signal picked(int offset)
 
-        readonly property int file: n > 0 ? index % n : 0
-        readonly property int copy: n > 0 ? Math.floor(index / n) - Math.floor(strip.copies(n) / 2) : 0
+        readonly property int file: index
 
         // places from the middle (negative = left)
-        readonly property real d: {
-            if (n === 0)
-                return 0;
-            let r = (file - strip.pos) % n;
-            r = ((r % n) + n) % n;
-            if (r >= n / 2)
-                r -= n;
-            return r + copy * n;
-        }
+        readonly property real d: n > 0 ? file - strip.pos : 0
         readonly property real middle: Math.max(0, 1 - Math.abs(d))     // 1 = in the middle
         readonly property real shown: Theme.wallThumbSmall + (1 - Theme.wallThumbSmall) * middle   // 1 = the big size
-        readonly property real exactX: strip.cx + strip.offset(d) * strip.spread - width / 2 + strip.bump
+        readonly property real exactX: strip.cx + strip.offset(d) * strip.spread - width / 2
 
         width: strip.bigW
         height: strip.bigH
@@ -837,7 +1109,7 @@ Item {
         // The outline, at the shown size, exactly over the picture. Placed by
         // hand, not with anchors.centerIn: that rounds to whole pixels, so the
         // outline would step against the smoothly scaled picture as it grows.
-        // White (Config.thumbOutline) on the one in the middle, the others like
+        // White (Config.previewSelectedBorder) on the one in the middle, the others like
         // an unfocused window's border; it blends over while one slides in.
         Rectangle {
             id: cardOutline
@@ -851,7 +1123,7 @@ Item {
             border.width: Theme.px(2)
             border.color: {
                 const a = card.strip.sideOutline;
-                const b = Config.thumbOutline;
+                const b = card.strip.middleOutline;
                 const m = card.middle;
                 return Qt.rgba(a.r + (b.r - a.r) * m, a.g + (b.g - a.g) * m, a.b + (b.b - a.b) * m, a.a + (b.a - a.a) * m);
             }
@@ -882,7 +1154,7 @@ Item {
         readonly property real spread: Shapes.lerp(root.notchShown / root.switchWidth, 1, root.sw)
 
         // Where the strip is: the cursor of Wallpapers / Themes, gliding from one
-        // to the next (it counts on round the loop, it never jumps back to 0).
+        // to the next.
         property real pos: 0
         // the same motion as switching workspaces: Hyprland's workspace slide
         // takes 300 ms on the "standard" curve (hyprland.lua), so does this
@@ -904,11 +1176,6 @@ Item {
             slide.stop();
             wallStrip.pos = cursor;
         }
-        function nudge(direction) {
-            bumpAnim.stop();
-            bumpAnim.to = -direction * Theme.px(14);
-            bumpAnim.start();
-        }
         Connections {
             target: Wallpapers
             enabled: root.switchMode === "wallpaper"
@@ -917,9 +1184,6 @@ Item {
             }
             function onJumped() {
                 wallStrip.jumpTo(Wallpapers.cursor);
-            }
-            function onBumped(direction) {
-                wallStrip.nudge(direction);
             }
         }
         Connections {
@@ -930,31 +1194,6 @@ Item {
             }
             function onJumped() {
                 wallStrip.jumpTo(Themes.cursor);
-            }
-            function onBumped(direction) {
-                wallStrip.nudge(direction);
-            }
-        }
-
-        // a single picture / theme: the strip only nudges
-        property real bump: 0
-        SequentialAnimation {
-            id: bumpAnim
-            property real to: 0
-            NumberAnimation {
-                target: wallStrip
-                property: "bump"
-                to: bumpAnim.to
-                duration: Theme.durFast
-                easing.type: Easing.OutQuad
-            }
-            NumberAnimation {
-                target: wallStrip
-                property: "bump"
-                to: 0
-                duration: Theme.durOpen
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Theme.curveDecel
             }
         }
 
@@ -968,14 +1207,11 @@ Item {
         // corner radius at the big size: the side pictures end up with Theme.wallThumbRadius
         readonly property real bigRadius: Theme.wallThumbRadius / Theme.wallThumbSmall
         // the outline of the pictures / cards beside the middle: the unfocused window
-        // border of the theme in use (inactiveHint in Config.qml)
-        readonly property color sideOutline: Config.inactiveHint
-        // Every picture is in the strip three times - one loop to the left, the loop,
-        // one loop to the right - five times when there are only one or two pictures:
-        // two places on each side are seen (one and a half).
-        function copies(n) {
-            return n < 3 ? 5 : 3;
-        }
+        // border of the theme in use (windowBorderInactive in Config.qml)
+        readonly property color sideOutline: Config.frameColors.windowBorderInactive
+        // ... and the one in the middle (white). Both typed as colours: the outline mixes them by
+        // their red, green and blue (Config.frameColors keeps them as text)
+        readonly property color middleOutline: Config.frameColors.previewSelectedBorder
         function offset(d) {
             const a = Math.abs(d);
             const o = a <= 1 ? a * firstStep : firstStep + (a - 1) * nextStep;
@@ -987,18 +1223,17 @@ Item {
         readonly property real cx: root.parent.width / 2 - root.x - x
         // exact (sub-pixel) positions while the strip moves - smooth; whole
         // pixels when it stands still - sharp
-        readonly property bool moving: slide.running || bumpAnim.running || (root.sw > 0 && root.sw < 1)
+        readonly property bool moving: slide.running || (root.sw > 0 && root.sw < 1)
 
         // ── the wallpapers ────────────────────────────────────────────────
-        // Every picture three (or five) times - copies() - so there are always
-        // pictures on both sides, even with only one or two. Each copy sits where
-        // it is nearest the middle. (They stay loaded while the theme switcher is open.)
+        // Every picture once, in order: the first has nothing on its left, the last
+        // nothing on its right. (They stay loaded while the theme switcher is open.)
         Item {
             anchors.fill: parent
             visible: root.switchMode === "wallpaper"
 
             Repeater {
-                model: Wallpapers.count * wallStrip.copies(Wallpapers.count)
+                model: Wallpapers.count
 
                 StripCard {
                     id: thumb
@@ -1027,7 +1262,7 @@ Item {
                         transformOrigin: Item.Center
                         scale: thumb.shown
                         radius: wallStrip.bigRadius - Theme.px(1)
-                        color: Config.selected              // until the picture has loaded
+                        color: Config.frameColors.controlBackground              // until the picture has loaded
 
                         Image {
                             id: thumbImage
@@ -1069,14 +1304,14 @@ Item {
 
         // ── the colour themes ─────────────────────────────────────────────
         // A card in the theme's own colours: its main colour, a row of five dots
-        // (its greys, its text colours and the focused window's border, activeHint;
+        // (its greys, its text colours and the focused window's border, windowBorderActive;
         // the darkest on the left, the lightest on the right), its name under them.
         Item {
             anchors.fill: parent
             visible: root.switchMode === "theme"
 
             Repeater {
-                model: Themes.count * wallStrip.copies(Themes.count)
+                model: Themes.count
 
                 StripCard {
                     id: themeCard
@@ -1103,7 +1338,7 @@ Item {
                         transformOrigin: Item.Center
                         scale: themeCard.shown
                         radius: wallStrip.bigRadius - Theme.px(1)
-                        color: themeCard.theme ? Config.themeColor(themeCard.theme, "frame") : Config.selected
+                        color: themeCard.theme ? Config.themeColor(themeCard.theme, "background") : Config.frameColors.controlBackground
                         antialiasing: true
 
                         Column {
@@ -1168,7 +1403,7 @@ Item {
             text: (switchText.at + 1) + " / " + switchText.count
             font.pixelSize: Theme.px(11)
             font.weight: Font.Medium
-            color: Config.textDim
+            color: Config.frameColors.textSecondary
         }
 
         // the keys that browse: left / right, the themes down / up (SUPER + CTRL + Down goes

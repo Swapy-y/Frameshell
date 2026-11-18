@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 # ═══════════════════════════════════════════════════════════════════════════
 #  make-frame.py - builds the Frame Kvantum themes (themes/Kvantum/Frame,
-#  FrameNoir, FrameMocha) from KvLibadwaita's dark theme: the same shapes, in
-#  the colours of the shell's themes (Config.qml: Default, Noir, Mocha).
+#  FrameNoir, Frame<name> for the other themes) from KvLibadwaita's dark theme:
+#  the same shapes, in the colours of the shell's themes (Config.qml).
 #
 #    git clone https://github.com/GabePoel/KvLibadwaita
 #    python3 make-frame.py KvLibadwaita/src/KvLibadwaita Frame
 #    python3 make-frame.py KvLibadwaita/src/KvLibadwaita FrameNoir
-#    python3 make-frame.py KvLibadwaita/src/KvLibadwaita FrameMocha
+#    python3 make-frame.py KvLibadwaita/src/KvLibadwaita FrameGruvbox      (any theme: Frame<name>)
 #
-#  The output folder's name picks the palette below (and names the theme).
+#  The output folder's name picks the palette (and names the theme): Frame and
+#  FrameNoir below, the others made from their colours in Config.qml (../palettes.py;
+#  <name> is the theme's name without spaces).
 #  Only needed to change a theme's colours: edit its palette, run it, copy the
 #  folder to ~/.config/Kvantum/. The Qt palettes (config/qt5ct, config/qt6ct
 #  colors/*.conf, made by ../make-themes.py) use the same colours.
@@ -50,7 +52,7 @@ PALETTES = {
         CHECK_FOCUS='#4e4e4e',
         SCROLL='#555555', SCROLL_HOVER='#767676', SCROLL_PRESS='#a3a3a3',
         ALT_BASE='#1f1f1f', MID_LIGHT='#333333', DARK='#0f0f0f', MID='#1f1f1f',
-        HIGHLIGHT='#3e3e3e', HIGHLIGHT_INACTIVE='#3e3e3e',   # selected text (textSelection in Config.qml)
+        HIGHLIGHT='#3e3e3e', HIGHLIGHT_INACTIVE='#3e3e3e',   # selected text (selectionBackground in Config.qml)
         LINK='#6aa3d9', VISITED='#b48ead',
     ),
     # Noir: black #000000 and #060606, a little lighter only where it must show
@@ -65,31 +67,15 @@ PALETTES = {
         HIGHLIGHT='#222222', HIGHLIGHT_INACTIVE='#222222',
         LINK='#6aa3d9', VISITED='#b48ead',
     ),
-    # Mocha: Catppuccin Mocha (catppuccin.com/palette), the accent Mauve
-    'FrameMocha': dict(
-        WIN='#181825',        # Mantle
-        FILL='#313244',       # Surface0
-        HOVER='#45475a',      # Surface1
-        PRESS='#585b70',      # Surface2
-        TOGGLE='#585b70',     # Surface2
-        SEL='#45475a',        # Surface1
-        SEL_INACTIVE='#313244',
-        ROW_HOVER='#1e1e2e',  # Base
-        OUTLINE='#313244',    # Surface0
-        ACCENT='#cba6f7',     # Mauve
-        ACCENT_HOVER='#b998e2',
-        ON_ACCENT='#11111b',  # Crust
-        DIM='#9399b2',        # Overlay2
-        TEXT='#cdd6f4',       # Text
-        DISABLED='#6c7086',   # Overlay0
-        RED='#f38ba8',        # Red
-        CHECK='#45475a', CHECK_FOCUS='#585b70',
-        SCROLL='#585b70', SCROLL_HOVER='#6c7086', SCROLL_PRESS='#7f849c',
-        ALT_BASE='#1e1e2e', MID_LIGHT='#313244', DARK='#11111b', MID='#1e1e2e',
-        HIGHLIGHT='#474859', HIGHLIGHT_INACTIVE='#474859',
-        LINK='#89b4fa', VISITED='#b4befe',   # Blue, Lavender
-    ),
 }
+# the other themes of Config.qml: their palettes made from their colours (../palettes.py)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import palettes  # noqa: E402
+GENERATED = {}
+for _name in palettes.generated():
+    PALETTES['Frame' + palettes.slug(_name)] = palettes.kvantum(_name)
+    GENERATED['Frame' + palettes.slug(_name)] = _name
+
 NAME = os.path.basename(os.path.normpath(out))
 if NAME not in PALETTES:
     sys.exit('the output folder must be named one of: ' + ', '.join(PALETTES))
@@ -108,7 +94,7 @@ GLOBAL = {
     '#6e6e6e': PRESS, '#797979': PRESS, '#93cee9': HOVER, '#3daee9': ACCENT,
     '#31363b': WIN, '#eff0f1': WIN, '#fcfcfc': WIN, '#587392': DIM,
 }
-# white (arrows, faint hover overlays) is the text colour (Mocha's is not white)
+# white (arrows, faint hover overlays) is the text colour (not every theme's is white)
 if TEXT.lower() != '#ffffff':
     GLOBAL['#ffffff'] = TEXT
 # per element (the start of its id): colour -> colour, 'currentColor' included
@@ -206,9 +192,9 @@ k = k.replace('author=Vince Liuice, based on KvAdapta by Tsu Jan',
 COMMENTS = {
     'Frame': 'The Frame colours (the shell and its GTK theme)',
     'FrameNoir': 'The Noir colours (the shell and its GTK theme): black and #060606',
-    'FrameMocha': 'Catppuccin Mocha (the shell\'s Mocha theme and its GTK theme)',
 }
+comment = COMMENTS.get(NAME) or 'The %s colours (the shell and its GTK theme)' % GENERATED[NAME]
 k = k.replace('comment=An uncomplicated theme inspired by the Materia GTK theme',
-              'comment=' + COMMENTS[NAME] + ' on KvLibadwaita\'s shapes')
+              'comment=' + comment + ' on KvLibadwaita\'s shapes')
 open(os.path.join(out, NAME + '.kvconfig'), 'w').write(k)
 print('written', out)

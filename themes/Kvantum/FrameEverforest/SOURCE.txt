@@ -1,0 +1,13 @@
+FrameEverforest - Kvantum theme for Qt 5 and Qt 6 apps (installed to ~/.config/Kvantum/FrameEverforest)
+
+Made from KvLibadwaitaDark, part of KvLibadwaita by GabePoel:
+  https://github.com/GabePoel/KvLibadwaita (commit 1f4e0bec44b13dabfa1fe4047aa8eeaccf2f3557)
+which is based on Colloid-kde by Vince Liuice (https://github.com/vinceliuice/Colloid-kde)
+and KvAdapta by Tsu Jan. License: GPL-3.0, see LICENSE in this folder.
+
+Changed by frameshell in November 2026 - the colours only, to the shell's Everforest theme
+(its colours in Config.qml; the GTK theme Frame-Everforest has the same): #2d353b windows
+and menus, #424e52 buttons and fields, #7fbbb3 checkboxes, radio buttons, sliders and
+progress bars with #2d353b marks, #d3c6aa for text and arrows. The shapes are
+KvLibadwaita's. ../make-frame.py makes FrameEverforest.svg and FrameEverforest.kvconfig from the original files
+(the palette: ../palettes.py).

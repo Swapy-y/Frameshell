@@ -7,8 +7,9 @@ import qs.components
 // ═══════════════════════════════════════════════════════════════════════════
 //  AuthDialog.qml - the password dialog for apps that need admin rights
 //  (pkexec, saving a system file, installing software). It is drawn like the
-//  launcher: a dark rounded card in the middle of the screen over a dimmed
-//  desktop, with only the lock, "Authentication required", the password field
+//  launcher: a black rounded card that grows out of the island
+//  (components/IslandSheet.qml), or with Island popups off (Config.dynamicPopups)
+//  sits in the middle of the screen over a dimmed desktop, with only the lock, "Authentication required", the password field
 //  and the two buttons (the password is asked for the account polkit picks).
 //
 //  Type the password and press Enter (or Authenticate); Esc or Cancel says no.
@@ -103,8 +104,10 @@ Scope {
 
     PanelWindow {
         id: win
+        // black like the frame, in every theme: the frame's colours for its pieces too
+        readonly property bool framePalette: true
 
-        visible: root.open || card.opacity > 0.01
+        visible: root.open || sheet.shown
 
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "frame-auth"
@@ -127,7 +130,7 @@ Scope {
         Rectangle {
             anchors.fill: parent
             color: "black"
-            opacity: root.open ? 0.35 : 0
+            opacity: root.open && sheet.centered ? 0.35 : 0      // (out of the island: no dimming)
             Behavior on opacity {
                 Anim {
                     duration: root.open ? Theme.durSmall : Theme.durFast
@@ -139,200 +142,189 @@ Scope {
             }
         }
 
-        Rectangle {
-            id: card
+        // the card: out of the island, or in the middle (Island popups, components/IslandSheet.qml)
+        IslandSheet {
+            id: sheet
+            open: root.open
+            sheetW: card.width
+            sheetH: sheet.contentTop + card.height
+            cardRadius: Theme.px(22)
 
-            readonly property real pad: Theme.px(20)
-            readonly property real innerW: width - 2 * pad
-            property real shakeX: 0
+            Item {
+                id: card
 
-            width: Theme.px(360)
-            height: column.height + 2 * pad
-            x: Math.round((parent.width - width) / 2 + shakeX)
-            y: Math.round((parent.height - height) / 2)
-            radius: Theme.px(22)
-            color: Config.surface               // see-through with the shell's blur
-            border.width: Theme.border
-            border.color: Config.outline
+                readonly property real pad: Theme.px(20)
+                readonly property real innerW: width - 2 * pad
+                property real shakeX: 0
 
-            Loader {
-                z: -1
-                anchors.fill: parent
-                active: Config.shadows && Config.shadowStrength > 0
-                source: "../components/CardShadow.qml"
-            }
+                width: Theme.px(360)
+                height: column.height + 2 * pad
+                x: Math.round(shakeX)
+                y: sheet.contentTop
 
-            opacity: root.open ? 1 : 0
-            scale: root.open ? 1 : 0.94
-            Behavior on opacity {
-                Anim {
-                    duration: root.open ? Theme.durSmall : Theme.durFast
-                }
-            }
-            Behavior on scale {
-                Anim {
-                    curve: root.open ? Theme.curveDecel : Theme.curveAccel
-                    duration: root.open ? Theme.durOpen : Theme.durClose
-                }
-            }
 
-            // a wrong password: a short shake
-            SequentialAnimation {
-                id: shake
-                NumberAnimation { target: card; property: "shakeX"; to: -Theme.px(10); duration: 50 }
-                NumberAnimation { target: card; property: "shakeX"; to: Theme.px(10); duration: 70 }
-                NumberAnimation { target: card; property: "shakeX"; to: -Theme.px(6); duration: 60 }
-                NumberAnimation { target: card; property: "shakeX"; to: Theme.px(4); duration: 50 }
-                NumberAnimation { target: card; property: "shakeX"; to: 0; duration: 40 }
-            }
 
-            // swallow clicks so they do not reach the backdrop
-            MouseArea {
-                anchors.fill: parent
-                onPressed: input.forceActiveFocus()
-            }
-
-            Column {
-                id: column
-                x: card.pad
-                y: card.pad
-                width: card.innerW
-                spacing: Theme.px(8)
-
-                Icon {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    size: Theme.px(26)
-                    name: "lock"
-                    color: Config.text
+                // a wrong password: a short shake
+                SequentialAnimation {
+                    id: shake
+                    NumberAnimation { target: card; property: "shakeX"; to: -Theme.px(10); duration: 50 }
+                    NumberAnimation { target: card; property: "shakeX"; to: Theme.px(10); duration: 70 }
+                    NumberAnimation { target: card; property: "shakeX"; to: -Theme.px(6); duration: 60 }
+                    NumberAnimation { target: card; property: "shakeX"; to: Theme.px(4); duration: 50 }
+                    NumberAnimation { target: card; property: "shakeX"; to: 0; duration: 40 }
                 }
 
-                Txt {
-                    width: parent.width
-                    horizontalAlignment: Text.AlignHCenter
-                    text: "Authentication required"
-                    font.pixelSize: Theme.px(20)
-                    font.weight: Font.Medium
+                // swallow clicks so they do not reach the backdrop
+                MouseArea {
+                    anchors.fill: parent
+                    onPressed: input.forceActiveFocus()
                 }
 
-                Item {
-                    width: 1
-                    height: Theme.px(4)
-                }
+                Column {
+                    id: column
+                    x: card.pad
+                    y: card.pad
+                    width: card.innerW
+                    spacing: Theme.px(8)
 
-                // password field, like the launcher's search bar: a filled field, no outline
-                Rectangle {
-                    width: parent.width
-                    height: Theme.px(40)
-                    radius: Theme.px(12)
-                    color: Config.selected
-
-                    TextInput {
-                        id: input
-                        anchors.fill: parent
-                        anchors.leftMargin: Theme.px(14)
-                        anchors.rightMargin: Theme.px(14)
-                        verticalAlignment: TextInput.AlignVCenter
-                        echoMode: root.showInput ? TextInput.Normal : TextInput.Password
-                        passwordCharacter: "•"
-                        enabled: root.open && !root.busy
+                    Icon {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        size: Theme.px(26)
+                        name: "lock"
                         color: Config.text
-                        selectionColor: Config.textSelection
-                        selectedTextColor: Config.text
-                        font.family: Theme.font
-                        font.pixelSize: Theme.px(17)
-                        renderType: Text.QtRendering
-                        clip: true
-
-                        Keys.onPressed: event => {
-                            if (event.key === Qt.Key_Escape) {
-                                root.cancel();
-                                event.accepted = true;
-                            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                                root.submit();
-                                event.accepted = true;
-                            }
-                        }
                     }
 
                     Txt {
-                        anchors.fill: input
-                        visible: input.text.length === 0
-                        text: root.busy ? "Checking…" : root.prompt
-                        color: Config.textFaint
-                        font.pixelSize: Theme.px(17)
+                        width: parent.width
+                        horizontalAlignment: Text.AlignHCenter
+                        text: "Authentication required"
+                        font.pixelSize: Theme.px(20)
+                        font.family: Theme.fontDisplay
+                        font.weight: Font.Medium
                     }
-                }
 
-                // wrong password / messages from the system
-                Txt {
-                    width: parent.width
-                    height: Theme.px(16)
-                    horizontalAlignment: Text.AlignHCenter
-                    text: root.errorText
-                    textFormat: Text.PlainText
-                    elide: Text.ElideRight
-                    color: Config.warning
-                    font.pixelSize: Theme.px(13)
-                }
+                    Item {
+                        width: 1
+                        height: Theme.px(4)
+                    }
 
-                Row {
-                    width: parent.width
-                    spacing: Theme.px(8)
+                    // password field, like the launcher's search bar: a filled field, no outline
+                    Rectangle {
+                        width: parent.width
+                        height: Theme.px(40)
+                        radius: Theme.px(12)
+                        color: Config.frameColors.controlBackground
 
-                    Repeater {
-                        model: [
-                            { label: "Cancel", primary: false },
-                            { label: "Authenticate", primary: true }
-                        ]
+                        TextInput {
+                            id: input
+                            anchors.fill: parent
+                            anchors.leftMargin: Theme.px(14)
+                            anchors.rightMargin: Theme.px(14)
+                            verticalAlignment: TextInput.AlignVCenter
+                            echoMode: root.showInput ? TextInput.Normal : TextInput.Password
+                            passwordCharacter: "•"
+                            enabled: root.open && !root.busy
+                            color: Config.text
+                            selectionColor: Config.frameColors.selectionBackground
+                            selectedTextColor: Config.text
+                            font.family: Theme.font
+                            font.pixelSize: Theme.px(17)
+                            renderType: Text.QtRendering
+                            clip: true
 
-                        Rectangle {
-                            id: button
-                            required property var modelData
-                            readonly property bool usable: !modelData.primary || (input.text.length > 0 && !root.busy)
-
-                            width: (parent.width - parent.spacing) / 2
-                            height: Theme.px(36)
-                            radius: Theme.px(12)
-                            color: modelData.primary
-                                ? (buttonArea.containsMouse && usable ? Config.buttonPrimaryHover : Config.text)
-                                : (buttonArea.containsMouse ? Config.buttonHover : Config.selected)
-                            opacity: usable ? 1 : 0.45
-                            scale: buttonArea.pressed && usable ? 0.97 : 1
-
-                            Behavior on color {
-                                CAnim {}
-                            }
-                            Behavior on opacity {
-                                Anim {
-                                    duration: Theme.durFast
+                            Keys.onPressed: event => {
+                                if (event.key === Qt.Key_Escape) {
+                                    root.cancel();
+                                    event.accepted = true;
+                                } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                    root.submit();
+                                    event.accepted = true;
                                 }
                             }
-                            Behavior on scale {
-                                Anim {
-                                    duration: Theme.durFast
+                        }
+
+                        Txt {
+                            anchors.fill: input
+                            visible: input.text.length === 0
+                            text: root.busy ? "Checking…" : root.prompt
+                            color: Config.frameColors.textTertiary
+                            font.pixelSize: Theme.px(17)
+                        }
+                    }
+
+                    // wrong password / messages from the system
+                    Txt {
+                        width: parent.width
+                        height: Theme.px(16)
+                        horizontalAlignment: Text.AlignHCenter
+                        text: root.errorText
+                        textFormat: Text.PlainText
+                        elide: Text.ElideRight
+                        color: Config.frameColors.warning
+                        font.pixelSize: Theme.px(13)
+                    }
+
+                    Row {
+                        width: parent.width
+                        spacing: Theme.px(8)
+
+                        Repeater {
+                            model: [
+                                { label: "Cancel", primary: false },
+                                { label: "Authenticate", primary: true }
+                            ]
+
+                            Rectangle {
+                                id: button
+                                required property var modelData
+                                readonly property bool usable: !modelData.primary || (input.text.length > 0 && !root.busy)
+
+                                width: (parent.width - parent.spacing) / 2
+                                height: Theme.px(36)
+                                radius: Theme.px(12)
+                                color: modelData.primary
+                                    ? Config.text
+                                    : (buttonArea.containsMouse ? Config.frameColors.controlHover : Config.frameColors.controlBackground)
+                                border.width: modelData.primary ? 0 : Theme.outlineW
+                                border.color: Theme.outlineColor
+                                opacity: usable ? 1 : 0.45
+                                scale: buttonArea.pressed && usable ? 0.97 : 1
+
+                                Behavior on color {
+                                    CAnim {}
                                 }
-                            }
+                                Behavior on opacity {
+                                    Anim {
+                                        duration: Theme.durFast
+                                    }
+                                }
+                                Behavior on scale {
+                                    Anim {
+                                        duration: Theme.durFast
+                                    }
+                                }
 
-                            Txt {
-                                anchors.centerIn: parent
-                                text: button.modelData.label
-                                color: button.modelData.primary ? Config.frame : Config.text
-                                font.pixelSize: Theme.px(15)
-                                font.weight: Font.Medium
-                            }
+                                Txt {
+                                    anchors.centerIn: parent
+                                    text: button.modelData.label
+                                    color: button.modelData.primary ? Config.frameColors.background : Config.text
+                                    font.pixelSize: Theme.px(15)
+                                    font.weight: Font.Medium
+                                }
 
-                            MouseArea {
-                                id: buttonArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: button.usable ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                onClicked: {
-                                    if (!button.usable)
-                                        return;
-                                    if (button.modelData.primary)
-                                        root.submit();
-                                    else
-                                        root.cancel();
+                                MouseArea {
+                                    id: buttonArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: button.usable ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    onClicked: {
+                                        if (!button.usable)
+                                            return;
+                                        if (button.modelData.primary)
+                                            root.submit();
+                                        else
+                                            root.cancel();
+                                    }
                                 }
                             }
                         }

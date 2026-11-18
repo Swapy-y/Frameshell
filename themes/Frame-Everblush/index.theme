@@ -1,0 +1,6 @@
+[X-GNOME-Metatheme]
+Name=Frame-Everblush
+Type=X-GNOME-Metatheme
+Comment=The frameshell Everblush colours on top of adw-gtk3-dark
+Encoding=UTF-8
+GtkTheme=Frame-Everblush

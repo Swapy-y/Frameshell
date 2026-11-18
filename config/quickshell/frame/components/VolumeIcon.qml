@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import QtQuick.Shapes
 import qs
 import "icons.js" as IconData
@@ -12,11 +13,14 @@ import "icons.js" as IconData
 Item {
     id: root
 
+    // the frame's colours inside the frame (Overlay.qml), else the theme's (Config.paletteFor)
+    readonly property var pal: Config.paletteFor(QsWindow.window)
+
     property real level: 1
     property bool muted: false
     property real size: 24
     property color color: Config.text
-    property color dim: Config.iconDim
+    property color dim: root.pal.inactive
 
     readonly property var parts: IconData.data["volume"]
     readonly property bool innerLit: !muted && level > 0.001

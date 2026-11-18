@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import qs
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -11,6 +12,9 @@ import qs
 // ═══════════════════════════════════════════════════════════════════════════
 Item {
     id: root
+
+    // the frame's colours inside the frame (Overlay.qml), else the theme's (Config.paletteFor)
+    readonly property var pal: Config.paletteFor(QsWindow.window)
 
     property string name: ""
     property string icon: ""
@@ -33,7 +37,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: Theme.pop(14)
-        color: root.selected ? Config.selected : (area.containsMouse ? Config.hover : "transparent")
+        color: root.selected ? root.pal.controlBackground : (area.containsMouse ? root.pal.cardBackground : "transparent")
 
         Behavior on color {
             CAnim {}
@@ -57,7 +61,7 @@ Item {
         text: root.name
         font.pixelSize: root.fontSize
         font.weight: Font.Medium
-        color: root.selected ? Config.text : Config.textDim
+        color: root.selected ? Config.text : root.pal.textSecondary
         elide: Text.ElideRight
 
         Behavior on color {

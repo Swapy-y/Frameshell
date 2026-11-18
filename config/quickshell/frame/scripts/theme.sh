@@ -1,13 +1,15 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════════════════
 #  theme.sh <name> - GTK and Qt apps follow the shell's colour theme
-#  (Config.qml `themes`: Default, Noir, Mocha).
+#  (Config.qml `themes`: Default, Noir, Catppuccin Mocha, Everblush, ...).
 #
 #    Default  ->  the GTK theme Frame,        Kvantum Frame,        Qt colours frame.conf,
 #                 kitty ~/.config/kitty/frame.conf, Firefox ~/.config/frameshell/firefox/Default
 #    <Name>   ->  the GTK theme Frame-<Name>, Kvantum Frame<Name>,  Qt colours frame-<name>.conf,
 #                 kitty ~/.config/kitty/frame-<name>.conf, Firefox .../firefox/<Name>
-#                 (a theme of your own without them: Default's)
+#                 (<Name>: the theme's name without spaces, <name> the same in lower case -
+#                 "Tokyo Night": Frame-TokyoNight, frame-tokyonight.conf; a theme of your own
+#                 without them: Default's)
 #
 #  The shell runs it when you pick a theme (SUPER + CTRL + Up / Down, services/Themes.qml)
 #  and once when it starts. It also remembers the theme for the shell
@@ -20,6 +22,9 @@
 #  start again.
 # ═══════════════════════════════════════════════════════════════════════════
 name="${1:-Default}"
+[[ $name == Mocha ]] && name="Catppuccin Mocha"     # the Mocha theme of earlier versions
+slug="${name//[[:space:]]/}"
+low="${slug,,}"
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
 DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
 STATE="${XDG_STATE_HOME:-$HOME/.local/state}/frameshell"
@@ -28,10 +33,10 @@ gtk=Frame
 kvantum=Frame
 qtcolors=frame.conf
 if [[ $name != Default ]]; then
-    [[ -d $DATA/themes/Frame-$name ]] && gtk="Frame-$name"
-    [[ -d $CFG/Kvantum/Frame$name ]] && kvantum="Frame$name"
-    [[ -f $CFG/qt6ct/colors/frame-${name,,}.conf || -f $CFG/qt5ct/colors/frame-${name,,}.conf ]] &&
-        qtcolors="frame-${name,,}.conf"
+    [[ -d $DATA/themes/Frame-$slug ]] && gtk="Frame-$slug"
+    [[ -d $CFG/Kvantum/Frame$slug ]] && kvantum="Frame$slug"
+    [[ -f $CFG/qt6ct/colors/frame-$low.conf || -f $CFG/qt5ct/colors/frame-$low.conf ]] &&
+        qtcolors="frame-$low.conf"
 fi
 
 # key=value in an ini-like file: changed only if it holds one of ours (`match`)
@@ -40,6 +45,7 @@ set_key() { # set_key <file> <key> <new value> <match: a pattern for the current
     local file=$1 key=$2 value=$3 match=$4 current
     [[ -f $file ]] || return 0
     current="$(grep -m1 "^$key=" "$file" | cut -d= -f2-)"
+    # shellcheck disable=SC2053  # $match is a glob on purpose ("Frame*")
     [[ -n $current && $current == $match && $current != "$value" ]] || return 0
     sed -i "s|^$key=.*|$key=$value|" "$file"
 }
@@ -75,7 +81,7 @@ done
 #    frame-<name>.conf); open kitty windows reload it at once. A kitty.conf of your own (a file,
 #    not such a link) stays. ──
 kittyconf=frame.conf
-[[ $name != Default && -f $CFG/kitty/frame-${name,,}.conf ]] && kittyconf="frame-${name,,}.conf"
+[[ $name != Default && -f $CFG/kitty/frame-$low.conf ]] && kittyconf="frame-$low.conf"
 link="$CFG/kitty/kitty.conf"
 if [[ -L $link && -f $CFG/kitty/$kittyconf ]]; then
     current="$(readlink "$link")"
@@ -106,7 +112,7 @@ firefox_profiles() {
 }
 FF="$CFG/frameshell/firefox"
 ffdir="$FF/Default"
-[[ $name != Default && -d $FF/$name ]] && ffdir="$FF/$name"
+[[ $name != Default && -d $FF/$slug ]] && ffdir="$FF/$slug"
 if [[ -d $ffdir ]]; then
     while IFS= read -r profile; do
         [[ -n $profile && -d $profile ]] || continue

@@ -57,13 +57,10 @@ Panel {
     readonly property var today: Clock.date
     readonly property var shownMonth: new Date(today.getFullYear(), today.getMonth() + monthOffset, 1)
 
-    Connections {
-        target: Ui
-
-        function onCalendarOpenChanged() {
-            if (Ui.calendarOpen)
-                root.monthOffset = 0;
-        }
+    // opening, it shows this month
+    onOpenChanged: {
+        if (open)
+            monthOffset = 0;
     }
 
     // Weeks needed by the shown month (Monday first).
@@ -96,7 +93,9 @@ Panel {
 
     // size follows the content: header + weekday row + the weeks of this month
     contentW: Theme.px(360)
-    contentH: gridTop + gridH + Theme.px(5) + Theme.bar
+    // (the bar's height under the days: the date sits there - notch mode: the corner block.
+    // Disable dock, Store.dockDisabled: no date - the frame and a little room)
+    contentH: gridTop + gridH + Theme.px(5) + (Store.dockDisabled ? Theme.frame + Theme.px(10) : Theme.bar)
 
     // mouse wheel changes the month
     WheelHandler {
@@ -104,7 +103,9 @@ Panel {
         onWheel: event => root.monthOffset += event.angleDelta.y > 0 ? -1 : 1
     }
 
-    readonly property real gridX: Math.round((contentW - gridW) / 2 - Theme.frame / 2)
+    // centred in what you see of it: less the frame on its right (frameless, the part
+    // of the panel off the screen: it moves out into the frame's place, Theme.frameShift)
+    readonly property real gridX: Math.round((contentW - gridW) / 2 - Theme.edge / 2)
 
     // Clarity City's digits are not drawn in the middle of their own width (a 1
     // has more room on its right, a 6 on its left). Their side spacings (in
@@ -150,7 +151,7 @@ Panel {
             text: root.shownMonth.getFullYear()
             font.pixelSize: Theme.px(19)
             font.weight: Font.Medium
-            color: Config.textDim
+            color: Config.frameColors.textSecondary
         }
     }
     MouseArea {
@@ -174,7 +175,8 @@ Panel {
             icon: "chev-left"
             iconSize: Theme.px(16)
             outline: false
-            offColor: Config.selected
+            edge: true                       // the outline ("No outline buttons" takes it away)
+            offColor: Config.frameColors.controlBackground
             hoverColor: offColor             // no change under the pointer
             iconColor: Config.text
             onClicked: root.monthOffset--
@@ -184,7 +186,8 @@ Panel {
             icon: "chev-right"
             iconSize: Theme.px(16)
             outline: false
-            offColor: Config.selected
+            edge: true                       // the outline ("No outline buttons" takes it away)
+            offColor: Config.frameColors.controlBackground
             hoverColor: offColor             // no change under the pointer
             iconColor: Config.text
             onClicked: root.monthOffset++
@@ -207,7 +210,7 @@ Panel {
                 text: modelData
                 font.pixelSize: Theme.px(12)
                 font.weight: Font.Medium
-                color: Config.textDim
+                color: Config.frameColors.textSecondary
             }
         }
     }
@@ -216,7 +219,7 @@ Panel {
         y: Theme.px(85)
         width: root.gridW
         height: 1
-        color: Config.divider
+        color: Config.frameColors.divider
     }
 
     // the days
@@ -284,7 +287,7 @@ Panel {
                     font.pixelSize: Theme.px(15)
                     font.weight: cell.modelData.today ? Font.DemiBold : Font.Medium
                     // today: dark number on the white circle
-                    color: cell.modelData.today ? Config.frame : (cell.modelData.inMonth ? Config.text : Config.textFaint)
+                    color: cell.modelData.today ? Config.frameColors.background : (cell.modelData.inMonth ? Config.text : Config.frameColors.textTertiary)
                 }
             }
         }

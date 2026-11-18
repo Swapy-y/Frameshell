@@ -1,0 +1,13 @@
+FrameNord - Kvantum theme for Qt 5 and Qt 6 apps (installed to ~/.config/Kvantum/FrameNord)
+
+Made from KvLibadwaitaDark, part of KvLibadwaita by GabePoel:
+  https://github.com/GabePoel/KvLibadwaita (commit 1f4e0bec44b13dabfa1fe4047aa8eeaccf2f3557)
+which is based on Colloid-kde by Vince Liuice (https://github.com/vinceliuice/Colloid-kde)
+and KvAdapta by Tsu Jan. License: GPL-3.0, see LICENSE in this folder.
+
+Changed by frameshell in November 2026 - the colours only, to the shell's Nord theme
+(its colours in Config.qml; the GTK theme Frame-Nord has the same): #2e3440 windows
+and menus, #414a5c buttons and fields, #81a1c1 checkboxes, radio buttons, sliders and
+progress bars with #2e3440 marks, #d8dee9 for text and arrows. The shapes are
+KvLibadwaita's. ../make-frame.py makes FrameNord.svg and FrameNord.kvconfig from the original files
+(the palette: ../palettes.py).

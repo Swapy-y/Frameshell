@@ -22,7 +22,7 @@ import qs.modules
 //    modules/EmojiPicker.qml Super+.        (`qs -c frame ipc call emoji toggle`)
 //    modules/OnScreenKeyboard.qml  Super+\  (`qs -c frame ipc call keyboard toggle`)
 //    modules/HyprSync.qml    gives the window border width / cornerRadius to Hyprland's windows
-//    modules/PowerConfirm.qml  "Shut down?" / "Log out?"
+//    modules/PowerConfirm.qml  "Shut down?" / "Restart?" / "Log out?"
 //    modules/Curtain.qml     logging out: the screen fades to black
 //    lock.qml                the lock screen, its own process (scripts/lock.sh starts it):
 //                            modules/Lock.qml + modules/LockView.qml
@@ -32,18 +32,24 @@ import qs.modules
 //    services/               data: clock, battery, volume, apps, notifications ...
 // ═══════════════════════════════════════════════════════════════════════════
 ShellRoot {
-    // Clarity City, bundled so the shell looks right even before the font is installed system-wide
+    // Inter, bundled: the shell's font when SF Pro isn't installed (Theme.font)
     FontLoader {
-        source: Qt.resolvedUrl("assets/fonts/ClarityCity-Regular.otf")
+        source: Qt.resolvedUrl("assets/fonts/Inter-Regular.otf")
     }
     FontLoader {
-        source: Qt.resolvedUrl("assets/fonts/ClarityCity-Medium.otf")
+        source: Qt.resolvedUrl("assets/fonts/Inter-Medium.otf")
     }
     FontLoader {
-        source: Qt.resolvedUrl("assets/fonts/ClarityCity-SemiBold.otf")
+        source: Qt.resolvedUrl("assets/fonts/Inter-SemiBold.otf")
     }
     FontLoader {
-        source: Qt.resolvedUrl("assets/fonts/ClarityCity-Bold.otf")
+        source: Qt.resolvedUrl("assets/fonts/Inter-Bold.otf")
+    }
+    FontLoader {
+        source: Qt.resolvedUrl("assets/fonts/InterDisplay-Medium.otf")
+    }
+    FontLoader {
+        source: Qt.resolvedUrl("assets/fonts/InterDisplay-SemiBold.otf")
     }
 
     Wallpaper {}

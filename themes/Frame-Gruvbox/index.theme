@@ -1,0 +1,6 @@
+[X-GNOME-Metatheme]
+Name=Frame-Gruvbox
+Type=X-GNOME-Metatheme
+Comment=The frameshell Gruvbox colours on top of adw-gtk3-dark
+Encoding=UTF-8
+GtkTheme=Frame-Gruvbox

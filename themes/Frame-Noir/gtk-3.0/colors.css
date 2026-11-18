@@ -6,8 +6,9 @@
    for warnings.
    gtk.css loads adw-gtk3-dark first; this file only replaces its colours.
    Made by themes/make-themes.py from themes/Frame (what each rule is for: see the
-   comments there): change the palette in make-themes.py and run it again (an edit
-   here is lost then). Restart an app to see a change. */
+   comments there): change the theme's colours in Config.qml (Noir's: its palette in
+   make-themes.py) and run it again (an edit here is lost then). Restart an app to see a
+   change. */
 
 @define-color accent_bg_color #ffffff;
 @define-color accent_fg_color #000000;

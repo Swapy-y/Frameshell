@@ -8,7 +8,7 @@ import "../components/shapes.js" as Shapes
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  QuickNote.qml - a note that opens on the right edge of the screen (hover
-//  the middle of the right frame). It grows with the text, stays centred
+//  the middle of the right edge). It grows with the text, stays centred
 //  vertically, and stops at Config.noteMaxHeightFraction of the screen height
 //  (then it scrolls). Click into it to type; Esc or clicking elsewhere stops
 //  editing. The text is saved automatically (services/Notes.qml).
@@ -28,7 +28,9 @@ Panel {
         input: !Ui.calendarOpen && (root.hot || panelHover.hovered || Ui.noteEditing)
     }
 
-    open: latch.open && !Ui.calendarOpen
+    // out while the latch is (Click to expand: peeking until clicked, components/Panel.qml)
+    peekable: true
+    hovering: latch.open && !Ui.calendarOpen
     attachRight: true
     resizeDuration: Theme.durFast        // follow typing quickly
 
@@ -69,6 +71,7 @@ Panel {
             y: Math.round((parent.height - height) / 2)
             text: "Quick note"
             font.pixelSize: Theme.px(21)
+            font.family: Theme.fontDisplay
             font.weight: Font.DemiBold
         }
 
@@ -79,7 +82,8 @@ Panel {
             icon: "note-save"
             iconSize: Theme.px(16)
             outline: false
-            offColor: Config.selected
+            edge: true                       // the outline ("No outline buttons" takes it away)
+            offColor: Config.frameColors.controlBackground
             hoverColor: offColor             // no change under the pointer
             iconColor: Config.text
             onClicked: root.save()
@@ -122,7 +126,8 @@ Panel {
         width: Theme.noteW - 2 * root.edge
         height: root.contentH - root.titleBlock - root.edge
         radius: Theme.px(12)
-        color: Config.selected
+        color: Config.frameColors.controlBackground
+        // (no outline: a field, not a button)
 
         // a click anywhere on the card (around the text too) starts typing at the end
         MouseArea {
@@ -157,9 +162,9 @@ Panel {
                 id: edit
                 width: flick.width
                 color: Config.text
-                selectionColor: Config.textSelection
+                selectionColor: Config.frameColors.selectionBackground
                 selectedTextColor: Config.text
-                // the clipboard entries' text: Clarity City Medium, 16 px
+                // the clipboard entries' text: the shell font, Medium, 16 px
                 font.family: Theme.font
                 font.pixelSize: Theme.px(16)
                 font.weight: Font.Medium
@@ -195,7 +200,7 @@ Panel {
             Txt {
                 visible: edit.text.length === 0 && !edit.activeFocus
                 text: "Click to write a note…"
-                color: Config.textFaint
+                color: Config.frameColors.textTertiary
                 font.pixelSize: Theme.px(16)
                 font.weight: Font.Medium
             }

@@ -31,9 +31,9 @@ Item {
     property real convexRadius: Theme.panelRadius
     property real earRadius: Theme.earRadius
 
-    // where the frame's bottom edge is: the bar, or less while the dock hides
-    // (Overlay.qml's fill layer says; auto hide)
-    readonly property real frameBottom: fillLayer.frameBottom !== undefined ? fillLayer.frameBottom : Theme.bar
+    // where the frame's bottom edge is (its fill: the border is round it): the bar, or
+    // less while the dock hides (Overlay.qml's fill layer says; auto hide)
+    readonly property real frameBottom: fillLayer.frameBottom !== undefined ? fillLayer.frameBottom : Theme.bar - Theme.border
 
     // the rectangle to draw (exact, may be fractional)
     property real fx: target.x
@@ -41,16 +41,24 @@ Item {
     property real fw: target.width
     property real fh: target.height
 
+    // The border is drawn round the fill, inside the panel's size (Theme.border): the
+    // fill is a border width smaller on every free side, so with its border the panel
+    // is exactly the rectangle above. (Attached sides run into the frame anyway.)
+    readonly property real inL: attachLeft ? 0 : Theme.border
+    readonly property real inR: attachRight ? 0 : Theme.border
+    readonly property real inT: attachTop ? 0 : Theme.border
+    readonly property real inB: attachBottom ? 0 : Theme.border
+
     // empty while nothing sticks out of the frame yet
     readonly property string pathData: Shapes.flapPath({
         W: fillLayer.width,
         H: fillLayer.height,
-        F: Theme.frame,
+        F: Theme.frameEdge,
         B: frameBottom,
-        x: fx,
-        y: fy,
-        w: fw,
-        h: fh,
+        x: fx + inL,
+        y: fy + inT,
+        w: fw - inL - inR,
+        h: fh - inT - inB,
         top: attachTop,
         bottom: attachBottom,
         left: attachLeft,
@@ -71,7 +79,7 @@ Item {
 
         ShapePath {
             strokeWidth: Theme.border * 2     // half is hidden under the fill
-            strokeColor: Config.outline
+            strokeColor: Config.frameColors.border
             fillColor: "transparent"
             joinStyle: ShapePath.RoundJoin
             PathSvg {
@@ -91,7 +99,7 @@ Item {
 
         ShapePath {
             strokeWidth: -1
-            fillColor: Config.frame
+            fillColor: Config.frameColors.background
             PathSvg {
                 path: root.pathData
             }

@@ -14,7 +14,7 @@ Singleton {
     property bool calendarOpen: false
     property bool noteEditing: false
     property bool clipboardSearching: false // typing in the clipboard's search field (modules/ClipboardPanel.qml)
-    property string confirm: ""             // "shutdown" / "logout": the "Shut down?" / "Log out?" card (modules/PowerConfirm.qml)
+    property string confirm: ""             // "shutdown" / "reboot" / "logout": the "Shut down?" / "Restart?" / "Log out?" card (modules/PowerConfirm.qml)
     property bool loggingOut: false         // the screen fades to black and the session ends (modules/Curtain.qml, PowerActions.logout())
 
     // After logging in the whole desktop (wallpaper, frame, bar) fades in together,
@@ -27,6 +27,9 @@ Singleton {
     property bool wallpaperOpen: false      // the wallpaper switcher in the island (SUPER + CTRL + Left / Right, modules/Island.qml)
     property bool themeOpen: false          // the theme switcher in the island (SUPER + CTRL + Up / Down, the same place)
     property bool settingsOpen: false       // the Settings app's window (modules/Settings.qml)
+    // launcher / switcher sheets growing out of the island, open or still closing
+    // (components/IslandSheet.qml): while there is one the island's top row steps aside
+    property int islandSheets: 0
     // the screens where a window covers the whole screen as a floating window (F11 on a
     // workspace without tiling, hyprland.lua: ipc call ui cover): the overlay hides there, as
     // Hyprland hides it for its own fullscreen (modules/Overlay.qml)
@@ -150,7 +153,7 @@ Singleton {
             noteEditing = false;
     }
 
-    // "Shut down?" / "Log out?" (the power menu, SUPER + M)
+    // "Shut down?" / "Restart?" / "Log out?" (the power menu, SUPER + M)
     function ask(action) {
         if (loggingOut)
             return;

@@ -2,7 +2,7 @@ import QtQuick
 import qs
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  Txt.qml - Text in the shell font (Clarity City).
+//  Txt.qml - Text in the shell font (Theme.font: SF Pro Text, or Inter).
 // ═══════════════════════════════════════════════════════════════════════════
 Text {
     color: Config.text

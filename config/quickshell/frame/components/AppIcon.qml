@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import qs
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -17,11 +18,14 @@ import qs
 Item {
     id: root
 
+    // the frame's colours inside the frame (Overlay.qml), else the theme's (Config.paletteFor)
+    readonly property var pal: Config.paletteFor(QsWindow.window)
+
     property string source: ""
     property string fallbackSource: ""
     property string label: ""
     property real size: 24
-    property color fallbackColor: Config.iconTile
+    property color fallbackColor: root.pal.appIconFallback
     property real fallbackRadius: size * 0.22
     property bool asynchronous: true
 
@@ -58,7 +62,7 @@ Item {
             anchors.centerIn: parent
             visible: root.size >= Theme.px(20) && root.label.length > 0
             text: root.label.charAt(0).toUpperCase()
-            color: Config.frame
+            color: root.pal.background
             font.pixelSize: root.size * 0.5
             font.weight: Font.DemiBold
         }

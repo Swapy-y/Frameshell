@@ -1,0 +1,170 @@
+/* Frame-Everblush - colours for GTK 4 and libadwaita apps (pavucontrol, GNOME apps, file pickers ...)
+   ->  ~/.local/share/themes/Frame-Everblush/gtk-4.0/colors.css
+
+   The shell's Everblush theme: #141b1e windows, #1c2326 cards, #232a2d buttons, #343b3e selections, #dadada text,
+   #67b0e8 main buttons with #141b1e text, #e57474 for errors, #e5c76b for warnings.
+   Loaded by the Frame-Everblush theme (plain GTK 4 apps) and, while Everblush is the shell's theme,
+   by ~/.config/gtk-4.0/gtk.css (libadwaita apps, which ignore themes; scripts/theme.sh
+   points it here). Made by themes/make-themes.py from themes/Frame (what each rule is
+   for: see the comments there): change the theme's colours in Config.qml (Noir's: its
+   palette in make-themes.py) and run it again (an edit here is lost then). Restart an
+   app to see a change. */
+
+@define-color accent_bg_color #67b0e8;
+@define-color accent_fg_color #141b1e;
+@define-color accent_color #67b0e8;
+@define-color destructive_bg_color #e57474;
+@define-color destructive_fg_color #141b1e;
+@define-color destructive_color #e57474;
+@define-color success_bg_color #8ccf7e;
+@define-color success_fg_color #141b1e;
+@define-color success_color #8ccf7e;
+@define-color warning_bg_color #e5c76b;
+@define-color warning_fg_color #141b1e;
+@define-color warning_color #e5c76b;
+@define-color error_bg_color #e57474;
+@define-color error_fg_color #141b1e;
+@define-color error_color #e57474;
+@define-color window_bg_color #141b1e;
+@define-color window_fg_color #dadada;
+@define-color view_bg_color #141b1e;
+@define-color view_fg_color #dadada;
+@define-color headerbar_bg_color #141b1e;
+@define-color headerbar_fg_color #dadada;
+@define-color headerbar_border_color #dadada;
+@define-color headerbar_backdrop_color #141b1e;
+@define-color headerbar_shade_color #2b3235;
+@define-color headerbar_darker_shade_color #2b3235;
+@define-color sidebar_bg_color #192023;
+@define-color sidebar_fg_color #dadada;
+@define-color sidebar_backdrop_color #192023;
+@define-color sidebar_shade_color rgba(0, 0, 0, 0.25);
+@define-color sidebar_border_color #2b3235;
+@define-color secondary_sidebar_bg_color #161d20;
+@define-color secondary_sidebar_fg_color #dadada;
+@define-color secondary_sidebar_backdrop_color #161d20;
+@define-color secondary_sidebar_shade_color rgba(0, 0, 0, 0.25);
+@define-color secondary_sidebar_border_color #2b3235;
+@define-color card_bg_color #1c2326;
+@define-color card_fg_color #dadada;
+@define-color card_shade_color rgba(0, 0, 0, 0.36);
+@define-color dialog_bg_color #141b1e;
+@define-color dialog_fg_color #dadada;
+@define-color popover_bg_color #141b1e;
+@define-color popover_fg_color #dadada;
+@define-color popover_shade_color rgba(0, 0, 0, 0.25);
+@define-color thumbnail_bg_color #1c2326;
+@define-color thumbnail_fg_color #dadada;
+@define-color shade_color rgba(0, 0, 0, 0.36);
+@define-color scrollbar_outline_color rgba(0, 0, 0, 0.5);
+
+:root {
+  --accent-bg-color: #67b0e8;
+  --accent-fg-color: #141b1e;
+  --accent-color: #67b0e8;
+  --destructive-bg-color: #e57474;
+  --destructive-fg-color: #141b1e;
+  --destructive-color: #e57474;
+  --success-bg-color: #8ccf7e;
+  --success-fg-color: #141b1e;
+  --success-color: #8ccf7e;
+  --warning-bg-color: #e5c76b;
+  --warning-fg-color: #141b1e;
+  --warning-color: #e5c76b;
+  --error-bg-color: #e57474;
+  --error-fg-color: #141b1e;
+  --error-color: #e57474;
+  --window-bg-color: #141b1e;
+  --window-fg-color: #dadada;
+  --view-bg-color: #141b1e;
+  --view-fg-color: #dadada;
+  --headerbar-bg-color: #141b1e;
+  --headerbar-fg-color: #dadada;
+  --headerbar-border-color: #dadada;
+  --headerbar-backdrop-color: #141b1e;
+  --headerbar-shade-color: #2b3235;
+  --headerbar-darker-shade-color: #2b3235;
+  --sidebar-bg-color: #192023;
+  --sidebar-fg-color: #dadada;
+  --sidebar-backdrop-color: #192023;
+  --sidebar-shade-color: rgba(0, 0, 0, 0.25);
+  --sidebar-border-color: #2b3235;
+  --secondary-sidebar-bg-color: #161d20;
+  --secondary-sidebar-fg-color: #dadada;
+  --secondary-sidebar-backdrop-color: #161d20;
+  --secondary-sidebar-shade-color: rgba(0, 0, 0, 0.25);
+  --secondary-sidebar-border-color: #2b3235;
+  --card-bg-color: #1c2326;
+  --card-fg-color: #dadada;
+  --card-shade-color: rgba(0, 0, 0, 0.36);
+  --dialog-bg-color: #141b1e;
+  --dialog-fg-color: #dadada;
+  --popover-bg-color: #141b1e;
+  --popover-fg-color: #dadada;
+  --popover-shade-color: rgba(0, 0, 0, 0.25);
+  --thumbnail-bg-color: #1c2326;
+  --thumbnail-fg-color: #dadada;
+  --shade-color: rgba(0, 0, 0, 0.36);
+  --scrollbar-outline-color: rgba(0, 0, 0, 0.5);
+  --overview-bg-color: #192023;
+  --overview-fg-color: #dadada;
+  --active-toggle-bg-color: rgba(218, 218, 218, 0.2);
+  --active-toggle-fg-color: #dadada;
+  --frame-link-color: #67b0e8;
+  --frame-visited-color: #c47fd5;
+}
+
+link,
+button.link {
+  color: var(--frame-link-color);
+}
+link:visited,
+button.link:visited {
+  color: var(--frame-visited-color);
+}
+link:hover,
+button.link:hover {
+  color: color-mix(in srgb, var(--frame-link-color) 75%, white);
+}
+link:active,
+button.link:active {
+  color: var(--frame-link-color);
+}
+
+switch:checked > slider,
+switch:checked:hover > slider,
+switch:checked:active > slider {
+  background-color: var(--accent-fg-color);
+}
+
+selection,
+selection:focus-within,
+.background.chromium selection,
+.background.chromium selection:focus {
+  background-color: #383f42;
+  color: var(--window-fg-color);
+}
+
+toast {
+  background-color: #141b1e;
+}
+
+infobar.info > revealer > box,
+infobar.question > revealer > box {
+  background-color: #232a2d;
+}
+
+popover > contents,
+popover > arrow {
+  border-color: #2b3235;
+}
+
+tooltip.background {
+  background-color: #141b1e;
+  border-color: #2b3235;
+}
+
+banner > revealer > widget,
+banner > revealer > widget:backdrop {
+  background-color: #141b1e;
+}

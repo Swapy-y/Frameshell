@@ -25,6 +25,11 @@ import qs.components
 //  selection - without one, the whole screen - with what you drew on it; Esc
 //  (or SUPER + C) cancels. The arrow keys move the selection by a pixel, with Shift they
 //  resize it. It fades out again either way.
+//  Its colours (`pal` below) are Noir's in every theme: black, the line round
+//  the area white. "Follow theme" (the Settings app's Screenshot page,
+//  Store.screenshotFollowTheme): the theme's in use, the line round the area in
+//  its windowBorderActive (the focused window's border). The darkening round the
+//  area is the same in both: black at 74 %.
 //  While it is open no keyboard shortcut of Hyprland works, not even SUPER +
 //  drag: hyprland.lua switches them off while this window ("frame-screenshot")
 //  is open.
@@ -61,6 +66,27 @@ Scope {
     property var wins: ({})                 // screen name -> its window
 
     readonly property string script: Quickshell.shellPath("scripts/screenshot.sh")
+
+    // ── its colours: Noir's in every theme, or the theme's in use with "Follow theme"
+    // (Store.screenshotFollowTheme) - a colour a theme leaves out is Default's (Config.themeColor) ──
+    QtObject {
+        id: pal
+
+        readonly property bool follow: Store.screenshotFollowTheme
+        // the theme they come from (no theme "Noir" any more: the frame's colours, Noir's)
+        readonly property var entry: follow ? Config.theme : (Config.themes.find(t => t.name === "Noir") || Config.frameBase)
+        readonly property color background: Config.themeColor(entry, "background")
+        readonly property color border: Config.themeColor(entry, "border")
+        readonly property color divider: Config.themeColor(entry, "divider")
+        readonly property color controlBackground: Config.themeColor(entry, "controlBackground")
+        readonly property color cardBackground: Config.themeColor(entry, "cardBackground")
+        readonly property color text: Config.themeColor(entry, "text")
+        readonly property color textSecondary: Config.themeColor(entry, "textSecondary")
+        readonly property color textTertiary: Config.themeColor(entry, "textTertiary")
+        readonly property color selectionBackground: Config.themeColor(entry, "selectionBackground")
+        // the line round the area: white, or the focused window's border (Hyprland's)
+        readonly property color outline: follow ? Config.windowBorderActive : "#ffffff"
+    }
 
     function start(m) {
         if (mode !== "" || (m !== "area" && m !== "screen"))
@@ -685,7 +711,7 @@ Scope {
                                     x: win.textAt ? win.textAt.x : 0
                                     y: win.textAt ? win.textAt.y : 0
                                     color: root.drawColor
-                                    selectionColor: Config.textSelection
+                                    selectionColor: pal.selectionBackground
                                     font.family: Theme.font
                                     font.pixelSize: root.textSize
                                     font.weight: Font.DemiBold
@@ -711,8 +737,9 @@ Scope {
                             }
                         }
 
-                        // ── dimmed around the selection (all of it without one): Config.shotDim ──
-                        readonly property color dim: Config.shotDim
+                        // ── dimmed around the selection (all of it without one): black at 74 %
+                        // (#AARRGGBB), in every theme ──
+                        readonly property color dim: "#bd000000"
 
                         Rectangle {
                             visible: !win.hasSel
@@ -759,7 +786,7 @@ Scope {
                             radius: Theme.px(6)
                             color: "transparent"
                             border.width: 2
-                            border.color: Config.shotOutline
+                            border.color: pal.outline
                         }
 
                         // its size in screen pixels, in its middle - only while it is being sized (drawn,
@@ -774,7 +801,7 @@ Scope {
                             width: sizeText.implicitWidth + Theme.px(14)
                             height: sizeText.implicitHeight + Theme.px(6)
                             radius: height / 2
-                            color: Config.frame
+                            color: pal.background
 
                             Behavior on opacity {
                                 Anim {
@@ -788,7 +815,7 @@ Scope {
                                 text: Math.round(root.sel.width * win.ratio) + " × " + Math.round(root.sel.height * win.ratio)
                                 font.pixelSize: Theme.fsSmall
                                 font.weight: Font.DemiBold
-                                color: Config.text
+                                color: pal.text
                             }
                         }
 
@@ -877,9 +904,9 @@ Scope {
                             width: tipRow.implicitWidth + Theme.px(16)
                             height: Theme.px(30)
                             radius: Theme.px(8)
-                            color: Config.frame
+                            color: pal.background
                             border.width: 1
-                            border.color: Config.outline
+                            border.color: pal.border
 
                             Behavior on opacity {
                                 Anim {
@@ -908,6 +935,7 @@ Scope {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: root.thickness + " px"
                                     font.pixelSize: Theme.fsSmall
+                                    color: pal.text
                                 }
                             }
 
@@ -957,9 +985,9 @@ Scope {
                             width: Theme.px(196)
                             height: col.implicitHeight + 2 * pad
                             radius: Theme.px(14)
-                            color: Config.frame
+                            color: pal.background
                             border.width: Math.max(1, Theme.border)
-                            border.color: Config.outline
+                            border.color: pal.border
 
                             Behavior on opacity {
                                 Anim {
@@ -994,7 +1022,7 @@ Scope {
                                         Rectangle {
                                             anchors.fill: parent
                                             radius: Theme.px(9)
-                                            color: toolRow.active ? Config.selected : (toolArea.containsMouse ? Config.hover : "transparent")
+                                            color: toolRow.active ? pal.controlBackground : (toolArea.containsMouse ? pal.cardBackground : "transparent")
                                         }
                                         ToolIcon {
                                             x: Theme.px(10)
@@ -1002,7 +1030,7 @@ Scope {
                                             width: Theme.px(18)
                                             height: Theme.px(18)
                                             tool: toolRow.modelData.tool
-                                            tint: toolRow.active ? Config.text : Config.textDim
+                                            tint: toolRow.active ? pal.text : pal.textSecondary
                                         }
                                         Txt {
                                             x: Theme.px(38)
@@ -1010,7 +1038,7 @@ Scope {
                                             text: toolRow.modelData.label
                                             font.pixelSize: Theme.px(14)
                                             font.weight: Font.Medium
-                                            color: toolRow.active ? Config.text : Config.textDim
+                                            color: toolRow.active ? pal.text : pal.textSecondary
                                         }
                                         MouseArea {
                                             id: toolArea
@@ -1029,7 +1057,7 @@ Scope {
                                 Rectangle {
                                     width: col.width
                                     height: 1
-                                    color: Config.divider
+                                    color: pal.divider
                                 }
 
                                 // the colour
@@ -1057,7 +1085,7 @@ Scope {
                                                     radius: width / 2
                                                     color: "transparent"
                                                     border.width: swatch.active ? Math.max(1, Theme.px(2)) : 0
-                                                    border.color: Config.text
+                                                    border.color: pal.text
                                                 }
                                                 Rectangle {
                                                     anchors.centerIn: parent
@@ -1066,7 +1094,7 @@ Scope {
                                                     radius: width / 2
                                                     color: swatch.modelData
                                                     border.width: 1
-                                                    border.color: Config.outline
+                                                    border.color: pal.border
                                                 }
                                                 MouseArea {
                                                     anchors.fill: parent
@@ -1082,7 +1110,7 @@ Scope {
                                 Rectangle {
                                     width: col.width
                                     height: 1
-                                    color: Config.divider
+                                    color: pal.divider
                                 }
 
                                 // undo
@@ -1097,7 +1125,7 @@ Scope {
                                     Rectangle {
                                         anchors.fill: parent
                                         radius: Theme.px(9)
-                                        color: undoRow.can && undoArea.containsMouse ? Config.hover : "transparent"
+                                        color: undoRow.can && undoArea.containsMouse ? pal.cardBackground : "transparent"
                                     }
                                     ToolIcon {
                                         x: Theme.px(10)
@@ -1105,7 +1133,7 @@ Scope {
                                         width: Theme.px(18)
                                         height: Theme.px(18)
                                         tool: "undo"
-                                        tint: Config.textDim
+                                        tint: pal.textSecondary
                                     }
                                     Txt {
                                         x: Theme.px(38)
@@ -1113,7 +1141,7 @@ Scope {
                                         text: "Undo"
                                         font.pixelSize: Theme.px(14)
                                         font.weight: Font.Medium
-                                        color: Config.textDim
+                                        color: pal.textSecondary
                                     }
                                     Txt {
                                         anchors.right: parent.right
@@ -1121,7 +1149,7 @@ Scope {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: "Ctrl+Z"
                                         font.pixelSize: Theme.fsSmall
-                                        color: Config.textFaint
+                                        color: pal.textTertiary
                                     }
                                     MouseArea {
                                         id: undoArea

@@ -30,6 +30,10 @@ Item {
     property real reveal: 1                  // 0 = hidden (auto hide), 1 = there
     property real notch: 0                   // 0 = bar, 1 = notch (notch mode)
     property real shownWidth: width          // how wide the dock is drawn round the middle (the notch while it grows)
+    // the power menu / the calendar is out (Overlay.qml)
+    property bool powerPanelOpen: false
+    property bool calendarPanelOpen: false
+
 
     x: 0
     y: parent.height - frameBottom
@@ -68,6 +72,14 @@ Item {
         RingButton {
             y: Math.round((parent.height - height) / 2)
             width: root.buttonH
+            // "Clean dock" (Config.cleanDock): only there while the pointer is on its corner
+            // or the power menu is out
+            opacity: !Config.cleanDock || powerArea.containsMouse || root.powerPanelOpen ? 1 : 0
+            Behavior on opacity {
+                Anim {
+                    duration: Theme.durFast
+                }
+            }
             // the Frameshell logo (2 px smaller than the power sign: it fills its square) -
             // or, switched off in the Settings app (Appearance), the power sign
             icon: Store.powerLogo ? "power-logo" : "power"
@@ -297,7 +309,7 @@ Item {
                     width: Theme.px(2)
                     height: Math.round(appsArea.squareH * 0.6)
                     radius: width / 2
-                    color: Config.dockLine
+                    color: Config.frameColors.dockSeparator
                     antialiasing: true
                     opacity: root.lineP
                     visible: opacity > 0.01
@@ -426,7 +438,7 @@ Item {
                 width: Math.min(cell.squareH + Theme.px(2), cell.pitch - Theme.px(4))
                 height: cell.squareH
                 radius: Theme.px(8)
-                color: Config.plainSquares ? (cell.current ? "#ffffff" : "#c9c9c9") : (cell.current ? Config.selected : (cellArea.containsMouse ? Config.hover : "transparent"))
+                color: Config.plainSquares ? (cell.current ? "#ffffff" : "#c9c9c9") : (cell.current ? Config.frameColors.controlBackground : (cellArea.containsMouse ? Config.frameColors.cardBackground : "transparent"))
 
                 // dips when pressed
                 scale: cellArea.pressed ? 0.92 : 1
@@ -510,6 +522,14 @@ Item {
             width: parent.width
             height: root.buttonH
             radius: height / 2
+            // "Clean dock" (Config.cleanDock): only there while the pointer is on its corner
+            // or the calendar is out
+            opacity: !Config.cleanDock || dateArea.containsMouse || root.calendarPanelOpen ? 1 : 0
+            Behavior on opacity {
+                Anim {
+                    duration: Theme.durFast
+                }
+            }
             // no fill, also while the calendar is open; dips when pressed
             color: "transparent"
             antialiasing: true
@@ -531,7 +551,7 @@ Item {
                 y: Math.round((parent.height - height) / 2)
                 text: Clock.dateNumeric
                 font.pixelSize: Theme.px(17)
-                font.weight: Font.DemiBold            // Clarity City SemiBold, like the island's clock
+                font.weight: Font.DemiBold            // SemiBold, like the island's clock
             }
         }
 

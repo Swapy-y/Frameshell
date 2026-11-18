@@ -4,7 +4,7 @@
 
 **A Hyprland + Quickshell desktop where everything lives in one frame.**
 
-A dark frame around a rounded wallpaper window, a notch that grows into an island,
+A black frame around a rounded wallpaper window, a notch that grows into an island,
 a dock at the bottom and panels that grow out of the edges.
 
 </div>
@@ -20,8 +20,9 @@ https://github.com/user-attachments/assets/1fd0dcb7-4957-406a-8c7e-0c01d8d9855b
 - **Frame, notch and island** — hover the notch for the clock, Wi-Fi / Bluetooth, media controls and notifications
 - **Panels from the edges** — volume + brightness (top-left), colour picker (top-right), clipboard history (left), quick note (right), calendar (bottom-right)
 - **Own launcher, app switcher and emoji picker** — no rofi/wofi needed (`SUPER+R`, `SUPER+Space`, `SUPER+.`)
-- **Wallpaper and colour-theme switchers** in the island — three themes (Default, Noir, Catppuccin Mocha) that also restyle GTK, Qt, kitty, Firefox and the window borders
-- **Settings app** — blur, gaps, borders, corner rounding, dock / island auto-hide, pinned apps, Wi-Fi, Bluetooth, audio devices, mouse and keyboard, keybind list, and **presets** that save your whole look under a name
+- **Wallpaper and colour-theme switchers** in the island — ten themes (Default, Noir, Catppuccin Mocha, Everblush, Everforest, Rose Pine, Gruvbox, Kanagawa, Nord, Tokyo Night), each with its own wallpapers, that also restyle GTK, Qt, kitty, Firefox and the window borders
+- **Picture in picture** (`SUPER+Pause`) — any window becomes a small 16:9 one in the corner that stays on top on every workspace, even over fullscreen
+- **Settings app** — blur, gaps, borders, corner rounding, dock / island auto-hide, up to 10 workspaces, pinned apps, Wi-Fi, Bluetooth, audio devices, mouse and keyboard, keybind list, and **presets** that save your whole look under a name
 - **Screenshot tool** with area selection and drawing (pencil, arrow, rectangle, text)
 - **Lock screen, login screen (SDDM Pixie) and boot splash (Plymouth)** in the same style
 - Notification daemon, polkit agent and on-screen keyboard built into the shell
@@ -94,6 +95,7 @@ The keys are **Hyprland's defaults**; the shell's extras sit on keys the default
 | `SUPER+S` · `SUPER+Shift+S` | scratchpad · move window there | `SUPER+.` · `SUPER+\` | emoji picker · on-screen keyboard |
 | `SUPER+scroll` | next / previous workspace | `SUPER+,` | calendar |
 | `SUPER+drag` | move (left) / resize (right) | `Print` · `Shift+Print` | screenshot area · screen |
+| | | `SUPER+Pause` | picture in picture |
 
 At the edge of the screen `SUPER+←/→` and `SUPER+Shift+←/→` continue to the workspace beside it.
 Change keys in the *KEYBINDINGS* section of `~/.config/hypr/hyprland.lua`.
@@ -126,9 +128,9 @@ Frameshell bundles or builds on other people's work — thank you:
 - [arch-darwin](https://github.com/armoredvortex/plymouth-theme-arch-darwin) by ArmoredVortex (MIT) — boot splash
 - [KvLibadwaita](https://github.com/GabePoel/KvLibadwaita) by GabePoel (GPL-3.0) — base of the Frame Kvantum themes
 - [adw-gtk3](https://github.com/lassekongo83/adw-gtk3) — base of the Frame GTK themes (installed, not bundled)
-- Clarity City by VMware (SIL OFL 1.1) — the shell's font
+- [Inter](https://github.com/rsms/inter) by The Inter Project Authors and Clarity City by VMware (both SIL OFL 1.1) — the shell's fonts
 - YAMIS icon pack by DIRN (GPL-3.0) — downloaded by the installer, not bundled
-- [Catppuccin](https://catppuccin.com) — the Mocha colour theme
+- The colour palettes of [Catppuccin](https://catppuccin.com), Everblush, Everforest, Rosé Pine, Gruvbox, Kanagawa, [Nord](https://www.nordtheme.com) and Tokyo Night — the colour themes of the same names
 - Motion curves inspired by the [Caelestia](https://github.com/caelestia-dots/shell) shell
 - Built with [Hyprland](https://hypr.land) and [Quickshell](https://quickshell.org)
 

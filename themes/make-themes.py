@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
 # ═══════════════════════════════════════════════════════════════════════════
-#  make-themes.py - makes the GTK themes and the Qt colour schemes of the
-#  shell's colour themes (Config.qml: Default, Noir, Mocha) from the Frame ones.
+#  make-themes.py - makes the GTK themes, the Qt colour schemes, the Firefox
+#  userChrome.css / userContent.css and the kitty configs of the shell's colour
+#  themes (Config.qml) from the Frame ones (the Default theme's).
 #
 #    python3 make-themes.py            (run it in this folder's parent, or anywhere)
 #
 #  Frame (the Default theme) is the hand-made original:
-#      themes/Frame/                       GTK 3 / GTK 4 theme
+#      themes/Frame/                           GTK 3 / GTK 4 theme
 #      config/qt5ct|qt6ct/colors/frame.conf    Qt palettes
+#      config/firefox/Default/                 Firefox
+#      config/kitty/frame.conf                 kitty
 #  Every other theme is the same files with each colour swapped for the one that
-#  has the same job in its palette (below):
-#      themes/Frame-Noir/, themes/Frame-Mocha/
-#      config/qt5ct|qt6ct/colors/frame-noir.conf, frame-mocha.conf
-#  So: change how a theme looks -> edit its palette here and run this again;
-#  change the GTK theme itself -> edit themes/Frame and run this again.
+#  has the same job in its palette:
+#      themes/Frame-<name>/, config/qt5ct|qt6ct/colors/frame-<name>.conf
+#  Noir's palette is below, hand-made (its Firefox and kitty files are too). The
+#  other themes' palettes come from their colours in Config.qml (palettes.py),
+#  and this also writes their config/firefox/<name>/ and config/kitty/frame-<name>.conf.
+#  <name>: the theme's name without spaces (palettes.slug(); lower case in file names).
+#  So: change a theme's colours -> change them in Config.qml (Noir: here) and run this
+#  again; change the GTK theme itself -> edit themes/Frame and run this again.
 #  (The Kvantum themes - the shapes of Qt apps - come from Kvantum/make-frame.py,
 #  with the same colours.)
 # ═══════════════════════════════════════════════════════════════════════════
@@ -38,7 +44,7 @@ GTK = {
         CARD='#222222',        # cards, thumbnails
         POPOVER='#1a1a1a',     # menus and popovers
         SELECTED='#3a3a3a',    # selected rows and files
-        TEXT_SELECTION='#3e3e3e',  # selected text (textSelection in Config.qml)
+        TEXT_SELECTION='#3e3e3e',  # selected text (selectionBackground in Config.qml)
         LINK='#6aa3d9', VISITED='#b48ead',
         INFOBAR='#2a2a2a', INFOBAR_HOVER='#313131',
         MENU_BORDER='#313131', TOOLTIP='#1a1a1a',
@@ -58,24 +64,6 @@ GTK = {
         # buttons, entries: #060606 instead of white 10 % (which would be #1a1a1a)
         FILL='#060606', FILL_HOVER='#0d0d0d', FILL_ACTIVE='#161616',
     ),
-    # Catppuccin Mocha (catppuccin.com/palette), the accent Mauve
-    'Mocha': dict(
-        BG='#181825',          # Mantle
-        FG='#cdd6f4',          # Text
-        ON='#11111b',          # Crust
-        ACCENT='#cba6f7',      # Mauve
-        RED='#f38ba8', GREEN='#a6e3a1', YELLOW='#f9e2af',
-        OUTLINE='#313244',     # Surface0
-        SIDEBAR='#1e1e2e', SIDEBAR2='#1e1e2e',   # Base
-        CARD='#1e1e2e',        # Base
-        POPOVER='#181825',     # Mantle
-        SELECTED='#45475a',    # Surface1
-        TEXT_SELECTION='#474859',
-        LINK='#89b4fa', VISITED='#b4befe',       # Blue, Lavender
-        INFOBAR='#313244', INFOBAR_HOVER='#45475a',
-        MENU_BORDER='#45475a', TOOLTIP='#181825',
-        OVERVIEW='#1e1e2e', TOGGLE='rgba(205, 214, 244, 0.2)',
-    ),
 }
 
 # Qt (qt5ct / qt6ct colour schemes). Frame's are the colours in colors/frame.conf.
@@ -90,21 +78,25 @@ QT = {
                  HIGHLIGHT_INACTIVE='#222222', HIGHLIGHT_DISABLED='#060606', LINK='#6aa3d9',
                  VISITED='#b48ead', ALT_BASE='#060606', TOOLTIP='#060606', DIM='#8c8c8c',
                  DISABLED='#575757', FAINT='#3a3a3a', ACCENT='#ffffff'),
-    'Mocha': dict(FG='#cdd6f4', FILL='#313244', LIGHT='#45475a', MIDLIGHT='#313244', DARK='#11111b',
-                  MID='#1e1e2e', BG='#181825', SHADOW='#000000', HIGHLIGHT='#474859',
-                  HIGHLIGHT_INACTIVE='#474859', HIGHLIGHT_DISABLED='#313244', LINK='#89b4fa',
-                  VISITED='#b4befe', ALT_BASE='#1e1e2e', TOOLTIP='#313244', DIM='#9399b2',
-                  DISABLED='#6c7086', FAINT='#585b70', ACCENT='#cba6f7'),
 }
 
 DESCRIBE = {
     'Noir': 'black #000000 windows, #060606 cards, fields, buttons and menus, white text,\n'
             '   #8c8c8c dim text, white main buttons with black text, #ff6b6b for errors, #ffb454\n'
             '   for warnings',
-    'Mocha': 'Catppuccin Mocha (catppuccin.com/palette): Mantle #181825 windows, Base\n'
-             '   #1e1e2e cards, Surface0 #313244 buttons, Surface1 #45475a selections, Text #cdd6f4,\n'
-             '   Mauve #cba6f7 main buttons with Crust text, Red #f38ba8 errors, Yellow #f9e2af warnings',
 }
+
+# the other themes of Config.qml: their palettes made from their colours (palettes.py)
+sys.path.insert(0, HERE)
+import palettes  # noqa: E402
+
+DISPLAY = {}                    # file name -> the theme's name (Frame -> Default)
+for _name in palettes.generated():
+    _s = palettes.slug(_name)
+    GTK[_s] = palettes.gtk(_name)
+    QT[_s] = palettes.qt(_name)
+    DESCRIBE[_s] = palettes.describe(_name)
+    DISPLAY[_s] = _name
 
 # ── GTK: which job each named colour has ────────────────────────────────────
 NAMED = {
@@ -504,25 +496,27 @@ EXTRAS = {'Noir': {3: NOIR_GTK3, 4: NOIR_GTK4}}
 
 
 def header(name, gtk_version):
-    low = name.lower()
+    shown = DISPLAY.get(name, name)
     if gtk_version == 3:
         return ('/* Frame-%s - colours for GTK 3 apps (Thunar, file pickers, Firefox\'s dialogs ...)\n'
                 '   ->  ~/.local/share/themes/Frame-%s/gtk-3.0/colors.css\n\n'
                 '   The shell\'s %s theme: %s.\n'
                 '   gtk.css loads adw-gtk3-dark first; this file only replaces its colours.\n'
                 '   Made by themes/make-themes.py from themes/Frame (what each rule is for: see the\n'
-                '   comments there): change the palette in make-themes.py and run it again (an edit\n'
-                '   here is lost then). Restart an app to see a change. */'
-                % (name, name, name, DESCRIBE[name]))
+                '   comments there): change the theme\'s colours in Config.qml (Noir\'s: its palette in\n'
+                '   make-themes.py) and run it again (an edit here is lost then). Restart an app to see a\n'
+                '   change. */'
+                % (name, name, shown, DESCRIBE[name]))
     return ('/* Frame-%s - colours for GTK 4 and libadwaita apps (pavucontrol, GNOME apps, file pickers ...)\n'
             '   ->  ~/.local/share/themes/Frame-%s/gtk-4.0/colors.css\n\n'
             '   The shell\'s %s theme: %s.\n'
             '   Loaded by the Frame-%s theme (plain GTK 4 apps) and, while %s is the shell\'s theme,\n'
             '   by ~/.config/gtk-4.0/gtk.css (libadwaita apps, which ignore themes; scripts/theme.sh\n'
             '   points it here). Made by themes/make-themes.py from themes/Frame (what each rule is\n'
-            '   for: see the comments there): change the palette in make-themes.py and run it again\n'
-            '   (an edit here is lost then). Restart an app to see a change. */'
-            % (name, name, name, DESCRIBE[name], name, name))
+            '   for: see the comments there): change the theme\'s colours in Config.qml (Noir\'s: its\n'
+            '   palette in make-themes.py) and run it again (an edit here is lost then). Restart an\n'
+            '   app to see a change. */'
+            % (name, name, shown, DESCRIBE[name], name, shown))
 
 
 def write(path, text):
@@ -541,7 +535,7 @@ def gtk_theme(name):
           open(os.path.join(src, 'index.theme')).read()
           .replace('Name=Frame', 'Name=Frame-' + name)
           .replace('GtkTheme=Frame', 'GtkTheme=Frame-' + name)
-          .replace('Comment=The frameshell colours', 'Comment=The frameshell %s colours' % name))
+          .replace('Comment=The frameshell colours', 'Comment=The frameshell %s colours' % DISPLAY.get(name, name)))
     for v in (3, 4):
         d = 'gtk-%d.0' % v
         for f in ('gtk.css', 'gtk-dark.css'):
@@ -584,13 +578,52 @@ def qt_scheme(name, version):
     out = ('; Frame %s - %s colour scheme (goes to ~/.config/%s/colors/frame-%s.conf)\n'
            '; The palette Qt apps use while %s is the shell\'s theme (scripts/theme.sh switches it),\n'
            '; the same as the Frame%s Kvantum theme\'s and the Frame-%s GTK theme\'s.\n'
-           '; Made by themes/make-themes.py: change the palette there and run it again.\n'
+           '; Made by themes/make-themes.py: change the theme\'s colours in Config.qml (Noir\'s: its palette\n'
+           '; in make-themes.py) and run it again.\n'
            '; Each line lists the colours for one state (active / disabled / inactive) in %s\'s fixed order.\n\n'
            '[ColorScheme]\n'
            'active_colors=%s\ndisabled_colors=%s\ninactive_colors=%s\n'
-           % (name, tool, tool, name.lower(), name, name, name, tool,
+           % (name, tool, tool, name.lower(), DISPLAY.get(name, name), name, name, tool,
               qt_line(pal, QT_ACTIVE, count), qt_line(pal, QT_DISABLED, count), qt_line(pal, QT_INACTIVE, count)))
     write(os.path.join(ROOT, 'config', tool, 'colors', 'frame-%s.conf' % name.lower()), out)
+
+
+# ── Firefox: Default's userChrome.css / userContent.css, recoloured ──
+def firefox_theme(name):
+    table = palettes.firefox(DISPLAY[name])
+    for f in ('userChrome.css', 'userContent.css'):
+        text = open(os.path.join(ROOT, 'config', 'firefox', 'Default', f)).read()
+        def one(m):
+            c = m.group(0).lower()
+            if c not in table:
+                sys.exit('config/firefox/Default/%s: no job for %s (palettes.firefox())' % (f, m.group(0)))
+            return table[c]
+        out = re.sub(r'#[0-9a-fA-F]{6}\b', one, text)
+        out = ('/* Firefox in the shell\'s %s theme - made by themes/make-themes.py from\n'
+               '   config/firefox/Default/%s (change that one and run it again). */\n' % (DISPLAY[name], f)) + out
+        write(os.path.join(ROOT, 'config', 'firefox', name, f), out)
+
+
+# ── kitty: Default's frame.conf with the theme's colours ──
+def kitty_theme(name):
+    table = palettes.kitty(DISPLAY[name])
+    text = open(os.path.join(ROOT, 'config', 'kitty', 'frame.conf')).read()
+    done = set()
+    def one(m):
+        key = m.group(1)
+        if key not in table:
+            return m.group(0)
+        done.add(key)
+        return '%s%s%s' % (m.group(1), m.group(2), table[key])
+    out = re.sub(r'^([a-z0-9_]+)(\s+)(#[0-9a-fA-F]{6})\b', one, text, flags=re.M)
+    missing = set(table) - done
+    if missing:
+        sys.exit('config/kitty/frame.conf: no line for ' + ', '.join(sorted(missing)))
+    out = out.replace('# Frame - kitty (terminal)  ->  ~/.config/kitty/kitty.conf',
+                      '# Frame %s - kitty (terminal)  ->  ~/.config/kitty/frame-%s.conf\n'
+                      '# Made by themes/make-themes.py from frame.conf with the %s theme\'s colours.'
+                      % (DISPLAY[name], name.lower(), DISPLAY[name]), 1)
+    write(os.path.join(ROOT, 'config', 'kitty', 'frame-%s.conf' % name.lower()), out)
 
 
 if __name__ == '__main__':
@@ -606,4 +639,7 @@ if __name__ == '__main__':
             gtk_theme(name)
             qt_scheme(name, 5)
             qt_scheme(name, 6)
+        if name in DISPLAY:
+            firefox_theme(name)
+            kitty_theme(name)
     print('done')

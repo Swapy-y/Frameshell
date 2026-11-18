@@ -39,3 +39,11 @@ function pillIds(occupied, focused, base, cap) {
         return a - b;
     });
 }
+
+// 1 … n (the pills of "10 workspaces": always the first five, services/Spaces.qml)
+function firstIds(n) {
+    var ids = [];
+    for (var i = 1; i <= n; i++)
+        ids.push(i);
+    return ids;
+}

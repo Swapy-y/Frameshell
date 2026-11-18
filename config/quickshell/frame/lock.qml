@@ -18,12 +18,13 @@ import qs.modules
 ShellRoot {
     settings.watchFiles: false      // never reload while the screen is locked
 
-    // the shell's font, used when the Pixie theme (and its font) is missing
+    // the shell's font (Inter, when SF Pro isn't installed: Theme.font), used when
+    // the Pixie theme (and its font) is missing
     FontLoader {
-        source: Qt.resolvedUrl("assets/fonts/ClarityCity-Regular.otf")
+        source: Qt.resolvedUrl("assets/fonts/Inter-Regular.otf")
     }
     FontLoader {
-        source: Qt.resolvedUrl("assets/fonts/ClarityCity-Bold.otf")
+        source: Qt.resolvedUrl("assets/fonts/Inter-Bold.otf")
     }
 
     Lock {}

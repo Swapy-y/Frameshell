@@ -16,10 +16,13 @@ import qs
 Item {
     id: root
 
+    // the frame's colours inside the frame (Overlay.qml), else the theme's (Config.paletteFor)
+    readonly property var pal: Config.paletteFor(QsWindow.window)
+
     property int level: 4
     property real size: 14
     property color color: Config.text
-    property color dim: Config.iconDim
+    property color dim: root.pal.inactive
 
     // screen pixels per pixel (2 on a 4K screen at scale 2)
     readonly property real dpr: QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1

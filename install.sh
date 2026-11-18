@@ -448,7 +448,13 @@ CURSOR_THEME="Simp1e-Adw-Dark"      # must match CURSOR_THEME in hyprland.lua
 # wallpapers earlier versions installed and this one no longer has (file:sha256)
 RETIRED_WALLPAPERS=(waves.png:d0f02170190780643c6bae3665eb46754d1b3ef395ef61e473cbea036efd6f4e
     black-hole.png:2b6f65aa79e64bcdf9f4482d81d9f861a7e821b67c3a41caa9e5d8f0ae417e29
-    dark-waves.png:a8ddd8c5112442ccdc12487ecbb2b847f6f2acd8185fffd2c02e38f323e0b1a5)
+    dark-waves.png:a8ddd8c5112442ccdc12487ecbb2b847f6f2acd8185fffd2c02e38f323e0b1a5
+    RosePine/rose-pine.jpg:b1e55aa0b640b26b2eb768551e3175ae35229bdbe99d38d657cd5a354bf048dd
+    Gruvbox/gruvbox.png:bad98330d792cdba06caea77fb437c86393cff082215cb6e5980f8bbf269b711
+    Gruvbox/gruvbox1.png:a8f16a264f2ee53a97f016edb5cdee6ffe7eaacdbf99ece0d85d423b03e5cfaa
+    Everforest/forest_stairs.png:c3a8c6c03c51a7da97ac5c9e32b2ff7c77ddba7087da50f2bae0e0b2790deb3f
+    CatppuccinMocha/jellyfish.png:b3efb1124ebc28f23c925e346bf44ac5b2a37b710cdc7c0e9b3a5971ae8db231
+    Everblush/everblush.png:56ad6340543454668771ce264fe6f40eb35074a433c87f551373308c841de76f)
 
 # The folder the cursor package really installed (the configs need its exact name).
 # find_cursor_theme [folders to look in]  (default: your icons, then the system's)
@@ -655,11 +661,14 @@ install_configs() {
             backup "$CFG/rofi/$rasi"
         fi
     done
-    # kitty: one config per colour theme (frame.conf = Default, frame-noir.conf, frame-mocha.conf);
+    # kitty: one config per colour theme (frame.conf = Default, frame-noir.conf, frame-nord.conf ...);
     # kitty.conf is a link to the one of the shell's theme (scripts/theme.sh switches it, below)
-    put "$HERE/config/kitty/frame.conf" "$CFG/kitty/frame.conf"
-    put "$HERE/config/kitty/frame-noir.conf" "$CFG/kitty/frame-noir.conf"
-    put "$HERE/config/kitty/frame-mocha.conf" "$CFG/kitty/frame-mocha.conf"
+    local k
+    for k in "$HERE"/config/kitty/frame*.conf; do
+        put "$k" "$CFG/kitty/${k##*/}"
+    done
+    # the Mocha theme of earlier versions (Catppuccin Mocha took its place)
+    [[ -f $CFG/kitty/frame-mocha.conf ]] && run rm -f "$CFG/kitty/frame-mocha.conf"
     if [[ -L $CFG/kitty/kitty.conf && "$(readlink "$CFG/kitty/kitty.conf")" == frame*.conf ]]; then
         run rm -f "$CFG/kitty/kitty.conf"       # the link an earlier install made
     else
@@ -670,11 +679,14 @@ install_configs() {
     # every profile's chrome/ ones to the shell's theme (below, and for a profile Firefox makes
     # later at the next start of the shell). The ones a profile has now go to the backup folder.
     local t f profile
-    for t in Default Noir Mocha; do
+    for t in "$HERE"/config/firefox/*/; do
+        t="${t%/}"
+        t="${t##*/}"
         for f in userChrome.css userContent.css; do
             put "$HERE/config/firefox/$t/$f" "$CFG/frameshell/firefox/$t/$f"
         done
     done
+    [[ -d $CFG/frameshell/firefox/Mocha ]] && run rm -rf "$CFG/frameshell/firefox/Mocha"
     # Firefox's keyboard shortcuts (customKeys.json, next to the chrome folder) - only with
     # --firefox-keys: copied into every profile - Firefox rewrites the file when you change a
     # shortcut (about:keyboard), so it is a copy, not a link; another one a profile has goes to
@@ -705,38 +717,76 @@ install_configs() {
     install_qt_theme
     put "$HERE/config/fontconfig/fonts.conf" "$CFG/fontconfig/fonts.conf"
 
-    # Clarity City (also bundled inside the shell, installing it makes hyprlock / GTK use it too)
-    say "Installing the Clarity City font"
+    # Inter (the shell's font when SF Pro isn't installed) and Clarity City (hyprlock, GTK, Qt):
+    # both are bundled inside the shell too, installing them makes the rest find them
+    say "Installing the Inter and Clarity City fonts"
     run mkdir -p "$DATA/fonts/frame"
-    run cp -f "$HERE"/config/quickshell/frame/assets/fonts/*.otf "$HERE/config/quickshell/frame/assets/fonts/LICENSE-ClarityCity.txt" "$DATA/fonts/frame/"
+    run cp -f "$HERE"/config/quickshell/frame/assets/fonts/*.otf "$HERE"/config/quickshell/frame/assets/fonts/LICENSE-*.txt "$DATA/fonts/frame/"
     command -v fc-cache >/dev/null 2>&1 && run fc-cache -f "$DATA/fonts" >/dev/null 2>&1
 
-    # wallpapers: SUPER + CTRL + Left / Right switches between the pictures in this folder.
-    # The bundled ones are added; a picture of yours with the same name is kept.
-    # (services/Wallpapers.qml lists them by name, `bundled`: the Settings app does not
-    # offer to remove them.)
-    local wdir="$DATA/frameshell/wallpapers" w old="$DATA/frameshell/wallpaper.png" sum
+    # wallpapers: each colour theme has its own folder of them (wallpapers/Default,
+    # wallpapers/Noir, wallpapers/TokyoNight ...; SUPER + CTRL + Left / Right switches between the
+    # pictures of the theme in use). The bundled ones are added; a picture of yours with the
+    # same name is kept. (services/Wallpapers.qml lists them by name, `bundled`: the Settings
+    # app does not offer to remove them.)
+    local wdir="$DATA/frameshell/wallpapers" w t old="$DATA/frameshell/wallpaper.png" sum name
     run mkdir -p "$wdir"
-    for w in "$HERE"/wallpapers/*; do
-        [[ -e $wdir/${w##*/} ]] || run install -m644 "$w" "$wdir/${w##*/}"
-    done
     # pictures an earlier version brought and this one doesn't: removed - but only if the
-    # file is still exactly that picture (a picture of yours with the same name stays)
+    # file is still exactly that picture (a picture of yours with the same name stays); before
+    # the new ones go in, as one of those can have an old one's name (Gruvbox/gruvbox.png)
     for w in "${RETIRED_WALLPAPERS[@]}"; do
         [[ -f $wdir/${w%%:*} ]] || continue
         sum="$(sha256sum "$wdir/${w%%:*}")"
         [[ ${sum%% *} == "${w#*:}" ]] && run rm -f "$wdir/${w%%:*}"
     done
+    for t in "$HERE"/wallpapers/*/; do
+        t="${t%/}"
+        t="${t##*/}"
+        run mkdir -p "$wdir/$t"
+        for w in "$HERE/wallpapers/$t"/*; do
+            [[ -f $w ]] || continue
+            [[ -e $wdir/$t/${w##*/} ]] || run install -m644 "$w" "$wdir/$t/${w##*/}"
+        done
+    done
+    # the pictures right in the folder (before each theme had its own): one that came with
+    # frameshell, still exactly that picture, goes (its theme's folder has it now); one of
+    # yours moves to Default's folder
+    for w in "$wdir"/*; do
+        [[ -f $w ]] || continue
+        name="${w##*/}"
+        case "${name,,}" in *.png | *.jpg | *.jpeg | *.webp) ;; *) continue ;; esac
+        t=""
+        for sum in "$HERE"/wallpapers/*/"$name"; do
+            [[ -f $sum ]] && cmp -s "$sum" "$w" && t="$sum"
+        done
+        if [[ -n $t ]]; then
+            run rm -f "$w"
+        elif [[ ! -e $wdir/Default/$name ]]; then
+            run mv "$w" "$wdir/Default/$name"
+        fi
+    done
     # your own wallpaper from an earlier version (one picture in ~/.local/share/frameshell):
-    # it joins the others as my-wallpaper.png and stays on screen
-    if [[ -f $old ]] && ! cmp -s "$old" "$HERE/wallpapers/meadow.png"; then
-        if [[ ! -e $wdir/my-wallpaper.png ]]; then
-            run cp -p "$old" "$wdir/my-wallpaper.png"
-            note "Your wallpaper is one of the choices now: $wdir/my-wallpaper.png"
+    # it joins Default's as my-wallpaper.png and stays on screen
+    if [[ -f $old ]] && ! cmp -s "$old" "$HERE/wallpapers/Default/meadow.png"; then
+        if [[ ! -e $wdir/Default/my-wallpaper.png ]]; then
+            run cp -p "$old" "$wdir/Default/my-wallpaper.png"
+            note "Your wallpaper is one of the choices now: $wdir/Default/my-wallpaper.png"
         fi
         if [[ ! -s $STATE/frameshell/wallpaper ]] && ((!DRY)); then
             mkdir -p "$STATE/frameshell"
-            printf '%s\n' "$wdir/my-wallpaper.png" >"$STATE/frameshell/wallpaper"
+            printf '%s\n' "$wdir/Default/my-wallpaper.png" >"$STATE/frameshell/wallpaper"
+        fi
+    fi
+    # the wallpaper you picked, if its picture moved into a theme's folder: its new place
+    if ((!DRY)) && [[ -s $STATE/frameshell/wallpaper ]]; then
+        w="$(head -n1 "$STATE/frameshell/wallpaper")"
+        if [[ $w == "$wdir"/* && ! -f $w ]]; then
+            for t in "$wdir"/*/"${w##*/}"; do
+                if [[ -f $t ]]; then
+                    printf '%s\n' "$t" >"$STATE/frameshell/wallpaper"
+                    break
+                fi
+            done
         fi
     fi
 
@@ -752,17 +802,21 @@ install_configs() {
     rename_apps
 }
 
-# The "Frame" GTK themes (themes/Frame, Frame-Noir, Frame-Mocha - the shell's Default, Noir and
-# Mocha colour themes): adw-gtk3-dark's shapes in the shell's colours, for GTK 3 apps (pavucontrol,
+# The "Frame" GTK themes (themes/Frame, Frame-Noir, Frame-Nord ... - one for each of the shell's
+# colour themes): adw-gtk3-dark's shapes in the shell's colours, for GTK 3 apps (pavucontrol,
 # file pickers ...) and plain GTK 4 apps. libadwaita apps (Nautilus ...) never load a theme; they get
 # the same colours from ~/.config/gtk-4.0/gtk.css. The shell switches between them (scripts/theme.sh).
 install_gtk_theme() {
     local t
     run mkdir -p "$DATA/themes"
-    for t in Frame Frame-Noir Frame-Mocha; do
+    for t in "$HERE"/themes/Frame*/; do
+        t="${t%/}"
+        t="${t##*/}"
         backup "$DATA/themes/$t"
         run cp -a "$HERE/themes/$t" "$DATA/themes/$t"
     done
+    # the Mocha theme of earlier versions (Catppuccin Mocha took its place)
+    [[ -d $DATA/themes/Frame-Mocha ]] && run rm -rf "$DATA/themes/Frame-Mocha"
     put "$HERE/config/gtk-4.0/gtk.css" "$CFG/gtk-4.0/gtk.css"
     # gtk.css finds colors.css by a relative path: fix it up for non-default XDG folders
     local def="../../.local/share/themes/Frame/gtk-4.0/colors.css" rel css
@@ -784,21 +838,25 @@ install_gtk_theme() {
 }
 
 # Qt 5 and Qt 6 apps: the Kvantum style with the Frame themes (themes/Kvantum/Frame, FrameNoir,
-# FrameMocha), their palettes, YAMIS and Clarity City - qt5ct for Qt 5, qt6ct for Qt 6 (hyprland.lua
+# FrameNord ...), their palettes, YAMIS and Clarity City - qt5ct for Qt 5, qt6ct for Qt 6 (hyprland.lua
 # points Qt at them)
 install_qt_theme() {
     local v t c
     run mkdir -p "$CFG/Kvantum"
-    for t in Frame FrameNoir FrameMocha; do
+    for t in "$HERE"/themes/Kvantum/Frame*/; do
+        t="${t%/}"
+        t="${t##*/}"
         backup "$CFG/Kvantum/$t"
         run cp -a "$HERE/themes/Kvantum/$t" "$CFG/Kvantum/$t"
     done
+    [[ -d $CFG/Kvantum/FrameMocha ]] && run rm -rf "$CFG/Kvantum/FrameMocha"
     put "$HERE/config/Kvantum/kvantum.kvconfig" "$CFG/Kvantum/kvantum.kvconfig"
     for v in 5 6; do
         put "$HERE/config/qt${v}ct/qt${v}ct.conf" "$CFG/qt${v}ct/qt${v}ct.conf"
-        for c in frame frame-noir frame-mocha; do
-            put "$HERE/config/qt${v}ct/colors/$c.conf" "$CFG/qt${v}ct/colors/$c.conf"
+        for c in "$HERE"/config/qt${v}ct/colors/frame*.conf; do
+            put "$c" "$CFG/qt${v}ct/colors/${c##*/}"
         done
+        [[ -f $CFG/qt${v}ct/colors/frame-mocha.conf ]] && run rm -f "$CFG/qt${v}ct/colors/frame-mocha.conf"
         if ((!DRY)); then
             # qt5ct / qt6ct want absolute paths
             sed -i "s|~/.config/|$CFG/|g" "$CFG/qt${v}ct/qt${v}ct.conf"
@@ -806,6 +864,10 @@ install_qt_theme() {
     done
     # the shell's colour theme picked earlier (SUPER + CTRL + Up / Down): GTK and Qt apps follow it
     # again (the files above are the Default theme's)
+    # (the Mocha theme of earlier versions is Catppuccin Mocha now)
+    if ((!DRY)) && [[ "$(head -n1 "$STATE/frameshell/theme" 2>/dev/null)" == Mocha ]]; then
+        printf '%s\n' "Catppuccin Mocha" >"$STATE/frameshell/theme"
+    fi
     if ((!DRY)) && [[ -s $STATE/frameshell/theme && -f $CFG/quickshell/frame/scripts/theme.sh ]]; then
         bash "$CFG/quickshell/frame/scripts/theme.sh" "$(head -n1 "$STATE/frameshell/theme")" || true
     fi
@@ -1202,7 +1264,7 @@ login_screen_setup() {
     # (scripts/wallpaper.sh), so the login screen always shows your wallpaper.
     local wall="" picked
     picked="$(head -n1 "$STATE/frameshell/wallpaper" 2>/dev/null)"
-    for p in "$picked" "$DATA/frameshell/wallpapers/meadow.png" "$HERE/wallpapers/meadow.png"; do
+    for p in "$picked" "$DATA/frameshell/wallpapers/Default/meadow.png" "$HERE/wallpapers/Default/meadow.png"; do
         if [[ -n $p && -f $p ]]; then wall="$p"; break; fi
     done
     if run "${SUDO[@]}" install -Dm644 -o "$ME" -g "$(id -gn)" "$wall" "$PIXIE_DIR/assets/wallpaper.png"; then
@@ -1211,12 +1273,12 @@ login_screen_setup() {
         warn "Could not copy the wallpaper to $PIXIE_DIR/assets/wallpaper.png."
     fi
 
-    # the login colours of the shell's colour theme (loginBackground ... in Config.qml): the
+    # the login colours (loginCard ... in Config.qml, the same in every colour theme): the
     # shell writes them into theme.conf.user, which wins over theme.conf (services/Themes.qml).
-    # Like the wallpaper copy, the file belongs to you, so switching themes needs no password.
+    # Like the wallpaper copy, the file belongs to you, so the shell needs no password for it.
     if [[ -f $PIXIE_DIR/theme.conf.user && -O $PIXIE_DIR/theme.conf.user ]] ||
         run "${SUDO[@]}" install -m644 -o "$ME" -g "$(id -gn)" /dev/null "$PIXIE_DIR/theme.conf.user"; then
-        note "Colours of the login and lock screen: the colour theme's (loginBackground ... in Config.qml)."
+        note "Colours of the login and lock screen: loginCard ... in Config.qml (the same in every colour theme)."
     else
         warn "Could not make $PIXIE_DIR/theme.conf.user: the login screen keeps the colours of its theme.conf."
     fi

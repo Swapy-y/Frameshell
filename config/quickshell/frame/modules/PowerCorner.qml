@@ -16,10 +16,12 @@ Panel {
 
     // true while the pointer touches the corner of the frame (set by Overlay.qml)
     property bool hot: false
+    // its panel is out
+    property bool panelOpen: Ui.powerOpen
 
     HoverLatch {
         id: latch
-        input: Store.dockNotch && (root.hot || blockHover.hovered || Ui.powerOpen)
+        input: Store.dockNotch && !Store.dockDisabled && (root.hot || blockHover.hovered || root.panelOpen)
     }
 
     HoverHandler {

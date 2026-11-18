@@ -7,7 +7,7 @@ import "../components/shapes.js" as Shapes
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  ClipboardPanel.qml - the clipboard history, on the left edge of the screen
-//  (hover the middle of the left frame), the twin of the quick note on the
+//  (hover the middle of the left edge), the twin of the quick note on the
 //  right.
 //
 //  Newest first: text (up to three lines, … when there is more)
@@ -35,7 +35,9 @@ Panel {
         input: !Ui.powerOpen && (root.hot || panelHover.hovered || Ui.clipboardSearching)
     }
 
-    open: latch.open
+    // out while the latch is (Click to expand: peeking until clicked, components/Panel.qml)
+    peekable: true
+    hovering: latch.open
     attachLeft: true
 
     // Like the quick note: as tall as the entries need, at most
@@ -157,6 +159,7 @@ Panel {
         y: Math.round(search.y + (search.height - height) / 2)
         text: "Clipboard"
         font.pixelSize: Theme.px(21)
+        font.family: Theme.fontDisplay
         font.weight: Font.DemiBold
     }
 
@@ -170,7 +173,11 @@ Panel {
         radius: Shapes.lerp(height / 2, Theme.px(9), root.sp)
         antialiasing: true
         // lighter only while you type in it
-        color: field.activeFocus ? Config.outline : Config.selected
+        color: field.activeFocus ? Config.frameColors.border : Config.frameColors.controlBackground
+        // the small buttons' outline while it is a button ("No outline buttons" takes it away);
+        // none as a field
+        border.width: root.searchOpen ? 0 : Theme.outlineSmallW
+        border.color: Theme.outlineSmallColor
         // the button dips when pressed
         scale: root.searchOpen ? 1 : (searchArea.pressed ? 0.9 : 1)
 
@@ -200,7 +207,7 @@ Panel {
             y: Math.round((parent.height - height) / 2)
             size: Math.round(Shapes.lerp(Theme.px(14), Theme.px(12), root.sp))
             name: "search"
-            color: root.searchOpen ? Config.textDim : Config.text
+            color: root.searchOpen ? Config.frameColors.textSecondary : Config.text
         }
 
         Txt {
@@ -211,7 +218,7 @@ Panel {
             text: "Search"
             font.pixelSize: Theme.px(13)
             font.weight: Font.Medium
-            color: Config.textDim
+            color: Config.frameColors.textSecondary
         }
 
         TextInput {
@@ -225,7 +232,7 @@ Panel {
             font.pixelSize: Theme.px(13)
             font.weight: Font.Medium
             color: Config.text
-            selectionColor: Config.textSelection
+            selectionColor: Config.frameColors.selectionBackground
             selectedTextColor: Config.text
             selectByMouse: true
             activeFocusOnPress: true
@@ -270,7 +277,7 @@ Panel {
         y: root.listTop + Theme.px(10)
         horizontalAlignment: Text.AlignHCenter
         text: Clipboard.entries.length === 0 ? "Nothing copied yet" : "No matches"
-        color: Config.textDim
+        color: Config.frameColors.textSecondary
         font.pixelSize: Theme.px(14)
         font.weight: Font.Medium
     }
@@ -383,11 +390,12 @@ Panel {
             width: list.width
             height: isImage ? picH + 2 * picPad : textPad + label.height + textPad
 
-            // a solid grey card, a little lighter under the pointer
+            // a solid grey card, a touch lighter under the pointer (like the pop-ups' Cancel buttons)
             Rectangle {
                 anchors.fill: parent
                 radius: Theme.px(12)
-                color: area.containsMouse ? Config.outline : Config.selected
+                color: area.containsMouse ? Config.frameColors.controlHover : Config.frameColors.controlBackground
+                // (no outline: a field, not a button)
                 scale: area.pressed ? 0.98 : 1
 
                 Behavior on color {

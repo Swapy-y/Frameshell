@@ -2,7 +2,8 @@ import QtQuick
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  HotZone.qml - Invisible strip of the frame that reacts to the pointer
-//  (used to open the slider and quick-note panels).
+//  (used to open the slider and quick-note panels). Frameless
+//  (Config.framelessOutline) it is as thin as the frame along the bare edge.
 // ═══════════════════════════════════════════════════════════════════════════
 Item {
     id: root

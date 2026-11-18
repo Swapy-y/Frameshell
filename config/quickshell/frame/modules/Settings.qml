@@ -10,7 +10,8 @@ import "../components/search.js" as Search
 // ═══════════════════════════════════════════════════════════════════════════
 //  Settings.qml - the Settings app: a normal window of the shell that tiles
 //  like any app (it shows in the dock and the app switcher as "Settings", with
-//  assets/icons/frame-settings.svg).
+//  the icon pack's GNOME Settings icon - org.gnome.Settings - or, in a pack without
+//  one, assets/icons/frame-settings.svg: services/IconPacks.qml).
 //
 //  Open it from the launcher (SUPER + R, "Settings": frame-settings.desktop)
 //  or with  qs -c frame ipc call ui settings.
@@ -23,7 +24,7 @@ import "../components/search.js" as Search
 //  a slider for a property of Config (whole numbers from min to max, in the style
 //  of the volume and brightness sliders), saved at once too. Some pages have one more
 //  card (`extra`):
-//    "wallpapers"  the pictures of the wallpaper folder - a click makes one the
+//    "wallpapers"  the pictures of the theme in use - a click makes one the
 //                  wallpaper, the bin on one you added removes it, the last tile
 //                  adds pictures (a click, or pictures dropped on it)
 //                  (services/Wallpapers.qml)
@@ -56,6 +57,16 @@ import "../components/search.js" as Search
 //                  modules/HyprSync.qml), each closed until you click its heading
 //
 //  To add a setting: a property in Store.qml, then an entry in `pages` below.
+//  A page can have `sections` too: more cards of settings under the first one, each
+//  on its own (the Appearance page's media and sliders, and the island's icons).
+//  The last page, Experimental, is for switches still being tried out: "Click to expand"
+//  (Config.clickToExpand - the island and the hover panels peek, a click opens them).
+//  experimental.json keeps the switches of the Appearance page's sections
+//  (Config.detailedMedia, flatSliders, minimalSliders, detailedBattery, glowingIcons,
+//  noButtonOutline), the Experimental page's (clickToExpand) and four
+//  more: the Appearance page's "Frame overlay" (Config.frameOverlay), the Island page's "10 workspaces"
+//  (tenWorkspaces) and "Island popups" (dynamicPopups), and the Dock page's "Clean dock"
+//  (cleanDock) - all of them are part of a preset (services/Presets.qml).
 // ═══════════════════════════════════════════════════════════════════════════
 Scope {
     id: root
@@ -80,11 +91,30 @@ Scope {
             name: "Island",
             icon: "set-island",
             description: "The notch at the top of the screen and what it shows when you hover it.",
+            keywords: "notch auto hide disable disabled off remove workspace workspaces 10 ten pill pills more popups pop-ups popup dynamic launcher switcher middle centre center",
             settings: [
+                {
+                    key: "islandDisabled",
+                    name: "Disable island",
+                    description: "No island at all - not when the pointer touches the top of the screen either, and windows go up to the top. The wallpaper and theme switchers and the pop-ups still open from the top edge."
+                },
                 {
                     key: "islandAutoHide",
                     name: "Auto hide",
-                    description: "Only show the island when the pointer touches the top of the screen."
+                    description: "Only show the island when the pointer touches the top of the screen.",
+                    when: () => !Store.islandDisabled
+                },
+                {
+                    key: "tenWorkspaces",
+                    owner: "config",
+                    name: "10 workspaces",
+                    description: "Go on past the 5th workspace up to the 10th: Super + Left / Right at the edge, Super + 6 ... 9 and 0. The island keeps five pills - the 5th is lighter and stands for workspaces 5 to 10."
+                },
+                {
+                    key: "dynamicPopups",
+                    owner: "config",
+                    name: "Island popups",
+                    description: "The pop-ups slide down out of the island - the app launcher, the app switcher, Wi-Fi and Bluetooth, Shut down / Restart / Log out, the password dialog and the emoji picker. Off: they open in the middle of the screen."
                 }
             ]
         },
@@ -93,18 +123,32 @@ Scope {
             name: "Dock",
             icon: "set-dock",
             description: "The bar at the bottom: the power button, your pinned and open apps and the date.",
-            keywords: "pinned apps pin unpin favourites favorites launcher",
+            keywords: "pinned apps pin unpin favourites favorites launcher clean corner corners power calendar date hover disable disabled off remove",
             extra: "pinned",
             settings: [
                 {
+                    key: "dockDisabled",
+                    name: "Disable dock",
+                    description: "No dock at all - no bar or notch, not when the pointer touches the bottom of the screen either, and windows go down to the bottom."
+                },
+                {
                     key: "dockAutoHide",
                     name: "Auto hide",
-                    description: "Only show the dock when the pointer touches the bottom of the screen."
+                    description: "Only show the dock when the pointer touches the bottom of the screen.",
+                    when: () => !Store.dockDisabled
                 },
                 {
                     key: "dockNotch",
                     name: "Notch mode",
-                    description: "The dock becomes a notch at the bottom, like the island. The power button and the date come out of the bottom corners when the pointer touches them."
+                    description: "The dock becomes a notch at the bottom, like the island. The power button and the date come out of the bottom corners when the pointer touches them.",
+                    when: () => !Store.dockDisabled
+                },
+                {
+                    key: "cleanDock",
+                    owner: "config",
+                    name: "Clean dock",
+                    description: "The power button (bottom left) and the date (bottom right) only show while the pointer is on their corner - click to open the power menu or the calendar, as always.",
+                    when: () => !Store.dockDisabled
                 }
             ]
         },
@@ -112,8 +156,8 @@ Scope {
             key: "wallpaper",
             name: "Wallpaper",
             icon: "set-wallpaper",
-            description: "The picture on the desktop, the lock screen and the login screen.",
-            keywords: "background picture image add drop remove delete",
+            description: "The picture on the desktop, the lock screen and the login screen. Each colour theme has its own pictures: these are the current theme's.",
+            keywords: "background picture image add drop remove delete theme",
             settings: [],
             extra: "wallpapers"
         },
@@ -122,7 +166,7 @@ Scope {
             name: "Theme",
             icon: "set-theme",
             description: "The colours of the shell - and of GTK and Qt apps, kitty, Firefox and the window borders with it.",
-            keywords: "colour color dark default noir mocha catppuccin",
+            keywords: "colour color dark default noir catppuccin mocha everblush everforest rose pine gruvbox kanagawa nord tokyo night",
             settings: [],
             extra: "themes"
         },
@@ -145,8 +189,8 @@ Scope {
             key: "appearance",
             name: "Appearance",
             icon: "set-appearance",
-            description: "The borders round the windows and round the frame, the rounding of the corners, the gap round the windows, the power button and the app icons.",
-            keywords: "border width thickness outline ring frame window look corner corners rounding round rounded radius gap gaps space spacing margin padding icon icons pack theme yamis adwaita papirus app apps power button logo frameshell",
+            description: "The border round the windows, the frame, the rounding of the corners, the gap round the windows, the media controls and the sliders, the island's icons, the power button and the app icons.",
+            keywords: "border width thickness outline ring frame frameless overlay edge edges window look corner corners rounding round rounded radius gap gaps space spacing margin padding icon icons pack theme yamis adwaita papirus app apps power button logo frameshell media music player controls detailed time times length flat square sliders slider bar ends minimal minimalistic sound volume brightness block battery seamless gap signal glow glowing shine halo island icons button buttons outline outlines border edge line no",
             settings: [
                 {
                     key: "windowBorder",
@@ -158,13 +202,10 @@ Scope {
                     description: "The ring round every window - light on the focused one, dark on the others."
                 },
                 {
-                    key: "frameBorder",
-                    kind: "slider",
-                    min: 0,
-                    max: 4,
-                    unit: "px",
-                    name: "Frame border",
-                    description: "The outline of the frame, the island, the panels and the pop-ups."
+                    key: "frameOverlay",
+                    owner: "config",
+                    name: "Frame overlay",
+                    description: "A dark frame round the left, top and right edges of the screen, the island and the blocks on the edges growing out of it. Off: the wallpaper reaches the edges and only the corners stay rounded."
                 },
                 {
                     key: "cornerRounding",
@@ -189,13 +230,64 @@ Scope {
                     description: "The space round every window - to the frame and between two windows."
                 }
             ],
+            // more cards of settings, each on its own (no heading)
+            sections: [
+                {
+                    settings: [
+                        {
+                            key: "detailedMedia",
+                            owner: "config",
+                            name: "Detailed media controls",
+                            description: "The open island's media with the times beside the progress bar - a longer bar and bigger buttons."
+                        },
+                        {
+                            key: "flatSliders",
+                            owner: "config",
+                            name: "Flat sliders",
+                            description: "The filled part of every slider ends square on the right, not round."
+                        },
+                        {
+                            key: "minimalSliders",
+                            owner: "config",
+                            name: "Minimalistic sliders block",
+                            description: "The sound and brightness block (top left) without the round icons on the left - just the names, the values and the sliders."
+                        }
+                    ]
+                },
+                {
+                    settings: [
+                        {
+                            key: "detailedBattery",
+                            owner: "config",
+                            name: "Detailed battery icon",
+                            description: "The island's battery with a dark gap inside its outline and the charge as a bar in it."
+                        },
+                        {
+                            key: "glowingIcons",
+                            owner: "config",
+                            name: "Glowing icons",
+                            description: "The white parts of the closed island - the workspace you are on, the signal and the battery - softly glow."
+                        }
+                    ]
+                },
+                {
+                    settings: [
+                        {
+                            key: "noButtonOutline",
+                            owner: "config",
+                            name: "No outline buttons",
+                            description: "Without the thin, slightly lighter outline round the dark buttons and fields - in the island, the pop-ups, the panels, and round the Settings app's sidebar icons."
+                        }
+                    ]
+                }
+            ],
             extra: "icons"
         },
         {
             key: "blur",
             name: "Blur",
             icon: "set-blur",
-            description: "The blur behind see-through windows and behind the shell.",
+            description: "The blur behind see-through windows.",
             keywords: "blur transparent transparency opacity see-through glass frosted size passes brightness contrast",
             settings: [
                 {
@@ -205,28 +297,11 @@ Scope {
                     description: "Blurs what is behind see-through windows, like kitty. It does not make a window see-through - the app does that itself."
                 },
                 {
-                    key: "shellBlur",
-                    owner: "config",
-                    name: "Apply blur to shell",
-                    description: "The frame, the island, the panels and the pop-ups become see-through, with a blur behind them. Their text and icons stay solid."
-                },
-                {
-                    key: "shellOpacity",
-                    kind: "slider",
-                    min: 0.5,
-                    max: 1,
-                    step: 0.05,
-                    percent: true,
-                    needs: ["shellBlur"],
-                    name: "Shell opacity",
-                    description: "How solid the shell is with its blur: lower is more see-through."
-                },
-                {
                     key: "blurSize",
                     kind: "slider",
                     min: 1,
                     max: 20,
-                    needs: ["windowBlur", "shellBlur"],
+                    needs: ["windowBlur"],
                     name: "Size",
                     description: "How far the blur reaches."
                 },
@@ -235,7 +310,7 @@ Scope {
                     kind: "slider",
                     min: 1,
                     max: 4,
-                    needs: ["windowBlur", "shellBlur"],
+                    needs: ["windowBlur"],
                     name: "Passes",
                     description: "How many times it is blurred: more is smoother and stronger (and a little more work for the GPU)."
                 },
@@ -246,7 +321,7 @@ Scope {
                     max: 2,
                     step: 0.05,
                     decimals: 2,
-                    needs: ["windowBlur", "shellBlur"],
+                    needs: ["windowBlur"],
                     name: "Brightness",
                     description: "How bright what is behind looks (1 = unchanged)."
                 },
@@ -257,7 +332,7 @@ Scope {
                     max: 2,
                     step: 0.05,
                     decimals: 2,
-                    needs: ["windowBlur", "shellBlur"],
+                    needs: ["windowBlur"],
                     name: "Contrast",
                     description: "How much contrast what is behind keeps (1 = unchanged)."
                 }
@@ -295,12 +370,17 @@ Scope {
             name: "Screenshot",
             icon: "set-screenshot",
             description: "Print freezes the screen to pick an area, Shift + Print takes the whole screen.",
-            keywords: "screenshot screen shot capture print snip snipping cursor pointer mouse picture",
+            keywords: "screenshot screen shot capture print snip snipping cursor pointer mouse picture theme follow colour colours color colors outline",
             settings: [
                 {
                     key: "screenshotCursor",
                     name: "Capture cursor",
                     description: "The pointer is in the picture, where it was when you pressed Print."
+                },
+                {
+                    key: "screenshotFollowTheme",
+                    name: "Follow theme",
+                    description: "The screenshot screen in the colours of the theme in use, the line round the area in the focused window's border colour. Off: Noir's black and white in every theme."
                 }
             ]
         },
@@ -330,6 +410,21 @@ Scope {
             keywords: "profile picture photo avatar face name user account about os operating system version distribution distro linux kernel computer device hardware processor cpu memory ram graphics gpu disk frameshell shell hyprland quickshell",
             settings: [],
             extra: "system"
+        },
+        {
+            key: "experimental",
+            name: "Experimental",
+            icon: "set-experimental",
+            description: "Things still being tried out.",
+            keywords: "experimental beta labs try test click expand extend hover peek open island panel",
+            settings: [
+                {
+                    key: "clickToExpand",
+                    owner: "config",
+                    name: "Click to expand",
+                    description: "The island and the blocks that come out of the edges - sound and brightness, the quick note, the clipboard, the colour picker - only peek out a little when the pointer touches them. Click one to open it all the way. Not the dock."
+                }
+            ]
         }
     ]
 
@@ -339,7 +434,8 @@ Scope {
         const q = query.trim().toLowerCase();
         if (q === "")
             return true;
-        const words = [pg.name, pg.description, pg.keywords || ""].concat(pg.settings.map(s => s.name + " " + (s.description || "")));
+        const all = pg.settings.concat(...(pg.sections || []).map(sec => sec.settings));
+        const words = [pg.name, pg.description, pg.keywords || ""].concat(all.map(s => s.name + " " + (s.description || "")));
         return words.join(" ").toLowerCase().indexOf(q) >= 0;
     }
 
@@ -398,7 +494,7 @@ Scope {
                     x: setting.inset
                     width: parent.width - 2 * setting.inset
                     height: 1
-                    color: Config.selected
+                    color: Config.controlBackground
                 }
 
                 Column {
@@ -421,7 +517,7 @@ Scope {
                         text: setting.modelData.description
                         font.pixelSize: Theme.px(12)
                         font.weight: Font.Medium
-                        color: Config.textDim
+                        color: Config.textSecondary
                     }
                 }
 
@@ -433,9 +529,9 @@ Scope {
                     y: Math.round((parent.height - height) / 2)
                     width: Theme.px(44)
                     height: Theme.px(26)
-                    // the rows are Config.hover - in Noir the toggle's own #060606:
+                    // the rows are Config.cardBackground - in Noir the toggle's own #060606:
                     // off, the theme's dim grey instead
-                    offColor: Config.iconDim
+                    offColor: Config.inactive
                     checked: setting.on
                     onToggled: on => setting.apply(on)
                 }
@@ -450,7 +546,7 @@ Scope {
                     text: setting.modelData.percent ? Math.round(setting.number * 100) + " %" : setting.number.toFixed(setting.modelData.decimals || 0) + (setting.modelData.unit ? " " + setting.modelData.unit : "")
                     font.pixelSize: Theme.px(13)
                     font.weight: Font.Medium
-                    color: Config.textDim
+                    color: Config.textSecondary
                 }
 
                 // the same slider as the volume and the brightness, in steps of `step`
@@ -482,7 +578,7 @@ Scope {
         width: Math.max(height, capText.implicitWidth + Theme.px(14))
         height: Theme.px(26)
         radius: Theme.px(7)
-        color: Config.selected
+        color: Config.controlBackground
         antialiasing: true
 
         Txt {
@@ -513,7 +609,7 @@ Scope {
 
         height: head.height + bodyClip.height
         radius: Theme.px(16)
-        color: Config.hover
+        color: Config.cardBackground
 
         Item {
             id: head
@@ -537,7 +633,7 @@ Scope {
                 width: Theme.px(32)
                 height: width
                 radius: width / 2
-                color: Config.selected
+                color: Config.controlBackground
                 antialiasing: true
 
                 Icon {
@@ -577,7 +673,7 @@ Scope {
                     text: dcard.description
                     font.pixelSize: Theme.px(12)
                     font.weight: Font.Medium
-                    color: Config.textDim
+                    color: Config.textSecondary
                 }
             }
 
@@ -596,7 +692,7 @@ Scope {
                 y: Math.round((parent.height - height) / 2)
                 size: Theme.px(14)
                 name: "chev-right"
-                color: Config.textDim
+                color: Config.textSecondary
                 rotation: dcard.expanded ? -90 : 90
 
                 Behavior on rotation {
@@ -664,7 +760,7 @@ Scope {
                 width: list.width
                 height: Theme.px(48)
                 radius: Theme.px(12)
-                color: nodeArea.containsMouse && !chosen ? Config.selected : Config.frame
+                color: nodeArea.containsMouse && !chosen ? Config.controlBackground : Config.background
 
                 Behavior on color {
                     CAnim {}
@@ -680,7 +776,7 @@ Scope {
                     radius: width / 2
                     color: "transparent"
                     border.width: Theme.px(2)
-                    border.color: nodeRow.chosen ? Config.text : Config.iconDim
+                    border.color: nodeRow.chosen ? Config.text : Config.inactive
                     antialiasing: true
 
                     Rectangle {
@@ -719,7 +815,7 @@ Scope {
             width: list.width
             height: Theme.px(48)
             radius: Theme.px(12)
-            color: Config.frame
+            color: Config.background
             visible: list.nodes.length === 0
 
             Txt {
@@ -727,7 +823,7 @@ Scope {
                 text: list.empty
                 font.pixelSize: Theme.px(13)
                 font.weight: Font.Medium
-                color: Config.textDim
+                color: Config.textSecondary
             }
         }
     }
@@ -741,7 +837,7 @@ Scope {
             title: "Settings"
             implicitWidth: Theme.px(780)
             implicitHeight: Theme.px(460)
-            color: Config.frame
+            color: Config.background
 
             // closed from outside (its close key, a middle-click in the dock): it is gone,
             // the next "open" makes a new one
@@ -822,7 +918,7 @@ Scope {
                         width: parent.width
                         height: Theme.px(36)
                         radius: Theme.px(10)
-                        color: field.activeFocus ? Config.selected : Config.hover
+                        color: field.activeFocus ? Config.controlBackground : Config.cardBackground
 
                         Behavior on color {
                             CAnim {}
@@ -840,7 +936,7 @@ Scope {
                             y: Math.round((parent.height - height) / 2)
                             size: Theme.px(14)
                             name: "search"
-                            color: Config.textDim
+                            color: Config.textSecondary
                         }
 
                         Txt {
@@ -850,7 +946,7 @@ Scope {
                             text: "Search"
                             font.pixelSize: Theme.px(14)
                             font.weight: Font.Medium
-                            color: Config.textDim
+                            color: Config.textSecondary
                         }
 
                         TextInput {
@@ -863,7 +959,7 @@ Scope {
                             font.pixelSize: Theme.px(14)
                             font.weight: Font.Medium
                             color: Config.text
-                            selectionColor: Config.textSelection
+                            selectionColor: Config.selectionBackground
                             selectedTextColor: Config.text
                             selectByMouse: true
                             onTextChanged: win.query = text
@@ -907,7 +1003,7 @@ Scope {
                                 Rectangle {
                                     anchors.fill: parent
                                     radius: Theme.px(10)
-                                    color: row.selected ? Config.selected : Config.hover
+                                    color: row.selected ? Config.controlBackground : Config.cardBackground
                                     opacity: row.selected || row.hot ? 1 : 0
 
                                     Behavior on color {
@@ -927,7 +1023,9 @@ Scope {
                                     width: Theme.px(30)
                                     height: width
                                     radius: width / 2
-                                    color: row.selected ? Config.text : Config.selected
+                                    color: row.selected ? Config.text : Config.controlBackground
+                                    border.width: row.selected ? 0 : Theme.outlineSmallW       // the small buttons' outline ("No outline buttons" takes it away)
+                                    border.color: Theme.outlineSmallColor
                                     antialiasing: true
 
                                     Behavior on color {
@@ -939,7 +1037,7 @@ Scope {
                                         y: Math.round((parent.height - height) / 2)
                                         size: Theme.px(16)
                                         name: row.modelData.icon
-                                        color: row.selected ? Config.frame : Config.text
+                                        color: row.selected ? Config.background : Config.text
                                     }
                                 }
 
@@ -981,7 +1079,7 @@ Scope {
                         text: "No results"
                         font.pixelSize: Theme.px(14)
                         font.weight: Font.Medium
-                        color: Config.textDim
+                        color: Config.textSecondary
                     }
                 }
 
@@ -1011,7 +1109,7 @@ Scope {
                             width: parent.width
                             height: header.height + 2 * Theme.px(24)
                             radius: ui.cardRadius
-                            color: Config.hover
+                            color: Config.cardBackground
 
                             Column {
                                 id: header
@@ -1023,7 +1121,7 @@ Scope {
                                     width: Theme.px(56)
                                     height: width
                                     radius: width / 2
-                                    color: Config.outline
+                                    color: Config.border
                                     antialiasing: true
 
                                     Icon {
@@ -1044,6 +1142,7 @@ Scope {
                                     horizontalAlignment: Text.AlignHCenter
                                     text: win.page ? win.page.name : ""
                                     font.pixelSize: Theme.px(20)
+                                    font.family: Theme.fontDisplay
                                     font.weight: Font.DemiBold
                                 }
 
@@ -1060,7 +1159,7 @@ Scope {
                                     text: win.page ? win.page.description : ""
                                     font.pixelSize: Theme.px(13)
                                     font.weight: Font.Medium
-                                    color: Config.textDim
+                                    color: Config.textSecondary
                                 }
                             }
                         }
@@ -1070,13 +1169,32 @@ Scope {
                             width: parent.width
                             height: settingsCol.height
                             radius: ui.cardRadius
-                            color: Config.hover
+                            color: Config.cardBackground
                             visible: win.page !== null && win.page.settings.length > 0
 
                             SettingRows {
                                 id: settingsCol
                                 width: parent.width
                                 settings: win.page ? win.page.settings : []
+                            }
+                        }
+
+                        // the page's sections: one more card of settings each, like the one above
+                        Repeater {
+                            model: win.page && win.page.sections ? win.page.sections : []
+
+                            Rectangle {
+                                required property var modelData
+                                width: parent.width
+                                height: sectionRows.height
+                                radius: ui.cardRadius
+                                color: Config.cardBackground
+
+                                SettingRows {
+                                    id: sectionRows
+                                    width: parent.width
+                                    settings: modelData.settings
+                                }
                             }
                         }
 
@@ -1188,8 +1306,8 @@ Scope {
                 }
 
                 // ── Wallpaper: the pictures ──────────────────────────────
-                // One tile per picture of the wallpaper folder, in the order of the
-                // switcher (SUPER + CTRL + Left / Right). The wallpaper has a ring round it; a
+                // One tile per picture of the theme in use (its wallpaper folder), in the
+                // order of the switcher (SUPER + CTRL + Left / Right); added pictures go to it too. The wallpaper has a ring round it; a
                 // click on another makes it the wallpaper. Under the pointer, a picture
                 // you added shows a bin in its corner: a click on it removes the picture
                 // (to the trash; the ones that come with frameshell stay). The last tile
@@ -1214,7 +1332,7 @@ Scope {
 
                         height: grid.height + 2 * pad
                         radius: ui.cardRadius
-                        color: Config.hover
+                        color: Config.cardBackground
 
                         // The tiles, kept in step with the folder one picture at a time (a
                         // picture added or removed: only its tile comes or goes, the others
@@ -1370,7 +1488,7 @@ Scope {
                                     ClippingRectangle {
                                         anchors.fill: parent
                                         radius: wcard.tileRadius
-                                        color: Config.selected          // until the picture has loaded
+                                        color: Config.controlBackground          // until the picture has loaded
 
                                         Image {
                                             id: tileImage
@@ -1430,7 +1548,7 @@ Scope {
                                         width: Theme.px(26)
                                         height: width
                                         radius: width / 2
-                                        color: Config.frame
+                                        color: Config.background
                                         antialiasing: true
                                         visible: opacity > 0
                                         opacity: shown ? 1 : 0
@@ -1494,9 +1612,9 @@ Scope {
                                 Rectangle {
                                     anchors.fill: parent
                                     radius: wcard.tileRadius
-                                    color: dropArea.containsDrag ? Config.selected : "transparent"
+                                    color: dropArea.containsDrag ? Config.controlBackground : "transparent"
                                     border.width: Theme.px(1.5)
-                                    border.color: dropArea.containsDrag ? Config.text : Config.iconDim
+                                    border.color: dropArea.containsDrag ? Config.text : Config.inactive
                                     antialiasing: true
 
                                     Behavior on color {
@@ -1538,7 +1656,7 @@ Scope {
                                         text: dropArea.containsDrag ? "Drop to add" : (Wallpapers.adding ? "Adding…" : "Add")
                                         font.pixelSize: Theme.px(13)
                                         font.weight: Font.Medium
-                                        color: dropArea.containsDrag ? Config.text : Config.textDim
+                                        color: dropArea.containsDrag ? Config.text : Config.textSecondary
                                     }
                                 }
 
@@ -1589,7 +1707,7 @@ Scope {
 
                         height: themeGrid.height + 2 * pad
                         radius: ui.cardRadius
-                        color: Config.hover
+                        color: Config.cardBackground
 
                         Grid {
                             id: themeGrid
@@ -1641,9 +1759,9 @@ Scope {
                                     Rectangle {
                                         anchors.fill: parent
                                         radius: tcard.tileRadius
-                                        color: Config.themeColor(themeTile.modelData, "frame")
+                                        color: Config.themeColor(themeTile.modelData, "background")
                                         border.width: 1
-                                        border.color: Config.iconDim
+                                        border.color: Config.inactive
                                         antialiasing: true
 
                                         Column {
@@ -1708,7 +1826,7 @@ Scope {
                             width: parent.width
                             height: powerLogoRow.height
                             radius: ui.cardRadius
-                            color: Config.hover
+                            color: Config.cardBackground
 
                             SettingRows {
                                 id: powerLogoRow
@@ -1802,7 +1920,7 @@ Scope {
                                             Rectangle {
                                                 anchors.fill: parent
                                                 radius: icard.tileRadius
-                                                color: Config.frame
+                                                color: Config.background
                                                 antialiasing: true
 
                                                 Column {
@@ -1846,7 +1964,7 @@ Scope {
                                                         text: packTile.usable ? packTile.modelData.about : "Not installed"
                                                         font.pixelSize: Theme.px(11)
                                                         font.weight: Font.Medium
-                                                        color: Config.textDim
+                                                        color: Config.textSecondary
                                                     }
                                                 }
                                             }
@@ -1916,7 +2034,7 @@ Scope {
                             readonly property real tileRadius: Theme.px(12)
                             // every tile the same colour, whatever its preset's theme: the
                             // shell's frame colour, like the icon packs' tiles
-                            readonly property color tileColor: Config.frame
+                            readonly property color tileColor: Config.background
 
                             width: saveCard.width
                             height: presetGrid.y + presetGrid.height + pad
@@ -1928,9 +2046,9 @@ Scope {
                                 width: Math.max(0, saveBtn.x - Theme.px(8) - x)
                                 height: Theme.px(36)
                                 radius: Theme.px(10)
-                                color: Config.frame
+                                color: Config.background
                                 border.width: Theme.border
-                                border.color: presetName.activeFocus ? Config.fieldFocus : Config.frame
+                                border.color: presetName.activeFocus ? Config.fieldFocusBorder : Config.background
 
                                 // the whole field puts the cursor in it (the text itself handles its own clicks)
                                 MouseArea {
@@ -1946,7 +2064,7 @@ Scope {
                                     anchors.rightMargin: Theme.px(12)
                                     verticalAlignment: TextInput.AlignVCenter
                                     color: Config.text
-                                    selectionColor: Config.textSelection
+                                    selectionColor: Config.selectionBackground
                                     selectedTextColor: Config.text
                                     font.family: Theme.font
                                     font.pixelSize: Theme.px(14)
@@ -1973,7 +2091,7 @@ Scope {
                                     visible: presetName.text.length === 0
                                     text: "Name"
                                     font.pixelSize: Theme.px(14)
-                                    color: Config.textFaint
+                                    color: Config.textTertiary
                                 }
                             }
 
@@ -2003,7 +2121,7 @@ Scope {
                                     text: "Save"
                                     font.pixelSize: Theme.px(13)
                                     font.weight: Font.Medium
-                                    color: Config.frame
+                                    color: Config.background
                                 }
 
                                 MouseArea {
@@ -2026,7 +2144,7 @@ Scope {
                                 text: saveCard.note
                                 font.pixelSize: Theme.px(12)
                                 font.weight: Font.Medium
-                                color: saveCard.failed ? Config.warning : Config.textDim
+                                color: saveCard.failed ? Config.warning : Config.textSecondary
                             }
 
                             Grid {
@@ -2075,7 +2193,7 @@ Scope {
                                             radius: presetsBody.tileRadius + Theme.px(4)
                                             color: "transparent"
                                             border.width: Theme.px(2)
-                                            border.color: Config.thumbOutline
+                                            border.color: Config.previewSelectedBorder
                                             antialiasing: true
                                             opacity: presetTile.isCurrent ? 1 : 0
 
@@ -2112,7 +2230,7 @@ Scope {
                                                     horizontalAlignment: Text.AlignHCenter
                                                     elide: Text.ElideRight
                                                     text: presetTile.about
-                                                    color: Config.textDim
+                                                    color: Config.textSecondary
                                                     font.pixelSize: Theme.px(11)
                                                     font.weight: Font.Medium
                                                 }
@@ -2139,7 +2257,7 @@ Scope {
                                             width: Theme.px(26)
                                             height: width
                                             radius: width / 2
-                                            color: Config.frame
+                                            color: Config.background
                                             antialiasing: true
                                             visible: opacity > 0
                                             opacity: shown ? 1 : 0
@@ -2388,7 +2506,7 @@ Scope {
                             width: kcol.width
                             height: failText.height + 2 * kcol.inset
                             radius: ui.cardRadius
-                            color: Config.hover
+                            color: Config.cardBackground
 
                             Txt {
                                 id: failText
@@ -2399,7 +2517,7 @@ Scope {
                                 text: "Hyprland's shortcuts could not be read (hyprctl binds). They are in ~/.config/hypr/hyprland.lua."
                                 font.pixelSize: Theme.px(13)
                                 font.weight: Font.Medium
-                                color: Config.textDim
+                                color: Config.textSecondary
                             }
                         }
 
@@ -2413,7 +2531,7 @@ Scope {
                                 width: kcol.width
                                 height: sectionCol.height + Theme.px(6)
                                 radius: ui.cardRadius
-                                color: Config.hover
+                                color: Config.cardBackground
 
                                 Column {
                                     id: sectionCol
@@ -2451,7 +2569,7 @@ Scope {
                                                 x: kcol.inset
                                                 width: parent.width - 2 * kcol.inset
                                                 height: 1
-                                                color: Config.selected
+                                                color: Config.controlBackground
                                             }
 
                                             Txt {
@@ -2494,7 +2612,7 @@ Scope {
                                                                 text: "or"
                                                                 font.pixelSize: Theme.px(12)
                                                                 font.weight: Font.Medium
-                                                                color: Config.textDim
+                                                                color: Config.textSecondary
                                                             }
                                                             Repeater {
                                                                 model: combo.modelData
@@ -2602,7 +2720,7 @@ Scope {
 
                         height: Math.max(face.height, info.height) + 2 * inset + (note.visible ? note.height + Theme.px(10) : 0)
                         radius: Theme.px(16)
-                        color: Config.hover
+                        color: Config.cardBackground
 
                         // the picture, or the first letter of the name (they fade into each other)
                         Item {
@@ -2617,7 +2735,7 @@ Scope {
                             Rectangle {
                                 anchors.fill: parent
                                 radius: width / 2
-                                color: Config.selected
+                                color: Config.controlBackground
                                 visible: opacity > 0
                                 opacity: face.showsPicture ? 0 : 1
                                 antialiasing: true
@@ -2681,7 +2799,7 @@ Scope {
                                 width: Theme.px(26)
                                 height: width
                                 radius: width / 2
-                                color: Config.frame
+                                color: Config.background
                                 antialiasing: true
                                 visible: opacity > 0
                                 opacity: shown ? 1 : 0
@@ -2748,9 +2866,9 @@ Scope {
                                 width: parent.width
                                 height: Theme.px(36)
                                 radius: Theme.px(10)
-                                color: Config.frame
+                                color: Config.background
                                 border.width: Theme.border
-                                border.color: nameInput.activeFocus ? Config.fieldFocus : Config.frame
+                                border.color: nameInput.activeFocus ? Config.fieldFocusBorder : Config.background
 
                                 TextInput {
                                     id: nameInput
@@ -2759,7 +2877,7 @@ Scope {
                                     anchors.rightMargin: Theme.px(12)
                                     verticalAlignment: TextInput.AlignVCenter
                                     color: Config.text
-                                    selectionColor: Config.textSelection
+                                    selectionColor: Config.selectionBackground
                                     selectedTextColor: Config.text
                                     font.family: Theme.font
                                     font.pixelSize: Theme.px(14)
@@ -2777,7 +2895,7 @@ Scope {
                                     visible: nameInput.text.length === 0
                                     text: "Your name"
                                     font.pixelSize: Theme.px(14)
-                                    color: Config.textFaint
+                                    color: Config.textTertiary
                                 }
 
                                 // the text cursor over the field
@@ -2794,7 +2912,7 @@ Scope {
                                 text: Profile.busy ? Profile.busyText : (pcard.editing ? "The name on the lock and login screen." : Profile.user)
                                 font.pixelSize: Theme.px(13)
                                 font.weight: Font.Medium
-                                color: Config.textDim
+                                color: Config.textSecondary
                             }
                         }
 
@@ -2836,7 +2954,7 @@ Scope {
                                     height: Theme.px(32)
                                     radius: Theme.px(10)
                                     opacity: Profile.busy ? 0.45 : 1
-                                    color: strong ? Config.text : (pbtnArea.containsMouse ? Config.buttonHover : Config.selected)
+                                    color: strong ? Config.text : (pbtnArea.containsMouse ? Config.controlHover : Config.controlBackground)
                                     scale: pbtnArea.pressed ? 0.95 : 1
 
                                     Behavior on color {
@@ -2849,7 +2967,7 @@ Scope {
                                         text: pbtn.modelData.label
                                         font.pixelSize: Theme.px(13)
                                         font.weight: Font.Medium
-                                        color: pbtn.strong ? Config.frame : Config.text
+                                        color: pbtn.strong ? Config.background : Config.text
                                     }
 
                                     MouseArea {
@@ -3099,7 +3217,7 @@ Scope {
                                     x: aboutRow.inset
                                     width: parent.width - 2 * aboutRow.inset
                                     height: 1
-                                    color: Config.selected
+                                    color: Config.controlBackground
                                 }
 
                                 Txt {
@@ -3110,7 +3228,7 @@ Scope {
                                     text: aboutRow.modelData.label
                                     font.pixelSize: Theme.px(13)
                                     font.weight: Font.Medium
-                                    color: Config.textDim
+                                    color: Config.textSecondary
                                 }
                                 Txt {
                                     id: rowValue
@@ -3176,7 +3294,7 @@ Scope {
                             enabled: wfcard.ready && wfcard.w.hardwareEnabled
                             width: Theme.px(44)
                             height: Theme.px(26)
-                            offColor: Config.iconDim
+                            offColor: Config.inactive
                             checked: wfcard.on
                             onToggled: on => wfcard.w.setEnabled(on)
                         }
@@ -3194,14 +3312,14 @@ Scope {
                                 width: wfList.width
                                 height: Theme.px(52)
                                 radius: Theme.px(12)
-                                color: Config.frame
+                                color: Config.background
                                 visible: wfcard.ready && wfcard.w.wiredConnected
 
                                 Icon {
                                     id: cableIcon
                                     x: Theme.px(14)
                                     y: Math.round((parent.height - height) / 2)
-                                    size: Theme.px(20)
+                                    size: Theme.px(16)
                                     name: "ethernet"
                                 }
                                 Column {
@@ -3218,7 +3336,7 @@ Scope {
                                         text: "Connected"
                                         font.pixelSize: Theme.px(12)
                                         font.weight: Font.Medium
-                                        color: Config.textDim
+                                        color: Config.textSecondary
                                     }
                                 }
                             }
@@ -3257,7 +3375,7 @@ Scope {
                                         width: parent.width
                                         height: Theme.px(52)
                                         radius: Theme.px(12)
-                                        color: netArea.containsMouse ? Config.selected : Config.frame
+                                        color: netArea.containsMouse ? Config.controlBackground : Config.background
 
                                         Behavior on color {
                                             CAnim {}
@@ -3297,7 +3415,7 @@ Scope {
                                                 text: netItem.net.stateChanging ? (netItem.net.connected ? "Disconnecting…" : "Connecting…") : netItem.net.connected ? (netArea.containsMouse ? "Connected - click to disconnect" : "Connected") : netItem.net.known ? "Saved" : netItem.locked ? "Needs a password" : "Open"
                                                 font.pixelSize: Theme.px(12)
                                                 font.weight: Font.Medium
-                                                color: Config.textDim
+                                                color: Config.textSecondary
                                                 elide: Text.ElideRight
                                             }
                                         }
@@ -3310,7 +3428,7 @@ Scope {
                                             y: Math.round((parent.height - height) / 2)
                                             size: Theme.px(14)
                                             name: "lock"
-                                            color: Config.textDim
+                                            color: Config.textSecondary
                                         }
 
                                         // forget a saved one (joining it again asks for its password)
@@ -3322,7 +3440,7 @@ Scope {
                                             width: netForgetLabel.implicitWidth + Theme.px(24)
                                             height: Theme.px(30)
                                             radius: Theme.px(11)
-                                            color: netForgetArea.containsMouse ? Config.buttonHover : Config.selected
+                                            color: netForgetArea.containsMouse ? Config.controlHover : Config.controlBackground
 
                                             Behavior on color {
                                                 CAnim {}
@@ -3357,9 +3475,9 @@ Scope {
                                             width: parent.width - joinBtn.width - Theme.px(8)
                                             height: parent.height
                                             radius: Theme.px(10)
-                                            color: Config.frame
+                                            color: Config.background
                                             border.width: Theme.border
-                                            border.color: pass.activeFocus ? Config.fieldFocus : Config.frame
+                                            border.color: pass.activeFocus ? Config.fieldFocusBorder : Config.background
 
                                             TextInput {
                                                 id: pass
@@ -3370,7 +3488,7 @@ Scope {
                                                 echoMode: TextInput.Password
                                                 passwordCharacter: "•"
                                                 color: Config.text
-                                                selectionColor: Config.textSelection
+                                                selectionColor: Config.selectionBackground
                                                 selectedTextColor: Config.text
                                                 font.family: Theme.font
                                                 font.pixelSize: Theme.px(14)
@@ -3387,7 +3505,7 @@ Scope {
                                                 visible: pass.text.length === 0
                                                 text: "Password"
                                                 font.pixelSize: Theme.px(14)
-                                                color: Config.textFaint
+                                                color: Config.textTertiary
                                             }
                                         }
 
@@ -3398,7 +3516,7 @@ Scope {
                                             width: joinLabel.implicitWidth + Theme.px(28)
                                             height: parent.height
                                             radius: Theme.px(10)
-                                            color: pass.text.length > 0 ? Config.text : Config.buttonDisabled
+                                            color: pass.text.length > 0 ? Config.text : Config.controlDisabled
                                             scale: joinArea.pressed ? 0.95 : 1
 
                                             Behavior on color {
@@ -3411,7 +3529,7 @@ Scope {
                                                 text: "Join"
                                                 font.pixelSize: Theme.px(14)
                                                 font.weight: Font.Medium
-                                                color: pass.text.length > 0 ? Config.frame : Config.textDim
+                                                color: pass.text.length > 0 ? Config.background : Config.textSecondary
                                             }
 
                                             MouseArea {
@@ -3442,7 +3560,7 @@ Scope {
                                 width: wfList.width
                                 height: Theme.px(48)
                                 radius: Theme.px(12)
-                                color: Config.frame
+                                color: Config.background
                                 visible: wfcard.ready && wfcard.w.networks.length === 0
 
                                 Txt {
@@ -3450,7 +3568,7 @@ Scope {
                                     text: "Looking for networks…"
                                     font.pixelSize: Theme.px(13)
                                     font.weight: Font.Medium
-                                    color: Config.textDim
+                                    color: Config.textSecondary
                                 }
                             }
                         }
@@ -3494,7 +3612,7 @@ Scope {
                             enabled: bcard.ready && !bcard.bt.busy
                             width: Theme.px(44)
                             height: Theme.px(26)
-                            offColor: Config.iconDim
+                            offColor: Config.inactive
                             checked: bcard.on
                             onToggled: on => bcard.bt.setEnabled(on)
                         }
@@ -3521,7 +3639,7 @@ Scope {
                                     width: btList.width
                                     height: rowH + (failed ? btError.height + Theme.px(10) : 0)
                                     radius: Theme.px(12)
-                                    color: btArea.containsMouse ? Config.selected : Config.frame
+                                    color: btArea.containsMouse ? Config.controlBackground : Config.background
 
                                     Behavior on color {
                                         CAnim {}
@@ -3541,7 +3659,7 @@ Scope {
                                         y: Math.round((btRow.rowH - height) / 2)
                                         size: Theme.px(20)
                                         name: bcard.bt.glyph(btRow.modelData)
-                                        color: btRow.modelData.connected ? Config.text : Config.textDim
+                                        color: btRow.modelData.connected ? Config.text : Config.textSecondary
                                     }
 
                                     Column {
@@ -3563,7 +3681,7 @@ Scope {
                                             text: bcard.bt.stateText(btRow.modelData) || (btRow.modelData.connected ? (btArea.containsMouse ? "Connected - click to disconnect" : "Connected") : btRow.known ? "Paired" : "New - click to pair")
                                             font.pixelSize: Theme.px(12)
                                             font.weight: Font.Medium
-                                            color: Config.textDim
+                                            color: Config.textSecondary
                                             elide: Text.ElideRight
                                         }
                                     }
@@ -3577,7 +3695,7 @@ Scope {
                                         width: forgetLabel.implicitWidth + Theme.px(24)
                                         height: Theme.px(30)
                                         radius: Theme.px(11)
-                                        color: forgetArea.containsMouse ? Config.buttonHover : Config.selected
+                                        color: forgetArea.containsMouse ? Config.controlHover : Config.controlBackground
 
                                         Behavior on color {
                                             CAnim {}
@@ -3621,7 +3739,7 @@ Scope {
                                 width: btList.width
                                 height: Theme.px(48)
                                 radius: Theme.px(12)
-                                color: Config.frame
+                                color: Config.background
                                 visible: bcard.ready && bcard.bt.devices.length === 0
 
                                 Txt {
@@ -3629,7 +3747,7 @@ Scope {
                                     text: "Looking for devices…"
                                     font.pixelSize: Theme.px(13)
                                     font.weight: Font.Medium
-                                    color: Config.textDim
+                                    color: Config.textSecondary
                                 }
                             }
                         }
@@ -3937,7 +4055,7 @@ Scope {
 
                         height: pinCol.height
                         radius: ui.cardRadius
-                        color: Config.hover
+                        color: Config.cardBackground
 
                         Column {
                             id: pinCol
@@ -3968,7 +4086,7 @@ Scope {
                                         text: "Always in the dock, before your open apps - a line between them. A click opens the app, or goes to its window when it is open."
                                         font.pixelSize: Theme.px(12)
                                         font.weight: Font.Medium
-                                        color: Config.textDim
+                                        color: Config.textSecondary
                                     }
                                 }
 
@@ -3980,7 +4098,7 @@ Scope {
                                     width: addLabel.implicitWidth + Theme.px(28)
                                     height: Theme.px(32)
                                     radius: Theme.px(11)
-                                    color: addArea.containsMouse ? Config.buttonHover : Config.selected
+                                    color: addArea.containsMouse ? Config.controlHover : Config.controlBackground
                                     scale: addArea.pressed ? 0.97 : 1
 
                                     Behavior on color {
@@ -4030,7 +4148,7 @@ Scope {
                                         width: pins.width
                                         height: Theme.px(52)
                                         radius: Theme.px(12)
-                                        color: Config.frame
+                                        color: Config.background
 
                                         AppIcon {
                                             id: pinIcon
@@ -4068,7 +4186,7 @@ Scope {
                                                     width: Theme.px(32)
                                                     height: width
                                                     radius: width / 2
-                                                    color: moveArea.containsMouse && usable ? Config.buttonHover : Config.selected
+                                                    color: moveArea.containsMouse && usable ? Config.controlHover : Config.controlBackground
                                                     opacity: usable ? 1 : 0.35
                                                     scale: moveArea.pressed && usable ? 0.94 : 1
                                                     antialiasing: true
@@ -4107,7 +4225,7 @@ Scope {
                                                 width: unpinLabel.implicitWidth + Theme.px(24)
                                                 height: Theme.px(32)
                                                 radius: Theme.px(11)
-                                                color: unpinArea.containsMouse ? Config.buttonHover : Config.selected
+                                                color: unpinArea.containsMouse ? Config.controlHover : Config.controlBackground
                                                 scale: unpinArea.pressed ? 0.97 : 1
 
                                                 Behavior on color {
@@ -4144,7 +4262,7 @@ Scope {
                                     width: pins.width
                                     height: Theme.px(52)
                                     radius: Theme.px(12)
-                                    color: Config.frame
+                                    color: Config.background
                                     visible: Apps.pinned.length === 0
 
                                     Txt {
@@ -4152,7 +4270,7 @@ Scope {
                                         text: "No pinned apps yet"
                                         font.pixelSize: Theme.px(13)
                                         font.weight: Font.Medium
-                                        color: Config.textDim
+                                        color: Config.textSecondary
                                     }
                                 }
                             }
@@ -4181,7 +4299,7 @@ Scope {
                                     width: parent.width
                                     height: Theme.px(36)
                                     radius: Theme.px(10)
-                                    color: pickField.activeFocus ? Config.selected : Config.frame
+                                    color: pickField.activeFocus ? Config.controlBackground : Config.background
 
                                     Behavior on color {
                                         CAnim {}
@@ -4198,7 +4316,7 @@ Scope {
                                         y: Math.round((parent.height - height) / 2)
                                         size: Theme.px(14)
                                         name: "search"
-                                        color: Config.textDim
+                                        color: Config.textSecondary
                                     }
 
                                     Txt {
@@ -4208,7 +4326,7 @@ Scope {
                                         text: "Search your apps"
                                         font.pixelSize: Theme.px(14)
                                         font.weight: Font.Medium
-                                        color: Config.textDim
+                                        color: Config.textSecondary
                                     }
 
                                     TextInput {
@@ -4221,7 +4339,7 @@ Scope {
                                         font.pixelSize: Theme.px(14)
                                         font.weight: Font.Medium
                                         color: Config.text
-                                        selectionColor: Config.textSelection
+                                        selectionColor: Config.selectionBackground
                                         selectedTextColor: Config.text
                                         selectByMouse: true
                                         onTextChanged: {
@@ -4251,7 +4369,7 @@ Scope {
                                         width: picker.width
                                         height: Theme.px(44)
                                         radius: Theme.px(12)
-                                        color: appArea.containsMouse ? Config.selected : Config.frame
+                                        color: appArea.containsMouse ? Config.controlBackground : Config.background
 
                                         Behavior on color {
                                             CAnim {}
@@ -4316,7 +4434,7 @@ Scope {
                                     width: picker.width
                                     height: Theme.px(44)
                                     radius: Theme.px(12)
-                                    color: Config.frame
+                                    color: Config.background
                                     visible: pcard.results.length === 0
 
                                     Txt {
@@ -4324,7 +4442,7 @@ Scope {
                                         text: pcard.apps.length === 0 ? "All your apps are pinned" : "No apps found"
                                         font.pixelSize: Theme.px(13)
                                         font.weight: Font.Medium
-                                        color: Config.textDim
+                                        color: Config.textSecondary
                                     }
                                 }
 
@@ -4341,7 +4459,7 @@ Scope {
                                         width: moreLabel.implicitWidth + Theme.px(28)
                                         height: Theme.px(32)
                                         radius: Theme.px(11)
-                                        color: moreArea.containsMouse ? Config.buttonHover : Config.selected
+                                        color: moreArea.containsMouse ? Config.controlHover : Config.controlBackground
                                         scale: moreArea.pressed ? 0.97 : 1
 
                                         Behavior on color {
@@ -4395,7 +4513,7 @@ Scope {
 
                         height: histCol.height
                         radius: ui.cardRadius
-                        color: Config.hover
+                        color: Config.cardBackground
 
                         Column {
                             id: histCol
@@ -4426,7 +4544,7 @@ Scope {
                                         text: "The last " + Notifs.historyMax + ", newest first - also the ones from Do not disturb."
                                         font.pixelSize: Theme.px(12)
                                         font.weight: Font.Medium
-                                        color: Config.textDim
+                                        color: Config.textSecondary
                                     }
                                 }
 
@@ -4439,7 +4557,7 @@ Scope {
                                     width: clearLabel.implicitWidth + Theme.px(28)
                                     height: Theme.px(32)
                                     radius: Theme.px(11)
-                                    color: clearArea.containsMouse && usable ? Config.buttonHover : Config.selected
+                                    color: clearArea.containsMouse && usable ? Config.controlHover : Config.controlBackground
                                     opacity: usable ? 1 : 0.4
                                     scale: clearArea.pressed && usable ? 0.97 : 1
 
@@ -4489,13 +4607,12 @@ Scope {
                                         id: entry
                                         required property var modelData
 
-                                        // like the card: the app's name on top, else the summary
-                                        readonly property string head: modelData.appName ? modelData.appName : (modelData.summary || "")
-                                        readonly property string text: {
-                                            const first = modelData.appName ? (modelData.summary || "") : "";
-                                            const rest = modelData.body || "";
-                                            return first.length > 0 && rest.length > 0 ? first + "\n" + rest : (first.length > 0 ? first : rest);
-                                        }
+                                        // like the card: the app's name small and grey on top (else the summary,
+                                        // in semibold), then the summary in semibold, then the message in grey
+                                        readonly property bool headIsApp: !!modelData.appName
+                                        readonly property string head: headIsApp ? modelData.appName : (modelData.summary || "")
+                                        readonly property string title: headIsApp ? (modelData.summary || "") : ""
+                                        readonly property string text: modelData.body || ""
                                         readonly property string iconSource: IconPacks.path(modelData.icon)
                                         readonly property real iconSize: Theme.px(28)
                                         readonly property real gap: Theme.px(12)
@@ -4504,11 +4621,12 @@ Scope {
                                         width: entries.width
                                         height: Math.max(Theme.px(52), entryText.height + 2 * pad)
                                         radius: Theme.px(12)
-                                        color: Config.frame
+                                        color: Config.background
 
                                         AppIcon {
                                             x: entry.pad
-                                            y: entryText.y + Math.round((entryHead.height - height) / 2)
+                                            // in the middle of a short entry, level with the top of a longer one
+                                            y: entryText.height <= height ? Math.round((parent.height - height) / 2) : entryText.y
                                             size: entry.iconSize
                                             source: entry.modelData.image ? entry.modelData.image : entry.iconSource
                                             fallbackSource: entry.modelData.image ? entry.iconSource : ""
@@ -4531,8 +4649,10 @@ Scope {
                                                     id: headLabel
                                                     width: Math.max(0, parent.width - timeLabel.width - Theme.px(10))
                                                     text: entry.head
-                                                    font.pixelSize: Theme.px(15)
-                                                    font.weight: Font.Medium
+                                                    textFormat: Text.PlainText
+                                                    font.pixelSize: entry.headIsApp ? Theme.px(13) : Theme.px(15)
+                                                    font.weight: entry.headIsApp ? Font.Medium : Font.DemiBold
+                                                    color: entry.headIsApp ? Config.textSecondary : Config.text
                                                     elide: Text.ElideRight
                                                 }
                                                 Txt {
@@ -4542,8 +4662,20 @@ Scope {
                                                     text: root.when(entry.modelData.time)
                                                     font.pixelSize: Theme.px(12)
                                                     font.weight: Font.Medium
-                                                    color: Config.textDim
+                                                    color: Config.textSecondary
                                                 }
+                                            }
+
+                                            Txt {
+                                                width: parent.width
+                                                visible: entry.title.length > 0
+                                                wrapMode: Text.Wrap
+                                                maximumLineCount: 2
+                                                elide: Text.ElideRight
+                                                textFormat: Text.PlainText
+                                                text: entry.title
+                                                font.pixelSize: Theme.px(15)
+                                                font.weight: Font.DemiBold
                                             }
 
                                             Txt {
@@ -4553,9 +4685,8 @@ Scope {
                                                 maximumLineCount: 3
                                                 elide: Text.ElideRight
                                                 text: entry.text
-                                                font.pixelSize: Theme.px(13)
-                                                font.weight: Font.Medium
-                                                color: Config.textDim
+                                                font.pixelSize: Theme.px(14)
+                                                color: Config.textSecondary
                                             }
                                         }
                                     }
@@ -4566,7 +4697,7 @@ Scope {
                                     width: entries.width
                                     height: Theme.px(52)
                                     radius: Theme.px(12)
-                                    color: Config.frame
+                                    color: Config.background
                                     visible: Notifs.history.length === 0
 
                                     Txt {
@@ -4574,7 +4705,7 @@ Scope {
                                         text: "No notifications yet"
                                         font.pixelSize: Theme.px(13)
                                         font.weight: Font.Medium
-                                        color: Config.textDim
+                                        color: Config.textSecondary
                                     }
                                 }
                             }
@@ -4592,7 +4723,7 @@ Scope {
                                     width: moreLabel.implicitWidth + Theme.px(28)
                                     height: Theme.px(32)
                                     radius: Theme.px(11)
-                                    color: moreArea.containsMouse ? Config.buttonHover : Config.selected
+                                    color: moreArea.containsMouse ? Config.controlHover : Config.controlBackground
                                     scale: moreArea.pressed ? 0.97 : 1
 
                                     Behavior on color {

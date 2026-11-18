@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import QtQuick.Shapes
 import qs
 import "icons.js" as IconData
@@ -12,10 +13,13 @@ import "icons.js" as IconData
 Item {
     id: root
 
+    // the frame's colours inside the frame (Overlay.qml), else the theme's (Config.paletteFor)
+    readonly property var pal: Config.paletteFor(QsWindow.window)
+
     property int level: 3
     property real size: 16
     property color color: Config.text
-    property color dim: Config.iconDim
+    property color dim: root.pal.inactive
 
     readonly property var parts: IconData.data["wifi-arcs"]
 

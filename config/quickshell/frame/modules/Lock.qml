@@ -65,10 +65,10 @@ Scope {
             return Config.wallpaper;            // no theme: the default desktop wallpaper
         return b.startsWith("/") ? b : themeDir + "/" + b;
     }
-    readonly property color baseColor: theme.backgroundColor || Config.loginBackground
+    readonly property color baseColor: theme.backgroundColor || Config.loginCard
     readonly property color textColor: theme.textColor || Config.loginText
     readonly property color configuredAccent: theme.accentColor || Config.loginAccent
-    readonly property color accentTextColor: theme.accentTextColor || (themeFound ? "white" : Config.loginAccentText)
+    readonly property color accentTextColor: theme.accentTextColor || (themeFound ? "white" : Config.loginButtonArrow)
     readonly property bool autoColor: theme.autoColor === "true"       // like Pixie: only when it says so
     readonly property bool use24h: theme.use24HourClock === undefined ? Config.clock24h : theme.use24HourClock === "true"
     readonly property string fontFamily: theme.fontFamily || ""
@@ -84,13 +84,13 @@ Scope {
     // the date and the power icons (cornerColor) and the password field's border and the
     // round button (fieldColor): like Pixie, the accent when theme.conf(.user) leaves them
     // empty or picks the colours from the wallpaper (autoColor=true)
-    readonly property color cornerColor: !autoColor && theme.cornerColor ? theme.cornerColor : (themeFound ? accent : Config.loginCorners)
+    readonly property color cornerColor: !autoColor && theme.cornerColor ? theme.cornerColor : (themeFound ? accent : Config.loginCornerText)
     readonly property color fieldColor: !autoColor && theme.fieldColor ? theme.fieldColor : (themeFound ? accent : Config.loginField)
     // the clock's hours and minutes (hourColor / minuteColor): "" = like Pixie, the colour
     // LockView makes from the accent; the card after a wrong password (errorColor)
-    readonly property string hourColor: !autoColor && theme.hourColor ? theme.hourColor : (themeFound ? "" : String(Config.loginHours))
-    readonly property string minuteColor: !autoColor && theme.minuteColor ? theme.minuteColor : (themeFound ? "" : String(Config.loginMinutes))
-    readonly property color errorColor: theme.errorColor || (themeFound ? "#442222" : Config.loginError)
+    readonly property string hourColor: !autoColor && theme.hourColor ? theme.hourColor : (themeFound ? "" : String(Config.loginClockHours))
+    readonly property string minuteColor: !autoColor && theme.minuteColor ? theme.minuteColor : (themeFound ? "" : String(Config.loginClockMinutes))
+    readonly property color errorColor: theme.errorColor || (themeFound ? "#442222" : Config.loginErrorCard)
 
     function setExtracted(c) {
         extracted = c;

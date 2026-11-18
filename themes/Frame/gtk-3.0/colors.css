@@ -83,7 +83,7 @@ placessidebar row:selected {
 }
 
 /* ── selected text (fields, text views, labels, terminals, Firefox): the shell's text
-   selection grey #3e3e3e (textSelection in Config.qml) with the normal text colour.
+   selection grey #3e3e3e (selectionBackground in Config.qml) with the normal text colour.
    (adw-gtk3: white at 25 %, labels and terminals a white block.) A field with an error
    or a warning keeps its red / yellow. ── */
 headerbar entry selection,

@@ -10,7 +10,9 @@ import "../components/emoji.js" as Emoji
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  EmojiPicker.qml - the emoji picker (SUPER + .): the launcher's look, a grid
-//  of emoji under a search field, on the screen with the focused window.
+//  of emoji under a search field, on the screen with the focused window - out of
+//  the island like the launcher, or a card in the middle (Island popups off,
+//  components/IslandSheet.qml).
 //
 //  Type to search, by name and by keywords ("heart", "thumbsup", "flag
 //  poland"; several words must all match). The arrow keys move through the
@@ -264,12 +266,14 @@ Scope {
 
         PanelWindow {
             id: win
+            // black like the frame, in every theme: the frame's colours for its pieces too
+            readonly property bool framePalette: true
             required property var modelData
             readonly property bool here: modelData.name === root.screenName
 
             screen: modelData
             // stays until the fade-out has finished
-            visible: here && (root.open || panel.opacity > 0.01)
+            visible: here && (root.open || sheet.shown)
 
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.namespace: "frame-emoji"
@@ -285,7 +289,7 @@ Scope {
 
             // while open, everything beside the panel is a click-catcher that closes it
             mask: Region {
-                item: root.open ? backdrop : panel
+                item: root.open ? backdrop : sheet.area
             }
 
             onVisibleChanged: {
@@ -303,338 +307,322 @@ Scope {
                 }
             }
 
-            Rectangle {
-                id: panel
+            // the card: out of the island, or in the middle (Island popups, components/IslandSheet.qml)
+            IslandSheet {
+                id: sheet
+                open: root.open && win.here
+                sheetW: panel.width
+                sheetH: sheet.contentTop + panel.height
+                cardRadius: Theme.pop(24)
 
-                readonly property real pad: Theme.pop(16)
-                readonly property real searchH: Theme.pop(44)
-                readonly property real gap: Theme.pop(10)
-                readonly property real headH: Theme.pop(30)      // the group / name line
-                readonly property int rows: 6
-                readonly property real cell: Math.floor((width - 2 * pad) / root.cols)
-                readonly property real tabsH: Theme.pop(40)
+                Item {
+                    id: panel
 
-                anchors.horizontalCenter: parent.horizontalCenter
-                y: Math.round((parent.height - height) / 2)
-                width: Theme.pop(580)
-                height: pad + searchH + gap + headH + rows * cell + gap + tabsH + pad
-                radius: Theme.pop(24)
-                color: Config.surface               // see-through with the shell's blur
-                border.width: Theme.border
-                border.color: Config.outline
+                    readonly property real pad: Theme.pop(16)
+                    readonly property real searchH: Theme.pop(44)
+                    readonly property real gap: Theme.pop(10)
+                    readonly property real headH: Theme.pop(30)      // the group / name line
+                    readonly property int rows: 6
+                    readonly property real cell: Math.floor((width - 2 * pad) / root.cols)
+                    readonly property real tabsH: Theme.pop(40)
 
-                // soft shadow (follows the panel while it fades and scales)
-                Loader {
-                    z: -1
-                    anchors.fill: parent
-                    active: Config.shadows && Config.shadowStrength > 0
-                    source: "../components/CardShadow.qml"
-                }
+                    x: 0
+                    y: sheet.contentTop
+                    width: Theme.pop(580)
+                    height: pad + searchH + gap + headH + rows * cell + gap + tabsH + pad
 
-                opacity: root.open && win.here ? 1 : 0
-                scale: root.open && win.here ? 1 : 0.94     // grows from its centre, like the launcher
-                Behavior on opacity {
-                    Anim {
-                        curve: root.open ? Theme.curveDecel : Theme.curveStandard
-                        duration: root.open ? Theme.durPopFade : Theme.durFast
-                    }
-                }
-                Behavior on scale {
-                    Anim {
-                        curve: root.open ? Theme.curveDecel : Theme.curveAccel
-                        duration: root.open ? Theme.durPop : Theme.durClose
-                    }
-                }
 
-                // clicks on the panel stay on it
-                MouseArea {
-                    anchors.fill: parent
-                }
 
-                // ── search field ──────────────────────────────────────────
-                Rectangle {
-                    x: panel.pad
-                    y: panel.pad
-                    width: parent.width - 2 * panel.pad
-                    height: panel.searchH
-                    radius: Theme.pop(14)
-                    color: Config.selected
-
-                    // the whole field: the text cursor, and a click puts the cursor in it (the text
-                    // itself handles its own clicks)
+                    // clicks on the panel stay on it
                     MouseArea {
                         anchors.fill: parent
-                        cursorShape: Qt.IBeamCursor
-                        onClicked: input.forceActiveFocus()
                     }
 
-                    TextInput {
-                        id: input
-                        anchors.fill: parent
-                        anchors.leftMargin: Theme.pop(17)
-                        anchors.rightMargin: Theme.pop(17)
-                        verticalAlignment: TextInput.AlignVCenter
-                        color: Config.text
-                        selectionColor: Config.textSelection
-                        selectedTextColor: Config.text
-                        font.family: Theme.font
-                        font.pixelSize: Theme.pop(17)
-                        font.weight: Font.Medium
-                        renderType: Text.QtRendering
-                        clip: true
-                        focus: true
-                        onTextChanged: root.query = text
+                    // ── search field ──────────────────────────────────────────
+                    Rectangle {
+                        x: panel.pad
+                        y: panel.pad
+                        width: parent.width - 2 * panel.pad
+                        height: panel.searchH
+                        radius: Theme.pop(14)
+                        color: Config.frameColors.controlBackground
 
+                        // the whole field: the text cursor, and a click puts the cursor in it (the text
+                        // itself handles its own clicks)
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.IBeamCursor
+                            onClicked: input.forceActiveFocus()
+                        }
+
+                        TextInput {
+                            id: input
+                            anchors.fill: parent
+                            anchors.leftMargin: Theme.pop(17)
+                            anchors.rightMargin: Theme.pop(17)
+                            verticalAlignment: TextInput.AlignVCenter
+                            color: Config.text
+                            selectionColor: Config.frameColors.selectionBackground
+                            selectedTextColor: Config.text
+                            font.family: Theme.font
+                            font.pixelSize: Theme.pop(17)
+                            font.weight: Font.Medium
+                            renderType: Text.QtRendering
+                            clip: true
+                            focus: true
+                            onTextChanged: root.query = text
+
+                            Connections {
+                                target: root
+
+                                function onCleared() {
+                                    input.text = "";
+                                    input.forceActiveFocus();
+                                }
+                            }
+
+                            Keys.onPressed: event => {
+                                const shift = (event.modifiers & Qt.ShiftModifier) !== 0;
+                                if (event.key === Qt.Key_Escape) {
+                                    root.hide();
+                                } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                    root.pick(root.index);
+                                } else if (event.key === Qt.Key_Left) {
+                                    root.select(root.index - 1);
+                                } else if (event.key === Qt.Key_Right) {
+                                    root.select(root.index + 1, true);
+                                } else if (event.key === Qt.Key_Up) {
+                                    root.select(root.index - root.cols);
+                                } else if (event.key === Qt.Key_Down) {
+                                    root.select(root.index + root.cols);
+                                } else if (event.key === Qt.Key_PageUp) {
+                                    root.select(root.index - root.cols * panel.rows);
+                                } else if (event.key === Qt.Key_PageDown) {
+                                    root.select(root.index + root.cols * panel.rows);
+                                } else if (event.key === Qt.Key_Backtab || (event.key === Qt.Key_Tab && shift)) {
+                                    // (Shift + Tab: some systems send Tab + Shift instead of Backtab)
+                                    root.jumpGroup(-1);
+                                } else if (event.key === Qt.Key_Tab) {
+                                    root.jumpGroup(1);
+                                } else {
+                                    return;     // normal typing
+                                }
+                                event.accepted = true;
+                            }
+                        }
+
+                        Txt {
+                            anchors.fill: input
+                            visible: input.text.length === 0
+                            text: "Search emoji…"
+                            color: Config.frameColors.textSecondary
+                            font.pixelSize: Theme.pop(17)
+                            font.weight: Font.Medium
+                        }
+                    }
+
+                    // ── the group at the top of the grid (or how many were found), and the name
+                    //    of the emoji under the pointer - else of the selected one ──
+                    Item {
+                        id: head
+                        x: panel.pad + Theme.pop(8)
+                        y: panel.pad + panel.searchH + panel.gap
+                        width: parent.width - 2 * panel.pad - Theme.pop(16)
+                        height: panel.headH
+
+                        Txt {
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width * 0.42
+                            elide: Text.ElideRight
+                            text: root.searching ? (root.shown.length === 0 ? "No emoji found" : root.shown.length + (root.shown.length === 1 ? " result" : " results")) : root.groupName(root.groupAt(grid.topIndex))
+                            color: Config.frameColors.textSecondary
+                            font.pixelSize: Theme.pop(13)
+                            font.weight: Font.DemiBold
+                        }
+                        Txt {
+                            readonly property int k: root.hovered >= 0 ? root.hovered : root.index
+
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width * 0.56
+                            horizontalAlignment: Text.AlignRight
+                            elide: Text.ElideRight
+                            text: k >= 0 && k < root.shown.length && root.shown[k] >= 0 ? Emoji.list[root.shown[k]][1] : ""
+                            color: Config.text
+                            font.pixelSize: Theme.pop(13)
+                        }
+                    }
+
+                    // ── the emoji ─────────────────────────────────────────────
+                    GridView {
+                        id: grid
+
+                        // the first one of the row at the top (for the group name above it)
+                        readonly property int topIndex: Math.min(count - 1, Math.floor((contentY + cellHeight / 2) / cellHeight) * root.cols)
+
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        y: head.y + head.height
+                        width: root.cols * panel.cell
+                        height: panel.rows * panel.cell
+                        cellWidth: panel.cell
+                        cellHeight: panel.cell
+                        clip: true
+                        model: root.shown
+                        boundsBehavior: Flickable.StopAtBounds
+                        cacheBuffer: Math.max(0, panel.cell * 3)
+
+                        // a new search (or a new opening) starts at the top
+                        onModelChanged: positionViewAtBeginning()
+
+                        // keep the selected one in sight
                         Connections {
                             target: root
 
-                            function onCleared() {
-                                input.text = "";
-                                input.forceActiveFocus();
+                            function onIndexChanged() {
+                                grid.positionViewAtIndex(root.index, GridView.Contain);
+                            }
+
+                            function onJumped(at) {
+                                grid.positionViewAtIndex(at, GridView.Beginning);
                             }
                         }
 
-                        Keys.onPressed: event => {
-                            const shift = (event.modifiers & Qt.ShiftModifier) !== 0;
-                            if (event.key === Qt.Key_Escape) {
-                                root.hide();
-                            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                                root.pick(root.index);
-                            } else if (event.key === Qt.Key_Left) {
-                                root.select(root.index - 1);
-                            } else if (event.key === Qt.Key_Right) {
-                                root.select(root.index + 1, true);
-                            } else if (event.key === Qt.Key_Up) {
-                                root.select(root.index - root.cols);
-                            } else if (event.key === Qt.Key_Down) {
-                                root.select(root.index + root.cols);
-                            } else if (event.key === Qt.Key_PageUp) {
-                                root.select(root.index - root.cols * panel.rows);
-                            } else if (event.key === Qt.Key_PageDown) {
-                                root.select(root.index + root.cols * panel.rows);
-                            } else if (event.key === Qt.Key_Backtab || (event.key === Qt.Key_Tab && shift)) {
-                                // (Shift + Tab: some systems send Tab + Shift instead of Backtab)
-                                root.jumpGroup(-1);
-                            } else if (event.key === Qt.Key_Tab) {
-                                root.jumpGroup(1);
-                            } else {
-                                return;     // normal typing
-                            }
-                            event.accepted = true;
-                        }
-                    }
+                        delegate: Item {
+                            id: cell
+                            required property int index
+                            required property int modelData
 
-                    Txt {
-                        anchors.fill: input
-                        visible: input.text.length === 0
-                        text: "Search emoji…"
-                        color: Config.textDim
-                        font.pixelSize: Theme.pop(17)
-                        font.weight: Font.Medium
-                    }
-                }
-
-                // ── the group at the top of the grid (or how many were found), and the name
-                //    of the emoji under the pointer - else of the selected one ──
-                Item {
-                    id: head
-                    x: panel.pad + Theme.pop(8)
-                    y: panel.pad + panel.searchH + panel.gap
-                    width: parent.width - 2 * panel.pad - Theme.pop(16)
-                    height: panel.headH
-
-                    Txt {
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width * 0.42
-                        elide: Text.ElideRight
-                        text: root.searching ? (root.shown.length === 0 ? "No emoji found" : root.shown.length + (root.shown.length === 1 ? " result" : " results")) : root.groupName(root.groupAt(grid.topIndex))
-                        color: Config.textDim
-                        font.pixelSize: Theme.pop(13)
-                        font.weight: Font.DemiBold
-                    }
-                    Txt {
-                        readonly property int k: root.hovered >= 0 ? root.hovered : root.index
-
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width * 0.56
-                        horizontalAlignment: Text.AlignRight
-                        elide: Text.ElideRight
-                        text: k >= 0 && k < root.shown.length && root.shown[k] >= 0 ? Emoji.list[root.shown[k]][1] : ""
-                        color: Config.text
-                        font.pixelSize: Theme.pop(13)
-                    }
-                }
-
-                // ── the emoji ─────────────────────────────────────────────
-                GridView {
-                    id: grid
-
-                    // the first one of the row at the top (for the group name above it)
-                    readonly property int topIndex: Math.min(count - 1, Math.floor((contentY + cellHeight / 2) / cellHeight) * root.cols)
-
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    y: head.y + head.height
-                    width: root.cols * panel.cell
-                    height: panel.rows * panel.cell
-                    cellWidth: panel.cell
-                    cellHeight: panel.cell
-                    clip: true
-                    model: root.shown
-                    boundsBehavior: Flickable.StopAtBounds
-                    cacheBuffer: Math.max(0, panel.cell * 3)
-
-                    // a new search (or a new opening) starts at the top
-                    onModelChanged: positionViewAtBeginning()
-
-                    // keep the selected one in sight
-                    Connections {
-                        target: root
-
-                        function onIndexChanged() {
-                            grid.positionViewAtIndex(root.index, GridView.Contain);
-                        }
-
-                        function onJumped(at) {
-                            grid.positionViewAtIndex(at, GridView.Beginning);
-                        }
-                    }
-
-                    delegate: Item {
-                        id: cell
-                        required property int index
-                        required property int modelData
-
-                        width: grid.cellWidth
-                        height: grid.cellHeight
-
-                        Rectangle {
-                            anchors.fill: parent
-                            anchors.margins: Theme.pop(2)
-                            radius: Theme.pop(10)
-                            color: cell.index === root.index ? Config.selected : (cellArea.containsMouse ? Config.hover : "transparent")
-                        }
-                        Text {
-                            anchors.centerIn: parent
-                            text: cell.modelData >= 0 ? Emoji.list[cell.modelData][0] : ""
-                            font.family: "Noto Color Emoji"
-                            font.pixelSize: Theme.pop(26)
-                        }
-                        MouseArea {
-                            id: cellArea
-                            anchors.fill: parent
-                            enabled: cell.modelData >= 0         // not an empty place
-                            hoverEnabled: true
-                            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            onContainsMouseChanged: {
-                                if (containsMouse)
-                                    root.hovered = cell.index;
-                                else if (root.hovered === cell.index)
-                                    root.hovered = -1;
-                            }
-                            onClicked: root.pick(cell.index)
-                        }
-                    }
-                }
-
-                Txt {
-                    visible: root.searching && root.shown.length === 0
-                    anchors.horizontalCenter: grid.horizontalCenter
-                    y: grid.y + Theme.pop(24)
-                    text: "Try another word"
-                    color: Config.textDim
-                    font.pixelSize: Theme.pop(15)
-                    font.weight: Font.Medium
-                }
-
-                // ── the groups: a click jumps there (and ends a search) ──
-                Rectangle {
-                    x: panel.pad
-                    y: grid.y + grid.height + panel.gap / 2
-                    width: parent.width - 2 * panel.pad
-                    height: 1
-                    color: Config.divider
-                }
-
-                Row {
-                    id: tabs
-                    // one emoji for each group of Emoji.groups
-                    readonly property var icons: ["😀", "👋", "🐻", "🍔", "✈️", "⚽", "💡", "💕", "🏁"]
-                    readonly property int current: root.groupAt(grid.topIndex)
-
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    y: grid.y + grid.height + panel.gap
-                    height: panel.tabsH
-                    spacing: Theme.pop(4)
-
-                    Repeater {
-                        model: root.groupStarts
-
-                        Item {
-                            id: tab
-                            required property var modelData
-                            readonly property bool active: tabs.current === modelData.group
-                            readonly property color ink: active || tabArea.containsMouse ? Config.text : Config.textDim
-
-                            width: Theme.pop(44)
-                            height: tabs.height
+                            width: grid.cellWidth
+                            height: grid.cellHeight
 
                             Rectangle {
                                 anchors.fill: parent
                                 anchors.margins: Theme.pop(2)
                                 radius: Theme.pop(10)
-                                color: tab.active ? Config.selected : (tabArea.containsMouse ? Config.hover : "transparent")
+                                color: cell.index === root.index ? Config.frameColors.controlBackground : (cellArea.containsMouse ? Config.frameColors.cardBackground : "transparent")
                             }
-                            // recently used: a clock
-                            Item {
-                                visible: tab.modelData.group === -1
+                            Text {
                                 anchors.centerIn: parent
-                                width: Theme.pop(18)
-                                height: width
+                                text: cell.modelData >= 0 ? Emoji.list[cell.modelData][0] : ""
+                                font.family: "Noto Color Emoji"
+                                font.pixelSize: Theme.pop(26)
+                            }
+                            MouseArea {
+                                id: cellArea
+                                anchors.fill: parent
+                                enabled: cell.modelData >= 0         // not an empty place
+                                hoverEnabled: true
+                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                onContainsMouseChanged: {
+                                    if (containsMouse)
+                                        root.hovered = cell.index;
+                                    else if (root.hovered === cell.index)
+                                        root.hovered = -1;
+                                }
+                                onClicked: root.pick(cell.index)
+                            }
+                        }
+                    }
 
-                                readonly property real line: Math.max(1, Theme.pop(2))
+                    Txt {
+                        visible: root.searching && root.shown.length === 0
+                        anchors.horizontalCenter: grid.horizontalCenter
+                        y: grid.y + Theme.pop(24)
+                        text: "Try another word"
+                        color: Config.frameColors.textSecondary
+                        font.pixelSize: Theme.pop(15)
+                        font.weight: Font.Medium
+                    }
+
+                    // ── the groups: a click jumps there (and ends a search) ──
+                    Rectangle {
+                        x: panel.pad
+                        y: grid.y + grid.height + panel.gap / 2
+                        width: parent.width - 2 * panel.pad
+                        height: 1
+                        color: Config.frameColors.divider
+                    }
+
+                    Row {
+                        id: tabs
+                        // one emoji for each group of Emoji.groups
+                        readonly property var icons: ["😀", "👋", "🐻", "🍔", "✈️", "⚽", "💡", "💕", "🏁"]
+                        readonly property int current: root.groupAt(grid.topIndex)
+
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        y: grid.y + grid.height + panel.gap
+                        height: panel.tabsH
+                        spacing: Theme.pop(4)
+
+                        Repeater {
+                            model: root.groupStarts
+
+                            Item {
+                                id: tab
+                                required property var modelData
+                                readonly property bool active: tabs.current === modelData.group
+                                readonly property color ink: active || tabArea.containsMouse ? Config.text : Config.frameColors.textSecondary
+
+                                width: Theme.pop(44)
+                                height: tabs.height
 
                                 Rectangle {
                                     anchors.fill: parent
-                                    radius: width / 2
-                                    color: "transparent"
-                                    border.width: parent.line
-                                    border.color: tab.ink
+                                    anchors.margins: Theme.pop(2)
+                                    radius: Theme.pop(10)
+                                    color: tab.active ? Config.frameColors.controlBackground : (tabArea.containsMouse ? Config.frameColors.cardBackground : "transparent")
                                 }
-                                Rectangle {     // the hour hand: up
-                                    x: (parent.width - width) / 2
-                                    y: Theme.pop(4)
-                                    width: parent.line
-                                    height: parent.height / 2 - Theme.pop(4) + parent.line / 2
-                                    color: tab.ink
+                                // recently used: a clock
+                                Item {
+                                    visible: tab.modelData.group === -1
+                                    anchors.centerIn: parent
+                                    width: Theme.pop(18)
+                                    height: width
+
+                                    readonly property real line: Math.max(1, Theme.pop(2))
+
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        radius: width / 2
+                                        color: "transparent"
+                                        border.width: parent.line
+                                        border.color: tab.ink
+                                    }
+                                    Rectangle {     // the hour hand: up
+                                        x: (parent.width - width) / 2
+                                        y: Theme.pop(4)
+                                        width: parent.line
+                                        height: parent.height / 2 - Theme.pop(4) + parent.line / 2
+                                        color: tab.ink
+                                    }
+                                    Rectangle {     // the minute hand: right
+                                        x: (parent.width - parent.line) / 2
+                                        y: (parent.height - height) / 2
+                                        width: parent.width / 2 - Theme.pop(4) + parent.line / 2
+                                        height: parent.line
+                                        color: tab.ink
+                                    }
                                 }
-                                Rectangle {     // the minute hand: right
-                                    x: (parent.width - parent.line) / 2
-                                    y: (parent.height - height) / 2
-                                    width: parent.width / 2 - Theme.pop(4) + parent.line / 2
-                                    height: parent.line
-                                    color: tab.ink
+                                Text {
+                                    visible: tab.modelData.group >= 0
+                                    anchors.centerIn: parent
+                                    text: tab.modelData.group >= 0 ? tabs.icons[tab.modelData.group] || "" : ""
+                                    font.family: "Noto Color Emoji"
+                                    font.pixelSize: Theme.pop(19)
+                                    opacity: tab.active || tabArea.containsMouse ? 1 : 0.55
                                 }
-                            }
-                            Text {
-                                visible: tab.modelData.group >= 0
-                                anchors.centerIn: parent
-                                text: tab.modelData.group >= 0 ? tabs.icons[tab.modelData.group] || "" : ""
-                                font.family: "Noto Color Emoji"
-                                font.pixelSize: Theme.pop(19)
-                                opacity: tab.active || tabArea.containsMouse ? 1 : 0.55
-                            }
-                            MouseArea {
-                                id: tabArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    input.text = "";            // ends a search: the whole grid again
-                                    root.index = tab.modelData.at;
-                                    root.jumped(tab.modelData.at);
-                                    input.forceActiveFocus();
+                                MouseArea {
+                                    id: tabArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        input.text = "";            // ends a search: the whole grid again
+                                        root.index = tab.modelData.at;
+                                        root.jumped(tab.modelData.at);
+                                        input.forceActiveFocus();
+                                    }
                                 }
                             }
                         }

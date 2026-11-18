@@ -32,7 +32,10 @@ Panel {
         id: panelHover
     }
 
-    open: latch.open && !root.blocked
+    // out while the latch is (Click to expand: peeking until clicked - then a click picks,
+    // components/Panel.qml)
+    peekable: true
+    hovering: latch.open && !root.blocked
     attachTop: true
     attachRight: true
 
@@ -46,9 +49,9 @@ Panel {
         // centred where the concept has it (a little towards the corner)
         x: root.contentW - Theme.px(20.75) - size / 2
         y: Theme.px(18.75) - size / 2
-        size: Theme.px(22)
+        size: Theme.px(26)
         name: "picker"
-        color: area.containsMouse ? Config.text : Config.pickerIcon
+        color: area.containsMouse ? Config.text : Config.frameColors.colorPickerIcon
         scale: area.pressed ? 0.88 : 1
 
         Behavior on scale {

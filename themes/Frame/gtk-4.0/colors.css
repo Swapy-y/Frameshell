@@ -140,7 +140,7 @@ switch:checked:active > slider {
 }
 
 /* selected text (fields, text views, labels, Chromium): the shell's text selection grey
-   #3e3e3e (textSelection in Config.qml) with the normal text colour on it (libadwaita: a
+   #3e3e3e (selectionBackground in Config.qml) with the normal text colour on it (libadwaita: a
    see-through tint over the text) */
 selection,
 selection:focus-within,

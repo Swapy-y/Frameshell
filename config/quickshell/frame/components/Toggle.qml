@@ -1,21 +1,25 @@
 import QtQuick
+import Quickshell
 import qs
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  Toggle.qml - an on/off switch in the theme's colours: on, a track in the
 //  text colour with a knob in the frame colour; off, like the shell's buttons -
-//  a track in the selected colour (Config.selected) with a knob in the text
+//  a track in the selected colour (Config.controlBackground) with a knob in the text
 //  colour, the same under the pointer.
 //
 //    checked   on / off (from outside)       toggled(bool)  emitted on click
 //    enabled   false = greyed out, no clicks
-//    offColor  the track when off (on something in Config.selected: another colour)
+//    offColor  the track when off (on something in Config.controlBackground: another colour)
 // ═══════════════════════════════════════════════════════════════════════════
 Item {
     id: root
 
+    // the frame's colours inside the frame (Overlay.qml), else the theme's (Config.paletteFor)
+    readonly property var pal: Config.paletteFor(QsWindow.window)
+
     property bool checked: false
-    property color offColor: Config.selected
+    property color offColor: root.pal.controlBackground
     signal toggled(bool on)
 
     implicitWidth: Theme.px(38)
@@ -43,7 +47,7 @@ Item {
         radius: width / 2
         y: pad
         x: root.checked ? root.width - width - pad : pad
-        color: root.checked ? Config.frame : Config.text
+        color: root.checked ? root.pal.background : Config.text
         scale: area.pressed ? 0.88 : 1
 
         Behavior on x {

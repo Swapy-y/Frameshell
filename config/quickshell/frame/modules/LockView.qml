@@ -21,6 +21,11 @@ import qs.services
 //    clock   stacked clock, date, power buttons, "Press any key to unlock"
 //    login   blurred wallpaper with the card: avatar, name, password, arrow
 //  Any key or a click opens the card, Escape goes back, Enter unlocks.
+//
+//  Restart and Shut down (top right) ask first, like the shell's power menu: a
+//  "Restart?" / "Shut down?" card in the middle over the dimmed lock screen
+//  (`asking`). Enter or the white button goes ahead; Esc, "Cancel" or a click
+//  outside says no. Suspend does not ask.
 // ═══════════════════════════════════════════════════════════════════════════
 Item {
     id: view
@@ -32,6 +37,53 @@ Item {
     readonly property real edgeGap: px(38)
     function px(v) {
         return Math.round(v * s);
+    }
+
+    // ── "Restart?" / "Shut down?" (those two buttons ask first) ──────────
+    readonly property var askKinds: ({
+            reboot: {
+                icon: "restart",
+                title: "Restart?",
+                text: "The computer will restart. Unsaved work in open apps may be lost.",
+                button: "Restart",
+                cmd: ["systemctl", "reboot"]
+            },
+            poweroff: {
+                icon: "power",
+                title: "Shut down?",
+                text: "The computer will turn off. Unsaved work in open apps may be lost.",
+                button: "Shut down",
+                cmd: ["systemctl", "poweroff"]
+            }
+        })
+    property string asking: ""          // "reboot" / "poweroff" while its card shows
+    property string askShown: "poweroff" // what the card says; kept while it fades out
+    readonly property var askKind: askKinds[askShown] || askKinds.poweroff
+    function ask(what) {
+        if (view.lock.unlocked || askKinds[what] === undefined)
+            return;
+        askShown = what;
+        asking = what;
+        view.forceActiveFocus();       // Esc / Enter come here, not to the password
+    }
+    function cancelAsk() {
+        asking = "";
+        if (view.lock.loginVisible)
+            passwordField.forceActiveFocus();
+    }
+    function confirmAsk() {
+        const k = askKinds[asking];
+        asking = "";
+        if (k)
+            Quickshell.execDetached(k.cmd);
+    }
+    // unlocked meanwhile: not asking any more (nor the next time it locks)
+    Connections {
+        target: view.lock
+        function onUnlockedChanged() {
+            if (view.lock.unlocked)
+                view.asking = "";
+        }
     }
 
     focus: true
@@ -334,12 +386,12 @@ Item {
                 {
                     glyph: "󰑐",
                     icon: "restart",
-                    cmd: ["systemctl", "reboot"]
+                    ask: "reboot"
                 },
                 {
                     glyph: "󰐥",
                     icon: "power",
-                    cmd: ["systemctl", "poweroff"]
+                    ask: "poweroff"
                 }
             ] : []
 
@@ -369,7 +421,13 @@ Item {
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: Quickshell.execDetached(powerButton.modelData.cmd)
+                    // restart and shut down ask first (the card at the bottom of this file)
+                    onClicked: {
+                        if (powerButton.modelData.ask)
+                            view.ask(powerButton.modelData.ask);
+                        else
+                            Quickshell.execDetached(powerButton.modelData.cmd);
+                    }
                 }
             }
         }
@@ -520,6 +578,15 @@ Item {
     // any key opens the card - and is used up by that, like on the login screen: it
     // does not go into the password (a space to wake the screen is not its first letter)
     Keys.onPressed: event => {
+        // "Restart?" / "Shut down?": Esc says no, Enter goes ahead, other keys do nothing
+        if (view.asking !== "") {
+            if (event.key === Qt.Key_Escape)
+                view.cancelAsk();
+            else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
+                view.confirmAsk();
+            event.accepted = true;
+            return;
+        }
         if (view.lock.loginVisible)
             return;
         view.lock.showLogin();
@@ -804,6 +871,146 @@ Item {
 
                 Item {
                     Layout.fillHeight: true
+                }
+            }
+        }
+    }
+
+    // ── "Restart?" / "Shut down?" ─────────────────────────────────────────
+    // drawn like the shell's (modules/PowerConfirm.qml): a black card in the middle
+    // over the dimmed lock screen, in the shell's font and the frame's colours
+    Item {
+        id: askCard
+        readonly property bool open: view.asking !== "" && !view.lock.unlocked
+        anchors.fill: parent
+        z: 200
+        visible: opacity > 0
+        opacity: open ? 1 : 0
+        Behavior on opacity {
+            NumberAnimation {
+                duration: askCard.open ? Theme.durSmall : Theme.durFast
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        // dimmed lock screen; a click outside the card says no
+        Rectangle {
+            anchors.fill: parent
+            color: "black"
+            opacity: 0.35
+        }
+        MouseArea {
+            anchors.fill: parent
+            enabled: askCard.open
+            onPressed: view.cancelAsk()
+        }
+
+        Rectangle {
+            id: askBox
+            readonly property real pad: Theme.px(24)
+            width: Theme.px(380)
+            height: askColumn.height + 2 * pad
+            anchors.centerIn: parent
+            radius: Theme.px(26)
+            color: Config.frameColors.background
+            scale: askCard.open ? 1 : 0.96
+            Behavior on scale {
+                NumberAnimation {
+                    duration: Theme.durSmall
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            // swallow clicks so they do not reach the backdrop
+            MouseArea {
+                anchors.fill: parent
+            }
+
+            Column {
+                id: askColumn
+                x: askBox.pad
+                y: askBox.pad
+                width: askBox.width - 2 * askBox.pad
+                spacing: Theme.px(10)
+
+                Icon {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    size: Theme.px(30)
+                    name: view.askKind.icon
+                    color: Config.frameColors.text
+                }
+                Txt {
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    text: view.askKind.title
+                    color: Config.frameColors.text
+                    font.pixelSize: Theme.px(24)
+                    font.family: Theme.fontDisplay
+                    font.weight: Font.Medium
+                }
+                Txt {
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    text: view.askKind.text
+                    wrapMode: Text.Wrap
+                    color: Config.frameColors.textSecondary
+                    font.pixelSize: Theme.px(17)
+                }
+                Item {
+                    width: 1
+                    height: Theme.px(8)
+                }
+                Row {
+                    width: parent.width
+                    spacing: Theme.px(10)
+
+                    Repeater {
+                        model: [false, true]          // Cancel, then Restart / Shut down
+
+                        Rectangle {
+                            id: askButton
+                            required property bool modelData
+                            readonly property bool primary: modelData
+                            width: (parent.width - parent.spacing) / 2
+                            height: Theme.px(42)
+                            radius: Theme.px(14)
+                            color: primary ? Config.frameColors.text : (askArea.containsMouse ? Config.frameColors.controlHover : Config.frameColors.controlBackground)
+                            border.width: primary ? 0 : Theme.outlineW
+                            border.color: Theme.outlineColor
+                            scale: askArea.pressed ? 0.97 : 1
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: Theme.durFast
+                                }
+                            }
+                            Behavior on scale {
+                                NumberAnimation {
+                                    duration: Theme.durFast
+                                }
+                            }
+
+                            Txt {
+                                anchors.centerIn: parent
+                                text: askButton.primary ? view.askKind.button : "Cancel"
+                                color: askButton.primary ? Config.frameColors.background : Config.frameColors.text
+                                font.pixelSize: Theme.px(17)
+                                font.weight: Font.Medium
+                            }
+                            MouseArea {
+                                id: askArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                enabled: askCard.open
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (askButton.primary)
+                                        view.confirmAsk();
+                                    else
+                                        view.cancelAsk();
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -1,0 +1,13 @@
+FrameKanagawa - Kvantum theme for Qt 5 and Qt 6 apps (installed to ~/.config/Kvantum/FrameKanagawa)
+
+Made from KvLibadwaitaDark, part of KvLibadwaita by GabePoel:
+  https://github.com/GabePoel/KvLibadwaita (commit 1f4e0bec44b13dabfa1fe4047aa8eeaccf2f3557)
+which is based on Colloid-kde by Vince Liuice (https://github.com/vinceliuice/Colloid-kde)
+and KvAdapta by Tsu Jan. License: GPL-3.0, see LICENSE in this folder.
+
+Changed by frameshell in November 2026 - the colours only, to the shell's Kanagawa theme
+(its colours in Config.qml; the GTK theme Frame-Kanagawa has the same): #1f1f28 windows
+and menus, #343443 buttons and fields, #dcd7ba checkboxes, radio buttons, sliders and
+progress bars with #1f1f28 marks, #dcd7ba for text and arrows. The shapes are
+KvLibadwaita's. ../make-frame.py makes FrameKanagawa.svg and FrameKanagawa.kvconfig from the original files
+(the palette: ../palettes.py).

@@ -1,8 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
-<!-- frameshell: the Settings app's icon (install.sh puts it in ~/.local/share/icons/hicolor/scalable/apps).
-     The gear fills 80 % of the icon (24 px in the 30 px icons of the 1080p dock), in the
-     YAMIS icons' colour #d8dee9. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="-64 -64 640 640">
-<path fill="#d8dee9" d="M502.325,307.303l-39.006-30.805c-6.215-4.908-9.665-12.429-9.668-20.348c0-0.084,0-0.168,0-0.252 c-0.014-7.936,3.44-15.478,9.667-20.396l39.007-30.806c8.933-7.055,12.093-19.185,7.737-29.701l-17.134-41.366 c-4.356-10.516-15.167-16.86-26.472-15.532l-49.366,5.8c-7.881,0.926-15.656-1.966-21.258-7.586 c-0.059-0.06-0.118-0.119-0.177-0.178c-5.597-5.602-8.476-13.36-7.552-21.225l5.799-49.363 c1.328-11.305-5.015-22.116-15.531-26.472L337.004,1.939c-10.516-4.356-22.646-1.196-29.701,7.736l-30.805,39.005 c-4.908,6.215-12.43,9.665-20.349,9.668c-0.084,0-0.168,0-0.252,0c-7.935,0.014-15.477-3.44-20.395-9.667L204.697,9.675 c-7.055-8.933-19.185-12.092-29.702-7.736L133.63,19.072c-10.516,4.356-16.86,15.167-15.532,26.473l5.799,49.366 c0.926,7.881-1.964,15.656-7.585,21.257c-0.059,0.059-0.118,0.118-0.178,0.178c-5.602,5.598-13.36,8.477-21.226,7.552 l-49.363-5.799c-11.305-1.328-22.116,5.015-26.472,15.531L1.939,174.996c-4.356,10.516-1.196,22.646,7.736,29.701l39.006,30.805 c6.215,4.908,9.665,12.429,9.668,20.348c0,0.084,0,0.167,0,0.251c0.014,7.935-3.44,15.477-9.667,20.395L9.675,307.303 c-8.933,7.055-12.092,19.185-7.736,29.701l17.134,41.365c4.356,10.516,15.168,16.86,26.472,15.532l49.366-5.799 c7.882-0.926,15.656,1.965,21.258,7.586c0.059,0.059,0.118,0.119,0.178,0.178c5.597,5.603,8.476,13.36,7.552,21.226l-5.799,49.364 c-1.328,11.305,5.015,22.116,15.532,26.472l41.366,17.134c10.516,4.356,22.646,1.196,29.701-7.736l30.804-39.005 c4.908-6.215,12.43-9.665,20.348-9.669c0.084,0,0.168,0,0.251,0c7.936-0.014,15.478,3.44,20.396,9.667l30.806,39.007 c7.055,8.933,19.185,12.093,29.701,7.736l41.366-17.134c10.516-4.356,16.86-15.168,15.532-26.472l-5.8-49.366 c-0.926-7.881,1.965-15.656,7.586-21.257c0.059-0.059,0.119-0.119,0.178-0.178c5.602-5.597,13.36-8.476,21.225-7.552l49.364,5.799 c11.305,1.328,22.117-5.015,26.472-15.531l17.134-41.365C514.418,326.488,511.258,314.358,502.325,307.303z M281.292,329.698 c-39.68,16.436-85.172-2.407-101.607-42.087c-16.436-39.68,2.407-85.171,42.087-101.608c39.68-16.436,85.172,2.407,101.608,42.088 C339.815,267.771,320.972,313.262,281.292,329.698z"/>
+<!-- frameshell: the Settings app's icon, the same in every icon pack (services/IconPacks.qml).
+     It is GNOME Settings' own icon, org.gnome.Settings.svg from gnome-control-center
+     (https://gitlab.gnome.org/GNOME/gnome-control-center, data/icons/hicolor/scalable/apps),
+     by the GNOME Project, licensed GPL-2.0-or-later. -->
+<svg height="128px" viewBox="0 0 128 128" width="128px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <linearGradient id="a" gradientUnits="userSpaceOnUse" x1="64" x2="64" y1="262.5" y2="232">
+        <stop offset="0" stop-color="#9a9996"/>
+        <stop offset="1" stop-color="#77767b"/>
+    </linearGradient>
+    <radialGradient id="b" cx="-243.066583" cy="-74.599978" gradientUnits="userSpaceOnUse" r="28.266656">
+        <stop offset="0" stop-color="#d5d3cf"/>
+        <stop offset="1" stop-color="#949390"/>
+    </radialGradient>
+    <linearGradient id="c" gradientUnits="userSpaceOnUse" x1="203.999985" x2="267.999985" y1="-64" y2="-64">
+        <stop offset="0" stop-color="#d5d3cf"/>
+        <stop offset="1" stop-color="#f6f5f4"/>
+    </linearGradient>
+    <g stroke-width="8">
+        <path d="m 67 122 h -6 l -2 -16 h 10 z m 0 0" fill="#9a9996" stroke="#9a9996" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="m 61 10 h 6 l 2 16 h -10 z m 0 0" fill="#9a9996" stroke="#9a9996" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="m 667.000092 291.999908 h -6 l -2 -16 h 10 z m 0 0" fill="#9a9996" stroke="#9a9996" stroke-linecap="round" stroke-linejoin="round" transform="matrix(0 1 -1 0 299.999908 -598.000092)"/>
+        <path d="m 661.000092 179.999908 h 6 l 2 16 h -10 z m 0 0" fill="#9a9996" stroke="#9a9996" stroke-linecap="round" stroke-linejoin="round" transform="matrix(0 1 -1 0 299.999908 -598.000092)"/>
+        <path d="m 666.999051 291.998922 l -5.999272 -0.00042 l -2.001544 -15.998026 l 9.999915 0.000049 z m 0 0" fill="#9a9996" stroke="#9a9996" stroke-linecap="round" stroke-linejoin="round" transform="matrix(-0.5 0.866025 -0.866025 -0.5 600.381916 -391.041005)"/>
+        <path d="m 661.001107 180.000804 l 5.999273 0.000419 l 2.001544 15.998026 l -10.003298 0.001905 z m 0 0" fill="#9a9996" stroke="#9a9996" stroke-linecap="round" stroke-linejoin="round" transform="matrix(-0.5 0.866025 -0.866025 -0.5 600.381916 -391.041005)"/>
+        <path d="m 667.000347 291.998468 l -5.999273 0.00042 l -2.002482 -16.00035 l 10.003298 0.001905 z m 0 0" fill="#9a9996" stroke="#9a9996" stroke-linecap="round" stroke-linejoin="round" transform="matrix(-0.866025 0.5 -0.5 -0.866025 757.040822 -61.618176)"/>
+        <path d="m 660.999745 180.00119 l 5.999273 -0.00042 l 2.002481 16.00035 l -10.003298 -0.001904 z m 0 0" fill="#9a9996" stroke="#9a9996" stroke-linecap="round" stroke-linejoin="round" transform="matrix(-0.866025 0.5 -0.5 -0.866025 757.040822 -61.618176)"/>
+        <path d="m 666.999018 291.999047 l -5.999273 -0.00042 l -2.001544 -15.998026 l 10.003298 -0.001904 z m 0 0" fill="#9a9996" stroke="#9a9996" stroke-linecap="round" stroke-linejoin="round" transform="matrix(0.866025 0.5 -0.5 0.866025 -393.040914 -470.382008)"/>
+        <path d="m 661.001074 180.000929 l 5.999273 0.00042 l 2.001543 15.998025 l -10.003298 0.001905 z m 0 0" fill="#9a9996" stroke="#9a9996" stroke-linecap="round" stroke-linejoin="round" transform="matrix(0.866025 0.5 -0.5 0.866025 -393.040914 -470.382008)"/>
+        <path d="m 667.00038 291.998593 l -5.999273 0.00042 l -2.002481 -16.00035 l 10.003298 0.001905 z m 0 0" fill="#9a9996" stroke="#9a9996" stroke-linecap="round" stroke-linejoin="round" transform="matrix(0.5 0.866025 -0.866025 0.5 -63.618084 -627.040914)"/>
+        <path d="m 660.999779 180.001315 l 5.999272 -0.00042 l 1.999099 15.998397 l -9.999915 0.000049 z m 0 0" fill="#9a9996" stroke="#9a9996" stroke-linecap="round" stroke-linejoin="round" transform="matrix(0.5 0.866025 -0.866025 0.5 -63.618084 -627.040914)"/>
+        <path d="m 67 120 h -6 l -2 -16 h 10 z m 0 0" fill="#f6f5f4" stroke="#f6f5f4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="m 61 8 h 6 l 2 16 h -10 z m 0 0" fill="#f6f5f4" stroke="#f6f5f4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="m 667.000092 291.999908 h -6 l -2 -16 h 10 z m 0 0" fill="#f6f5f4" stroke="#f6f5f4" stroke-linecap="round" stroke-linejoin="round" transform="matrix(0 1 -1 0 299.999908 -600.000092)"/>
+        <path d="m 661.000092 179.999908 h 6 l 2 16 h -10 z m 0 0" fill="#f6f5f4" stroke="#f6f5f4" stroke-linecap="round" stroke-linejoin="round" transform="matrix(0 1 -1 0 299.999908 -600.000092)"/>
+        <path d="m 666.999051 291.998922 l -5.999272 -0.00042 l -2.001544 -15.998026 l 9.999915 0.000049 z m 0 0" fill="#f6f5f4" stroke="#f6f5f4" stroke-linecap="round" stroke-linejoin="round" transform="matrix(-0.5 0.866025 -0.866025 -0.5 600.381916 -393.041005)"/>
+        <path d="m 661.001107 180.000804 l 5.999273 0.000419 l 2.001544 15.998026 l -10.003298 0.001905 z m 0 0" fill="#f6f5f4" stroke="#f6f5f4" stroke-linecap="round" stroke-linejoin="round" transform="matrix(-0.5 0.866025 -0.866025 -0.5 600.381916 -393.041005)"/>
+        <path d="m 667.000347 291.998468 l -5.999273 0.00042 l -2.002482 -16.00035 l 10.003298 0.001905 z m 0 0" fill="#f6f5f4" stroke="#f6f5f4" stroke-linecap="round" stroke-linejoin="round" transform="matrix(-0.866025 0.5 -0.5 -0.866025 757.040822 -63.618176)"/>
+        <path d="m 660.999745 180.00119 l 5.999273 -0.00042 l 2.002481 16.00035 l -10.003298 -0.001904 z m 0 0" fill="#f6f5f4" stroke="#f6f5f4" stroke-linecap="round" stroke-linejoin="round" transform="matrix(-0.866025 0.5 -0.5 -0.866025 757.040822 -63.618176)"/>
+        <path d="m 666.999018 291.999047 l -5.999273 -0.00042 l -2.001544 -15.998026 l 10.003298 -0.001904 z m 0 0" fill="#f6f5f4" stroke="#f6f5f4" stroke-linecap="round" stroke-linejoin="round" transform="matrix(0.866025 0.5 -0.5 0.866025 -393.040914 -472.382008)"/>
+        <path d="m 661.001074 180.000929 l 5.999273 0.00042 l 2.001543 15.998025 l -10.003298 0.001905 z m 0 0" fill="#f6f5f4" stroke="#f6f5f4" stroke-linecap="round" stroke-linejoin="round" transform="matrix(0.866025 0.5 -0.5 0.866025 -393.040914 -472.382008)"/>
+        <path d="m 667.00038 291.998593 l -5.999273 0.00042 l -2.002481 -16.00035 l 10.003298 0.001905 z m 0 0" fill="#f6f5f4" stroke="#f6f5f4" stroke-linecap="round" stroke-linejoin="round" transform="matrix(0.5 0.866025 -0.866025 0.5 -63.618084 -629.040914)"/>
+        <path d="m 660.999779 180.001315 l 5.999272 -0.00042 l 1.999099 15.998397 l -9.999915 0.000049 z m 0 0" fill="#f6f5f4" stroke="#f6f5f4" stroke-linecap="round" stroke-linejoin="round" transform="matrix(0.5 0.866025 -0.866025 0.5 -63.618084 -629.040914)"/>
+    </g>
+    <path d="m 100 238 c 0 19.882812 -16.117188 36 -36 36 s -36 -16.117188 -36 -36 s 16.117188 -36 36 -36 s 36 16.117188 36 36 z m 0 0" fill="none" stroke="url(#a)" stroke-width="24" transform="matrix(1 0 0 1 0 -172)"/>
+    <path d="m 102 64 c 0 20.988281 -17.011719 38 -38 38 s -38 -17.011719 -38 -38 s 17.011719 -38 38 -38 s 38 17.011719 38 38 z m 0 0" fill="none" stroke="#f6f5f4" stroke-width="20"/>
+    <path d="m -209.5 -64 c 0 14.636719 -11.863281 26.5 -26.5 26.5 s -26.5 -11.863281 -26.5 -26.5 s 11.863281 -26.5 26.5 -26.5 s 26.5 11.863281 26.5 26.5 z m 0 0" fill="none" stroke="url(#b)" stroke-linecap="square" stroke-linejoin="round" stroke-width="5" transform="matrix(0 -1 -1 0 0 -172)"/>
+    <path d="m 268 -64 c 0 17.671875 -14.328125 32 -32 32 s -32 -14.328125 -32 -32 s 14.328125 -32 32 -32 s 32 14.328125 32 32 z m 0 0" fill="none" stroke="url(#c)" stroke-linecap="square" stroke-linejoin="round" stroke-width="8" transform="matrix(0 1 -1 0 0 -172)"/>
 </svg>

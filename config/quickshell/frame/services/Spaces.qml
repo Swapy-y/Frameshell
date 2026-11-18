@@ -14,18 +14,31 @@ import "workspaces.js" as Workspaces
 //  window on the last one, the next pill appears; pills above the first four
 //  disappear again once their workspace is empty (the rules are written down
 //  in workspaces.js).
+//
+//  "10 workspaces" (the Settings app's Island page, Config.tenWorkspaces):
+//  always five pills, and the 5th stands for workspaces 5 ... 10 - it is the
+//  pill of the workspace you are on (`focusedPill`) on any of them, and the
+//  island draws it in the lighter grey of a workspace without tiling.
 // ═══════════════════════════════════════════════════════════════════════════
 Singleton {
     id: root
 
     readonly property int focusedId: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : 1
 
+    // "10 workspaces": five pills, the last one for workspaces 5 ... 10
+    readonly property bool ten: Config.tenWorkspaces
+    readonly property int tenPills: 5
+    // the pill that is lit for the workspace you are on (10 workspaces: the 5th from 5 up)
+    readonly property int focusedPill: ten ? Math.min(focusedId, tenPills) : focusedId
+
     // ids of the pills that are shown right now, sorted
-    property var ids: Workspaces.pillIds([], 1, Config.workspaceCount, Config.workspaceMax)
+    property var ids: ten ? Workspaces.firstIds(tenPills) : Workspaces.pillIds([], 1, Config.workspaceCount, Config.workspaceMax)
 
     // every pill the island can ever show: it keeps one slot per id, so a pill
     // can grow in and shrink away instead of popping in and out
     readonly property var slots: {
+        if (ten)
+            return Workspaces.firstIds(tenPills);
         const last = Math.max(Config.workspaceMax, Config.workspaceCount, ids.length > 0 ? ids[ids.length - 1] : 1);
         const all = [];
         for (let i = 1; i <= last; i++)
@@ -40,14 +53,14 @@ Singleton {
             if (ws[i].id > 0 && ws[i].toplevels.values.length > 0)
                 occupied.push(ws[i].id);
         }
-        const next = Workspaces.pillIds(occupied, focusedId, Config.workspaceCount, Config.workspaceMax);
+        const next = ten ? Workspaces.firstIds(tenPills) : Workspaces.pillIds(occupied, focusedId, Config.workspaceCount, Config.workspaceMax);
         if (JSON.stringify(next) !== JSON.stringify(ids))
             ids = next;
     }
 
     // the workspaces with tiling off (SUPER + Page Down): hyprland.lua writes their numbers into
     // ~/.local/state/frameshell/untiled whenever that changes (and none when Hyprland starts);
-    // their small pill in the island is a bit lighter (Config.pillUntiled)
+    // their small pill in the island is a bit lighter (Config.workspaceUntiled)
     property var untiled: []
     FileView {
         id: untiledFile
@@ -117,6 +130,10 @@ Singleton {
         }
 
         function onWorkspaceMaxChanged() {
+            settle.restart();
+        }
+
+        function onTenWorkspacesChanged() {
             settle.restart();
         }
     }

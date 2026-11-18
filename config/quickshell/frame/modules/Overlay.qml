@@ -41,6 +41,9 @@ Scope {
                     Ui.closePopups();
             }
 
+            // its pieces get the frame's colours (Config.frameColors; components: Config.paletteFor)
+            readonly property bool framePalette: true
+
             WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.namespace: "frame-overlay"
             // a text cursor / Esc handling is only needed while something is open
@@ -55,7 +58,9 @@ Scope {
             }
             color: "transparent"
 
-            // Input region: the frame ring + every visible panel (none while covered)
+            // Input region: the frame ring (frameless, Config.framelessOutline: a strip as thin
+            // as the frame along the edges, where the hot corners and edges are, and the
+            // rounded corners) + every visible panel (none while covered)
             mask: win.covered ? noInput : frameInput
             Region {
                 id: noInput
@@ -65,11 +70,11 @@ Scope {
                 Region {
                     item: scene
                     Region {
-                        x: Theme.frame
-                        y: Theme.frame
-                        width: Math.max(0, scene.width - 2 * Theme.frame)
-                        height: Math.max(0, scene.height - Theme.frame - scene.frameBottom)
-                        radius: Theme.frameCornerRadius
+                        x: Theme.edge
+                        y: Theme.edge
+                        width: Math.max(0, scene.width - 2 * Theme.edge)
+                        height: Math.max(0, scene.height - Theme.edge - Math.max(Theme.edge, scene.frameBottom + Theme.border))
+                        radius: Config.framelessOutline ? Math.max(0, Config.cornerRounding - Theme.edge) : Theme.frameCornerRadius
                         intersection: Intersection.Subtract
                     }
                 }
@@ -155,11 +160,16 @@ Scope {
 
                 // ── the dock (bottom bar) ─────────────────────────────
                 // Auto hide (the Settings app, Store.dockAutoHide): the bottom of the
-                // frame is as thin as its sides; when the pointer touches the bottom
-                // edge of the screen the bar grows back up, over your windows (they
-                // keep their size: the space is not reserved, see Reserve.qml). It stays
-                // while the pointer is on it and while the power menu or the calendar
-                // (they open from it) is open.
+                // frame is as thin as its sides (frameless: nothing, only its corners are
+                // rounded); when the pointer touches the bottom edge of the screen the
+                // bar grows back up, over your windows (they keep their size: the space
+                // is not reserved, see Reserve.qml). It stays while the pointer is on it
+                // and while the power menu or the calendar (they open from it) is open.
+                //
+                // Disable dock (the Settings app, Store.dockDisabled): as auto hide, but it
+                // never comes out - no hot edge, no corner blocks, not with the power menu or
+                // the calendar either (they open in the bottom corners, without the bar's
+                // strip for the button: PowerMenu.qml, CalendarPanel.qml).
                 //
                 // Notch mode (the Settings app, Store.dockNotch): the bottom of the frame
                 // is as thin as its sides, and the dock is a notch in the middle of it -
@@ -173,7 +183,7 @@ Scope {
                     id: dockLatch
                     input: (dockZone.hovered && dockZone.enabled) || (dockEdge.hovered && dockEdge.enabled)
                 }
-                readonly property bool dockOpen: !Store.dockAutoHide || dockLatch.open || (!Store.dockNotch && (Ui.powerOpen || Ui.calendarOpen))
+                readonly property bool dockOpen: !Store.dockHidden || (!Store.dockDisabled && (dockLatch.open || (!Store.dockNotch && (power.open || calendar.open))))
                 property real dockP: dockOpen ? 1 : 0          // 0 = hidden, 1 = the bar is there
                 Behavior on dockP {
                     PanelAnim {
@@ -188,13 +198,15 @@ Scope {
                         opening: Store.dockNotch
                     }
                 }
-                // how far the dock comes up from the bottom of the screen (the bar /
-                // notch, or the frame's own thickness while it is hidden)
+                // how far the dock comes up from the bottom of the screen, as you see it
+                // (the bar / notch, or the frame while it is hidden - frameless, nothing)
                 readonly property real dockTop: Shapes.lerp(Theme.frame, Theme.bar, dockP)
-                // how far the frame comes up from the bottom of the screen (the bar,
-                // or the frame's own thickness while the dock is hidden or a notch;
-                // fractional while it moves, so the edge glides)
-                readonly property real frameBottom: Shapes.lerp(dockTop, Theme.frame, notchP)
+                // where the shapes put the frame's bottom edge: the bar, or the frame while
+                // the dock is hidden or a notch (frameless, nothing: the bottom is like the
+                // other edges, only its corners are rounded) - less the border, which is
+                // drawn round the fill (Theme.border); fractional while it moves, so the
+                // edge glides
+                readonly property real frameBottom: Shapes.lerp(dockTop, Theme.frame, notchP) - Theme.border
 
                 // After logging in the frame, island and bar fade in together with
                 // the wallpaper (Ui.revealed, set by Wallpaper.qml once the picture has
@@ -315,18 +327,21 @@ Scope {
                         z: 0
 
                         // border of the window area (the visible half of this stroke is the
-                        // border, the other half is hidden under the frame fill)
+                        // border, the other half is hidden under the frame fill). Frameless,
+                        // along the left, top and right edges it runs just off the screen
+                        // (Theme.frameEdge): it only shows round the rounded corners and on
+                        // top of the bar
                         Shape {
                             anchors.fill: parent
                             preferredRendererType: Shape.CurveRenderer
 
                             ShapePath {
                                 strokeWidth: Theme.border * 2
-                                strokeColor: Config.outline
+                                strokeColor: Config.frameColors.border
                                 fillColor: "transparent"
                                 joinStyle: ShapePath.RoundJoin
                                 PathSvg {
-                                    path: Shapes.innerPath(scene.width, scene.height, Theme.frame, scene.frameBottom, Theme.frameCornerRadius)
+                                    path: Shapes.innerPath(scene.width, scene.height, Theme.frameEdge, scene.frameBottom, Theme.frameCornerRadius)
                                 }
                             }
                         }
@@ -340,17 +355,18 @@ Scope {
                         // the panels' shapes meet the frame here (components/Flap.qml)
                         readonly property real frameBottom: scene.frameBottom
 
-                        // the dark frame: everything outside the wallpaper window
+                        // the dark frame: everything outside the wallpaper window (frameless:
+                        // the four rounded corners of the screen and the bar)
                         Shape {
                             anchors.fill: parent
                             preferredRendererType: Shape.CurveRenderer
 
                             ShapePath {
                                 strokeWidth: -1
-                                fillColor: Config.frame
+                                fillColor: Config.frameColors.background
                                 fillRule: ShapePath.OddEvenFill
                                 PathSvg {
-                                    path: Shapes.ringPath(scene.width, scene.height, Theme.frame, scene.frameBottom, Theme.frameCornerRadius)
+                                    path: Shapes.ringPath(scene.width, scene.height, Theme.frameEdge, scene.frameBottom, Theme.frameCornerRadius)
                                 }
                             }
                         }
@@ -362,19 +378,19 @@ Scope {
                     anchors.fill: parent
                     z: 2
 
-                    // ── hot zones (pixels of the frame itself) ────────────
+                    // ── hot zones (pixels of the frame itself: Theme.edge) ──────
                     HotZone {
                         id: slidersHotTop
                         x: 0
                         y: 0
                         width: Theme.px(110)
-                        height: Theme.frame
+                        height: Theme.edge
                     }
                     HotZone {
                         id: slidersHotLeft
                         x: 0
                         y: 0
-                        width: Theme.frame
+                        width: Theme.edge
                         height: Theme.px(70)
                     }
                     HotZone {
@@ -382,37 +398,38 @@ Scope {
                         x: scene.width - Theme.px(70)
                         y: 0
                         width: Theme.px(70)
-                        height: Theme.frame
+                        height: Theme.edge
                     }
                     HotZone {
                         id: pickerHotRight
-                        x: scene.width - Theme.frame
+                        x: scene.width - Theme.edge
                         y: 0
-                        width: Theme.frame
+                        width: Theme.edge
                         height: Theme.px(70)
                     }
                     HotZone {
                         id: clipboardHot
                         x: 0
                         y: scene.height / 2 - Theme.px(140)
-                        width: Theme.frame
+                        width: Theme.edge
                         height: Theme.px(280)
                     }
-                    // the top edge above the island, while it hides (auto hide)
+                    // the top edge above the island, while it hides (auto hide; not with
+                    // Disable island)
                     HotZone {
                         id: islandHot
-                        enabled: Store.islandAutoHide
+                        enabled: Store.islandAutoHide && !Store.islandDisabled
                         x: Math.round((scene.width - Theme.islandW) / 2)
                         y: 0
                         width: Theme.islandW
-                        height: Theme.frame
+                        height: Theme.edge
                     }
                     HotZone {
                         id: noteHot
-                        enabled: !Ui.calendarOpen
-                        x: scene.width - Theme.frame
+                        enabled: !calendar.open
+                        x: scene.width - Theme.edge
                         y: scene.height / 2 - Theme.px(140)
-                        width: Theme.frame
+                        width: Theme.edge
                         height: Theme.px(280)
                     }
 
@@ -485,7 +502,7 @@ Scope {
                         x: Math.round((scene.width - fw) / 2)
                         y: Math.round(scene.height - fh)
                         width: scene.notchP > 0 ? Math.round(fw) : 0
-                        height: scene.notchP > 0 ? Math.round(fh) : 0
+                        height: scene.notchP > 0 ? Math.max(0, Math.round(fh)) : 0
 
                         Flap {
                             target: dockNotch
@@ -502,34 +519,34 @@ Scope {
                     // the bottom-left / bottom-right corner of the frame (notch mode)
                     HotZone {
                         id: powerHotBottom
-                        enabled: Store.dockNotch
+                        enabled: Store.dockNotch && !Store.dockDisabled
                         x: 0
-                        y: scene.height - Theme.frame
+                        y: scene.height - Theme.edge
                         width: Theme.px(70)
-                        height: Theme.frame
+                        height: Theme.edge
                     }
                     HotZone {
                         id: powerHotLeft
-                        enabled: Store.dockNotch
+                        enabled: Store.dockNotch && !Store.dockDisabled
                         x: 0
                         y: scene.height - Theme.px(70)
-                        width: Theme.frame
+                        width: Theme.edge
                         height: Theme.px(70)
                     }
                     HotZone {
                         id: dateHotBottom
-                        enabled: Store.dockNotch
+                        enabled: Store.dockNotch && !Store.dockDisabled
                         x: scene.width - Theme.px(70)
-                        y: scene.height - Theme.frame
+                        y: scene.height - Theme.edge
                         width: Theme.px(70)
-                        height: Theme.frame
+                        height: Theme.edge
                     }
                     HotZone {
                         id: dateHotRight
-                        enabled: Store.dockNotch
-                        x: scene.width - Theme.frame
+                        enabled: Store.dockNotch && !Store.dockDisabled
+                        x: scene.width - Theme.edge
                         y: scene.height - Theme.px(70)
-                        width: Theme.frame
+                        width: Theme.edge
                         height: Theme.px(70)
                     }
 
@@ -539,6 +556,7 @@ Scope {
                         fillLayer: fills
                         strokeLayer: strokes
                         hot: (powerHotBottom.hovered || powerHotLeft.hovered) && Store.dockNotch
+                        panelOpen: power.open
                     }
 
                     DateCorner {
@@ -546,6 +564,7 @@ Scope {
                         fillLayer: fills
                         strokeLayer: strokes
                         hot: (dateHotBottom.hovered || dateHotRight.hovered) && Store.dockNotch
+                        panelOpen: calendar.open
                     }
 
                     BottomBar {
@@ -554,6 +573,8 @@ Scope {
                         reveal: scene.dockP
                         notch: scene.notchP
                         shownWidth: dockNotch.fw
+                        powerPanelOpen: power.open
+                        calendarPanelOpen: calendar.open
                     }
 
                     // the bottom edge while the dock hides; once it is out, the whole
@@ -562,10 +583,10 @@ Scope {
                     // Notch mode: only under the notch (the corners are the blocks').
                     HotZone {
                         id: dockZone
-                        enabled: Store.dockAutoHide
+                        enabled: Store.dockAutoHide && !Store.dockDisabled
                         x: Store.dockNotch ? Math.round((scene.width - bar.notchWidth) / 2) : 0
                         width: Store.dockNotch ? Math.round(bar.notchWidth) : scene.width
-                        height: dockLatch.open ? Theme.bar : Theme.frame
+                        height: dockLatch.open ? Theme.bar : Theme.edge
                         y: scene.height - height
                     }
 
@@ -578,10 +599,10 @@ Scope {
                     // notch is clicked once the dock has gone again.)
                     HotZone {
                         id: dockEdge
-                        enabled: Store.dockAutoHide && Store.dockNotch
+                        enabled: Store.dockAutoHide && Store.dockNotch && !Store.dockDisabled
                         width: Math.round(Math.min(Math.max(Theme.px(1500), bar.notchWidth), scene.width - 2 * Theme.px(70)))
                         x: Math.round((scene.width - width) / 2)
-                        height: dockLatch.open ? Theme.bar : Theme.frame
+                        height: dockLatch.open ? Theme.bar : Theme.edge
                         y: scene.height - height
                     }
                 }

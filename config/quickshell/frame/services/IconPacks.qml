@@ -24,6 +24,12 @@ import qs
 //    path(name)          the picture of icon `name` in the pack in use ("" if it
 //                        has none: AppIcon then shows the app's first letter)
 //    pathIn(name, pack)  the same in another pack (the Settings app's previews)
+//
+//  The shell's own Settings app ("frame-settings") has the pack's icon of GNOME
+//  Settings (org.gnome.Settings); a pack without one: assets/icons/frame-settings.svg
+//  (GNOME Settings' gear).
+//
+//  Adwaita is no longer one of the packs: picked before, the shell's own is used.
 // ═══════════════════════════════════════════════════════════════════════════
 Singleton {
     id: root
@@ -36,10 +42,6 @@ Singleton {
         {
             name: "YAMIS",
             about: "Monochrome, in one colour"
-        },
-        {
-            name: "Adwaita",
-            about: "The apps' own icons"
         },
         {
             name: "Papirus-Dark",
@@ -83,9 +85,17 @@ Singleton {
         return pathIn(name, current);
     }
 
+    // the Settings app's icon when a pack has no org.gnome.Settings
+    readonly property string settingsIcon: Qt.resolvedUrl("../assets/icons/frame-settings.svg").toString()
+
     function pathIn(name, pack) {
         if (!name)
             return "";
+        // the Settings app: the pack's GNOME Settings icon, else the shell's gear
+        if (name === "frame-settings") {
+            const own = pathIn("org.gnome.Settings", pack);
+            return own !== "" ? own : settingsIcon;
+        }
         // a file instead of a name, and the shell's own theme: as before, Qt finds them
         if (pack === qtTheme || name.charAt(0) === "/")
             return Quickshell.iconPath(name, true);

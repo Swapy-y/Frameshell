@@ -4,13 +4,18 @@
 //
 // Everything is expressed as SVG path strings (consumed by QtQuick.Shapes
 // PathSvg) in *overlay pixel coordinates*:
-//   W,H  screen size           F  frame thickness (top / left / right)
+//   W,H  screen size           F  where the frame's edge is (top / left / right)
 //   B    bottom bar height     R  radius of the wallpaper window corners
 //
 // The wallpaper "window" is the rectangle (F, F) - (W-F, H-B) with rounded
 // corners. The dark frame is everything outside it. Panels ("flaps") are
 // extra dark shapes that grow out of the frame and are merged into it with
 // concave "ears" so the whole thing reads as one continuous piece.
+//
+// F and B may be negative: with no visible frame F is Theme.frameEdge, one
+// border width outside the screen, so the border drawn round the shapes ends
+// exactly on the screen's edge (only the rounded corners, the bar, the notch
+// and the panels show).
 
 var OFF = 2;   // how far outside the screen the hidden parts of paths go
 
@@ -24,17 +29,35 @@ function pt(x, y) {
 
 // Inner (wallpaper) rounded rectangle, drawn counter-clockwise so that it
 // punches a hole through the outer rectangle with the non-zero fill rule too.
+//
+// A side that lies outside the screen (no frame there: F < 0, or B < 0 while
+// the dock is hidden) steps up to OFF further out between its two corners. The
+// border is drawn along this path, and a stroke running right along the screen's
+// edge would still tint the outermost row of pixels (its anti-aliasing reaches a
+// little beyond it): a faint line where there should be none. The step is as
+// big as the side is outside the screen (at most OFF), so it grows smoothly
+// while the bar slides away.
 function innerPath(W, H, F, B, R) {
     var IL = F, IT = F, IR = W - F, IB = H - B;
     var r = Math.max(0, Math.min(R, (IR - IL) / 2, (IB - IT) / 2));
+    var oL = clamp(-IL, 0, OFF), oT = clamp(-IT, 0, OFF);
+    var oR = clamp(IR - W, 0, OFF), oB = clamp(IB - H, 0, OFF);
+    // from the end of one corner (x0, y0) to the start of the next (x1, y1),
+    // pushed out by (dx, dy) on the way
+    function side(x0, y0, x1, y1, dx, dy) {
+        if (dx === 0 && dy === 0)
+            return " L" + pt(x1, y1);
+        return " L" + pt(x0 + dx, y0 + dy) + " L" + pt(x1 + dx, y1 + dy) + " L" + pt(x1, y1);
+    }
     var s = "M" + pt(IL + r, IT);
     s += " A" + n(r) + "," + n(r) + " 0 0 0 " + pt(IL, IT + r);
-    s += " L" + pt(IL, IB - r);
+    s += side(IL, IT + r, IL, IB - r, -oL, 0);
     s += " A" + n(r) + "," + n(r) + " 0 0 0 " + pt(IL + r, IB);
-    s += " L" + pt(IR - r, IB);
+    s += side(IL + r, IB, IR - r, IB, 0, oB);
     s += " A" + n(r) + "," + n(r) + " 0 0 0 " + pt(IR, IB - r);
-    s += " L" + pt(IR, IT + r);
+    s += side(IR, IB - r, IR, IT + r, oR, 0);
     s += " A" + n(r) + "," + n(r) + " 0 0 0 " + pt(IR - r, IT);
+    s += side(IR - r, IT, IL + r, IT, 0, -oT);
     s += " Z";
     return s;
 }
@@ -69,6 +92,10 @@ function flapPath(o) {
     var x0 = o.x, y0 = o.y, x1 = o.x + o.w, y1 = o.y + o.h;
     var IL = F, IT = F, IR = W - F, IB = H - B;
     var top = !!o.top, bottom = !!o.bottom, left = !!o.left, right = !!o.right;
+    // the hidden parts go this far outside the screen: always beyond the frame's
+    // edge (which is itself outside the screen with no frame, F < 0), so the
+    // border drawn along them never reaches onto the screen
+    var off = OFF + Math.max(0, -F, -B);
 
     // the part of the panel that is inside the window area (what you can see)
     var dw = (right ? IR : x1) - (left ? IL : x0);
@@ -110,44 +137,44 @@ function flapPath(o) {
 
     // ---- top-left (arrive going up the left side, leave going right) ----
     if (top && left) {
-        P(-OFF, -OFF);
+        P(-off, -off);
     } else if (top) {
-        P(x0, IT + rtl); A(rtl, x0 - rtl, IT, 0); P(x0 - rtl, -OFF);
+        P(x0, IT + rtl); A(rtl, x0 - rtl, IT, 0); P(x0 - rtl, -off);
     } else if (left) {
-        P(-OFF, y0 - rtl); P(IL, y0 - rtl); A(rtl, IL + rtl, y0, 0);
+        P(-off, y0 - rtl); P(IL, y0 - rtl); A(rtl, IL + rtl, y0, 0);
     } else {
         P(x0, y0 + rtl); A(rtl, x0 + rtl, y0, 1);
     }
 
     // ---- top-right (arrive going right along the top, leave going down) ----
     if (top && right) {
-        P(W + OFF, -OFF);
+        P(W + off, -off);
     } else if (top) {
-        P(x1 + rtr, -OFF); P(x1 + rtr, IT); A(rtr, x1, IT + rtr, 0);
+        P(x1 + rtr, -off); P(x1 + rtr, IT); A(rtr, x1, IT + rtr, 0);
     } else if (right) {
-        P(IR - rtr, y0); A(rtr, IR, y0 - rtr, 0); P(W + OFF, y0 - rtr);
+        P(IR - rtr, y0); A(rtr, IR, y0 - rtr, 0); P(W + off, y0 - rtr);
     } else {
         P(x1 - rtr, y0); A(rtr, x1, y0 + rtr, 1);
     }
 
     // ---- bottom-right (arrive going down the right side, leave going left) ----
     if (bottom && right) {
-        P(W + OFF, H + OFF);
+        P(W + off, H + off);
     } else if (bottom) {
-        P(x1, IB - rbr); A(rbr, x1 + rbr, IB, 0); P(x1 + rbr, H + OFF);
+        P(x1, IB - rbr); A(rbr, x1 + rbr, IB, 0); P(x1 + rbr, H + off);
     } else if (right) {
-        P(W + OFF, y1 + rbr); P(IR, y1 + rbr); A(rbr, IR - rbr, y1, 0);
+        P(W + off, y1 + rbr); P(IR, y1 + rbr); A(rbr, IR - rbr, y1, 0);
     } else {
         P(x1, y1 - rbr); A(rbr, x1 - rbr, y1, 1);
     }
 
     // ---- bottom-left (arrive going left along the bottom, leave going up) ----
     if (bottom && left) {
-        P(-OFF, H + OFF);
+        P(-off, H + off);
     } else if (bottom) {
-        P(x0 - rbl, H + OFF); P(x0 - rbl, IB); A(rbl, x0, IB - rbl, 0);
+        P(x0 - rbl, H + off); P(x0 - rbl, IB); A(rbl, x0, IB - rbl, 0);
     } else if (left) {
-        P(IL + rbl, y1); A(rbl, IL, y1 + rbl, 0); P(-OFF, y1 + rbl);
+        P(IL + rbl, y1); A(rbl, IL, y1 + rbl, 0); P(-off, y1 + rbl);
     } else {
         P(x0 + rbl, y1); A(rbl, x0, y1 - rbl, 1);
     }

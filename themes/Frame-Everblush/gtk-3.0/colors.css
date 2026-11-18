@@ -1,0 +1,229 @@
+/* Frame-Everblush - colours for GTK 3 apps (Thunar, file pickers, Firefox's dialogs ...)
+   ->  ~/.local/share/themes/Frame-Everblush/gtk-3.0/colors.css
+
+   The shell's Everblush theme: #141b1e windows, #1c2326 cards, #232a2d buttons, #343b3e selections, #dadada text,
+   #67b0e8 main buttons with #141b1e text, #e57474 for errors, #e5c76b for warnings.
+   gtk.css loads adw-gtk3-dark first; this file only replaces its colours.
+   Made by themes/make-themes.py from themes/Frame (what each rule is for: see the
+   comments there): change the theme's colours in Config.qml (Noir's: its palette in
+   make-themes.py) and run it again (an edit here is lost then). Restart an app to see a
+   change. */
+
+@define-color accent_bg_color #67b0e8;
+@define-color accent_fg_color #141b1e;
+@define-color accent_color #67b0e8;
+
+@define-color destructive_bg_color #e57474;
+@define-color destructive_fg_color #141b1e;
+@define-color destructive_color #e57474;
+@define-color success_bg_color #8ccf7e;
+@define-color success_fg_color #141b1e;
+@define-color success_color #8ccf7e;
+@define-color warning_bg_color #e5c76b;
+@define-color warning_fg_color #141b1e;
+@define-color warning_color #e5c76b;
+@define-color error_bg_color #e57474;
+@define-color error_fg_color #141b1e;
+@define-color error_color #e57474;
+
+@define-color window_bg_color #141b1e;
+@define-color window_fg_color #dadada;
+@define-color view_bg_color #141b1e;
+@define-color view_fg_color #dadada;
+@define-color headerbar_bg_color #141b1e;
+@define-color headerbar_fg_color #dadada;
+@define-color headerbar_border_color #dadada;
+@define-color headerbar_backdrop_color #141b1e;
+@define-color headerbar_shade_color #2b3235;
+@define-color headerbar_darker_shade_color #2b3235;
+@define-color sidebar_bg_color #192023;
+@define-color sidebar_fg_color #dadada;
+@define-color sidebar_backdrop_color #192023;
+@define-color sidebar_shade_color rgba(0, 0, 0, 0.25);
+@define-color sidebar_border_color #2b3235;
+@define-color secondary_sidebar_bg_color #161d20;
+@define-color secondary_sidebar_fg_color #dadada;
+@define-color secondary_sidebar_backdrop_color #161d20;
+@define-color secondary_sidebar_shade_color rgba(0, 0, 0, 0.25);
+@define-color secondary_sidebar_border_color #2b3235;
+@define-color card_bg_color #1c2326;
+@define-color card_fg_color #dadada;
+@define-color card_shade_color rgba(0, 0, 0, 0.36);
+@define-color dialog_bg_color #141b1e;
+@define-color dialog_fg_color #dadada;
+@define-color popover_bg_color #141b1e;
+@define-color popover_fg_color #dadada;
+@define-color popover_shade_color rgba(0, 0, 0, 0.25);
+@define-color thumbnail_bg_color #1c2326;
+@define-color thumbnail_fg_color #dadada;
+@define-color shade_color rgba(0, 0, 0, 0.36);
+@define-color scrollbar_outline_color rgba(0, 0, 0, 0.5);
+
+@define-color theme_selected_bg_color #343b3e;
+@define-color theme_selected_fg_color #dadada;
+@define-color theme_unfocused_selected_bg_color #343b3e;
+@define-color theme_unfocused_selected_fg_color #dadada;
+
+treeview.view:selected,
+treeview.view:selected:focus,
+.view:selected,
+.view:selected:focus,
+iconview:selected,
+iconview:selected:focus,
+flowbox flowboxchild:selected {
+  background-color: @theme_selected_bg_color;
+}
+placessidebar row:selected {
+  color: @window_fg_color;
+}
+
+headerbar entry selection,
+.titlebar entry selection,
+entry selection,
+spinbutton:not(.vertical) selection,
+.view text selection:focus,
+iconview text selection:focus,
+.view text selection,
+iconview text selection,
+textview text selection:focus,
+textview text selection,
+label selection,
+.terminal selection,
+.terminal text selection,
+#MozillaGtkWidget.background selection:focus,
+#MozillaGtkWidget.background selection {
+  background-color: #383f42;
+  color: @window_fg_color;
+}
+.thunar .standard-view .view:active {
+  background-color: transparent;
+}
+
+@define-color frame_link_color #67b0e8;
+@define-color frame_visited_color #c47fd5;
+
+button:link > label,
+button:link,
+*:link,
+button:link > label:active,
+*:link:active,
+*:selected button:link > label:active,
+*:selected *:link:active,
+button:link > label:backdrop,
+*:link:backdrop:backdrop:hover,
+*:link:backdrop:backdrop:hover:selected,
+*:link:backdrop,
+button:link > label:selected,
+*:selected button:link > label,
+*:link:selected,
+*:selected *:link {
+  color: @frame_link_color;
+}
+button:visited > label,
+button:visited,
+button:link > label:visited,
+button:visited > label:visited,
+*:visited,
+*:visited:backdrop,
+*:link:visited,
+*:selected button:link > label:visited,
+*:selected button:visited > label:visited,
+*:selected button:visited,
+*:selected *:link:visited,
+button:visited > label:active,
+button:active:visited,
+*:selected button:visited > label:active,
+*:selected button:active:visited,
+button:visited > label:backdrop,
+button:backdrop:visited,
+button:visited > label:selected,
+button:selected:visited,
+*:selected button:visited > label {
+  color: @frame_visited_color;
+}
+button:link > label:hover,
+button:visited > label:hover,
+button:hover:visited,
+*:link:hover,
+*:selected button:link > label:hover,
+*:selected button:visited > label:hover,
+*:selected button:hover:visited,
+*:selected *:link:hover {
+  color: mix(@frame_link_color, white, 0.25);
+}
+
+button.suggested-action,
+button.suggested-action:hover,
+button.suggested-action:active,
+button.suggested-action:checked {
+  color: @accent_fg_color;
+}
+button.suggested-action {
+  background-color: @accent_bg_color;
+}
+button.suggested-action:hover {
+  background-color: mix(@accent_bg_color, @accent_fg_color, 0.08);
+}
+button.suggested-action:active,
+button.suggested-action:checked {
+  background-color: mix(@accent_bg_color, @accent_fg_color, 0.18);
+}
+button.suggested-action:active:hover,
+button.suggested-action:checked:hover {
+  background-color: mix(@accent_bg_color, @accent_fg_color, 0.22);
+}
+button.suggested-action:disabled:active,
+button.suggested-action:disabled:checked {
+  color: alpha(@accent_fg_color, 0.5);
+}
+switch:checked slider,
+switch:checked:hover slider {
+  background-color: @accent_fg_color;
+}
+treeview.view acceleditor > label {
+  color: @accent_fg_color;
+}
+.view.content-view.check:checked:not(list),
+.content-view:not(list) check:checked {
+  color: @accent_fg_color;
+}
+infobar.info > revealer > box,
+infobar.question > revealer > box {
+  background-color: #232a2d;
+}
+infobar.action.info:hover > revealer > box,
+infobar.action.question:hover > revealer > box {
+  background-color: #2b3235;
+}
+infobar.info button,
+infobar.question button {
+  background-color: alpha(currentColor, 0.1);
+}
+infobar.info button:hover,
+infobar.question button:hover {
+  background-color: alpha(currentColor, 0.15);
+}
+infobar.info button:checked,
+infobar.info button:active,
+infobar.question button:checked,
+infobar.question button:active {
+  background-color: alpha(currentColor, 0.3);
+}
+
+popover.background,
+.csd popover.background {
+  border-color: #2b3235;
+}
+menu,
+.menu,
+.context-menu,
+.csd menu,
+.csd .menu,
+.csd .context-menu {
+  border: 1px solid #2b3235;
+}
+
+tooltip.background {
+  background-color: #141b1e;
+  border-color: #2b3235;
+}

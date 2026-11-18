@@ -345,7 +345,7 @@ Scope {
                 radius: Theme.px(20)
                 color: Config.surface               // see-through with the shell's blur
                 border.width: Theme.border
-                border.color: Config.outline
+                border.color: Config.border
 
                 // soft shadow (follows the card while it fades)
                 Loader {
@@ -364,14 +364,16 @@ Scope {
                         readonly property var k: modelData.key
                         // a modifier that is on
                         readonly property bool latched: (k.kind === "shift" && root.shift) || (k.kind === "caps" && root.caps) || (k.kind === "ctrl" && root.ctrl) || (k.kind === "alt" && root.alt)
-                        readonly property color ink: latched ? Config.frame : Config.text
+                        readonly property color ink: latched ? Config.background : Config.text
 
                         x: card.pad + modelData.x * card.unit
                         y: card.pad + modelData.row * (card.keyH + card.gap)
                         width: k.w * card.unit - card.gap
                         height: card.keyH
                         radius: Theme.px(10)
-                        color: latched ? Config.text : (keyArea.pressed ? Config.iconDim : (keyArea.containsMouse ? Config.buttonHover : Config.selected))
+                        color: latched ? Config.text : (keyArea.pressed ? Config.inactive : (keyArea.containsMouse ? Config.controlHover : Config.controlBackground))
+                        border.width: latched ? 0 : Theme.outlineW
+                        border.color: Theme.outlineColor
 
                         Txt {
                             visible: !keyItem.k.icon

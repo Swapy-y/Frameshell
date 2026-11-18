@@ -10,7 +10,7 @@ import qs.services
 //  the same page; else cornerRadius), shadows and shadowStrength
 //  to Hyprland, so the window border, the window corners and the window shadows
 //  always match the frame and the panels. And the window border colours of the
-//  colour theme in use (activeHint / inactiveHint in Config.qml). And the gap
+//  colour theme in use (windowBorderActive / windowBorderInactive in Config.qml). And the gap
 //  round the windows (Config.windowGap, the Appearance page's "Window gap").
 //
 //  hyprland.lua already reads these when Hyprland starts or reloads (the width
@@ -19,6 +19,10 @@ import qs.services
 //  A change in the Settings app, or saving Config.qml (which reloads the shell),
 //  runs this once more: the new values reach the windows right away, no
 //  Hyprland reload needed. Outside Hyprland it does nothing.
+//
+//  "10 workspaces" (the Settings app's Island page, Config.tenWorkspaces)
+//  goes to hyprland.lua's frameshell_workspaces(): SUPER + Left / Right and the number
+//  keys go up to workspace 10, or back to workspaceMax.
 //
 //  The keyboard, the mouse and the touchpad (the Settings app's Devices page,
 //  input.json) go to Hyprland once the shell has read them - so Hyprland has
@@ -34,22 +38,20 @@ Scope {
     readonly property int followMouse: Config.focusFollowsMouse ? 1 : 2
     readonly property bool noWarps: !Config.cursorFollowsFocus
 
-    // the blur (the Settings app's Blur page): Hyprland's blur is on while windows or the
-    // shell want it; windows get none (a rule, "frame-window-blur") without windowBlur, the
-    // shell's layers get it (a rule, "frame-shell-blur") with shellBlur - only where they
-    // are at least about as solid as the shell's surfaces (ignore_alpha), so not their
-    // shadows or the empty middle of the screen
+    // the blur (the Settings app's Blur page): Hyprland's blur is on with windowBlur, and
+    // windows get none (a rule, "frame-window-blur") without it. The shell's own blur is
+    // gone: its old rule ("frame-shell-blur") is sent switched off, so a session that
+    // had it on loses it at once
     function num(v) {
         return String(Math.round(v * 100) / 100);
     }
-    readonly property string blurConf: "enabled = " + (Config.windowBlur || Config.shellBlur) +
+    readonly property string blurConf: "enabled = " + Config.windowBlur +
         ", size = " + Math.max(1, Math.round(Config.blurSize)) + ", passes = " + Math.max(1, Math.round(Config.blurPasses)) +
         ", brightness = " + num(Config.blurBrightness) + ", contrast = " + num(Config.blurContrast)
     readonly property string blurRules: "hl.window_rule({ name = 'frame-window-blur', enabled = " + !Config.windowBlur +
         ", match = { class = '.*' }, no_blur = true }); " +
-        "hl.layer_rule({ name = 'frame-shell-blur', enabled = " + Config.shellBlur +
-        ", match = { namespace = '^frame-(overlay|switcher|launcher|auth|network|confirm|emoji|osk)\\$' }, blur = true, ignore_alpha = " +
-        num(Math.max(0, Config.shellAlpha - 0.05)) + " })"
+        "hl.layer_rule({ name = 'frame-shell-blur', enabled = false" +
+        ", match = { namespace = '^frame-(overlay|switcher|launcher|auth|network|confirm|emoji|osk)\\$' }, blur = true })"
     readonly property int rounding: Math.max(0, Config.cornerRounding)
 
     // the keyboard, the mouse and the touchpad (the Settings app's Devices page)
@@ -135,11 +137,11 @@ Scope {
         return "rgba(000000" + (v < 16 ? "0" : "") + v.toString(16) + ")";
     }
 
-    // the window border colours of the shell's theme: activeHint / inactiveHint in Config.qml
+    // the window border colours of the shell's theme: windowBorderActive / windowBorderInactive in Config.qml
     // (a theme that leaves one out gets Default's), as Hyprland writes them ("rgba(c4c4c4ff)")
     readonly property var borders: ({
-            active: Themes.hyprColor(Config.activeHint),
-            inactive: Themes.hyprColor(Config.inactiveHint)
+            active: Themes.hyprColor(Config.windowBorderActive),
+            inactive: Themes.hyprColor(Config.windowBorderInactive)
         })
     readonly property string borderColors: borders.active + " " + borders.inactive
 
@@ -208,6 +210,27 @@ Scope {
         onExited: root.syncGap()
     }
 
+    // "10 workspaces": hyprland.lua's frameshell_workspaces(true / false) lets SUPER + Left / Right
+    // and SUPER + 6 ... 0 go up to workspace 10 (or stops them at workspaceMax again). Sent once
+    // the shell has read experimental.json and on every switch (the newest one after a send
+    // that was still running). hyprland.lua reads the same file when Hyprland starts; one
+    // without frameshell_workspaces (an older one) is left alone
+    readonly property string workspaces: Config.experimentalRead ? String(Config.tenWorkspaces) : ""
+    property string sentWorkspaces: ""
+    function syncWorkspaces() {
+        if (workspaces === "" || workspaceSync.running || sentWorkspaces === workspaces)
+            return;
+        sentWorkspaces = workspaces;
+        root.run(workspaceSync, ["sh", "-c",
+            '[ -n "$HYPRLAND_INSTANCE_SIGNATURE" ] && command -v hyprctl >/dev/null 2>&1 || exit 0; ' +
+            'hyprctl eval "if frameshell_workspaces then frameshell_workspaces(' + workspaces + ') end" >/dev/null 2>&1; true']);
+    }
+    onWorkspacesChanged: syncWorkspaces()
+    Process {
+        id: workspaceSync
+        onExited: root.syncWorkspaces()
+    }
+
     // the Process below runs once when the shell starts (every save of Config.qml
     // restarts the shell) and again on every change while it is running (the
     // Settings app's slider); a change that comes while it still runs is sent
@@ -224,6 +247,7 @@ Scope {
     Component.onCompleted: {
         syncBorders();
         syncGap();
+        syncWorkspaces();
         resync();
     }
 
@@ -240,7 +264,7 @@ Scope {
             'hyprctl keyword decoration:shadow:enabled ' + root.shadowsOn + ' >/dev/null; ' +
             'hyprctl keyword decoration:shadow:color "' + root.shadowActive + '" >/dev/null; ' +
             'hyprctl keyword decoration:shadow:color_inactive "' + root.shadowInactive + '" >/dev/null; ' +
-            'hyprctl keyword decoration:blur:enabled ' + (Config.windowBlur || Config.shellBlur) + ' >/dev/null; }; ' +
+            'hyprctl keyword decoration:blur:enabled ' + Config.windowBlur + ' >/dev/null; }; ' +
             // the two blur rules (Lua config only), on their own: should they fail, the rest is set
             'hyprctl eval "' + root.blurRules + '" >/dev/null 2>&1; true'];
     }

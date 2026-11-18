@@ -1,0 +1,635 @@
+/* Firefox in the shell's Gruvbox theme - made by themes/make-themes.py from
+   config/firefox/Default/userChrome.css (change that one and run it again). */
+@-moz-document url(about:newtab), url(about:home) {
+  #main-button {
+    opacity: 0 !important;
+  }
+}
+
+
+
+
+:root {
+  --focus-outline-color: transparent !important;
+  --toolbar-field-focus-border-color: transparent !important;
+}
+
+
+#urlbar[focused="true"] > #urlbar-background,
+#urlbar[focused="true"] > .urlbar-background,
+#searchbar:focus-within {
+  outline: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+
+
+
+:root, .urlbarView {
+  
+  --urlbarview-background-color-selected: #4e4743 !important;
+  --urlbarview-background-color-hover: #4e4743 !important;
+  --urlbarview-text-color-selected: #d4be98 !important;
+  
+  
+  --urlbarView-highlight-background: #4e4743 !important;
+  --urlbarView-hover-background: #4e4743 !important;
+  --urlbarView-highlight-color: #d4be98 !important;
+}
+
+
+.urlbarView-row[selected] > .urlbarView-row-inner,
+.urlbarView-row-inner[selected] {
+  background-color: #4e4743 !important;
+  color: #d4be98 !important;
+}
+
+.urlbarView-row:hover > .urlbarView-row-inner,
+.urlbarView-row-inner:hover {
+  background-color: #4e4743 !important;
+  color: #d4be98 !important;
+}
+
+
+
+
+.urlbarView-url {
+  color: #d4be98 !important;
+}
+
+
+
+
+
+:root {
+  --toolbarbutton-icon-fill-attention: #d4be98 !important;
+}
+
+
+#star-button,
+#star-button[starred] {
+  fill: #d4be98 !important;
+}
+
+
+.urlbarView-row[type="bookmark"] .urlbarView-type-icon {
+  fill: #d4be98 !important;
+}
+
+
+
+
+.urlbarView-row,
+.urlbarView-row-inner {
+  border-radius: 10px !important;
+}
+
+
+
+
+
+
+
+
+.searchmode-switcher {
+  display: none !important;
+  transition: opacity 150ms ease-in-out !important;
+}
+
+
+#urlbar-input {
+  margin-inline-start: 10px !important;
+}
+
+
+
+
+
+.tabbrowser-tab[label="New Tab"] .tab-icon-image,
+.tabbrowser-tab[label="New Tab"] .tab-label-container,
+.tabbrowser-tab[label="New Tab"] .tab-text,
+.tabbrowser-tab[label="New Tab"] label {
+  display: none !important;
+}
+
+
+
+
+.tab-background,
+.tab-background[selected],
+.tab-background[multiselected] {
+  box-shadow: none !important;
+}
+
+
+
+
+.tabbrowser-tab {
+  margin-top: 1px !important;
+}
+
+
+
+
+.tab-content {
+  margin-bottom: 1px !important;
+}
+
+
+
+
+#browser vbox#appcontent tabbrowser,
+#content,
+#tabbrowser-tabpanels,
+.browserContainer,
+browser[type="content-primary"],
+browser[type="content"] {
+  background-color: #31302f !important;
+}
+
+
+
+
+#TabsToolbar {
+  opacity: 1 !important;
+}
+
+
+
+
+#sidebar-search-container search-textbox,
+search-textbox {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+
+treechildren::-moz-tree-row,
+treechildren::-moz-tree-cell {
+  outline: none !important;
+  outline-style: none !important;
+}
+
+
+
+
+
+
+
+
+
+@namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
+
+
+#sidebar {
+  box-shadow: none !important;
+}
+
+
+:root {
+  --content-area-shadow: none !important;
+}
+
+#browser,
+#appcontent,
+#tabbrowser-tabbox,
+#tabbrowser-tabpanels,
+.browserSidebarContainer,
+.browserStack,
+#tabbrowser-tabbox > browser {
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+  filter: none !important;
+}
+
+.titlebar-buttonbox-container { display: none !important; }
+
+
+
+#urlbar[focused="true"] > #urlbar-background,
+#urlbar[breakout][breakout-extend] > #urlbar-background,
+#searchbar:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+
+:root {
+  --toolbar-bgcolor: #282828 !important;
+  --lwt-accent-color: #1c1c1c !important;
+}
+#nav-bar {
+  background: #282828 !important;
+}
+
+:root {
+  --chrome-content-separator-color: #282828 !important;
+}
+
+#navigator-toolbox {
+  border-bottom: 1px solid #282828 !important;
+}
+
+#nav-bar {
+  border-bottom: none !important;
+}
+
+:root {
+  --tabs-border-color: #282828 !important;
+  --tab-selected-bgcolor: #282828 !important;
+  --lwt-selected-tab-background-color: #282828 !important;
+}
+
+
+#navigator-toolbox,
+#nav-bar,
+#TabsToolbar {
+  border-top: 1px solid #282828 !important;
+  border-top-color: #282828 !important;
+}
+
+
+#TabsToolbar,
+#titlebar {
+  background: #1c1c1c !important;
+}
+
+.tabbrowser-tab .tab-background,
+.tabbrowser-tab[selected] .tab-background,
+.tabbrowser-tab[multiselected] .tab-background {
+  background-color: #282828 !important;
+  background-image: none !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+:root {
+  --toolbar-field-background-color: #1c1c1c !important;
+  --toolbar-field-focus-background-color: #1c1c1c !important;
+  --toolbar-field-border-color: #1c1c1c !important;
+  --toolbar-field-focus-border-color: #1c1c1c !important;
+}
+
+#urlbar-background,
+#urlbar[focused="true"] > #urlbar-background,
+#urlbar[breakout][breakout-extend] > #urlbar-background,
+#searchbar {
+  background-color: #1c1c1c !important;
+  border: 1px solid #1c1c1c !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+
+#urlbar:hover > #urlbar-background,
+#urlbar:not([focused]):hover > #urlbar-background {
+  background-color: #1c1c1c !important;
+  border-color: #1c1c1c !important;
+}
+
+:root {
+  --tab-selected-bgcolor: #282828 !important;
+  --lwt-selected-tab-background-color: #282828 !important;
+}
+
+
+.tabbrowser-tab:not([selected]) .tab-background {
+  background-color: #1c1c1c !important;
+  background-image: none !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+
+.tabbrowser-tab[selected] .tab-background {
+  background-color: #282828 !important;
+  background-image: none !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+
+.tabbrowser-tab[multiselected] .tab-background {
+  background-color: #282828 !important;
+}
+
+
+.tabbrowser-tab:not([selected]):hover .tab-background {
+  background-color: #222222 !important;
+}
+
+:root {
+  
+  --focus-outline: none !important;
+  --focus-outline-color: transparent !important;
+  --toolbar-field-focus-border-color: transparent !important;
+
+  
+  --urlbar-box-bgcolor: #1c1c1c !important;
+  --urlbar-box-hover-bgcolor: #1c1c1c !important;
+  --urlbar-box-focus-bgcolor: #1c1c1c !important;
+  --urlbar-box-active-bgcolor: #1c1c1c !important;
+  --urlbar-box-shadow: none !important;
+}
+
+
+#urlbar > #urlbar-background,
+#urlbar[focused] > #urlbar-background,
+#urlbar[open] > #urlbar-background,
+#urlbar[breakout][breakout-extend] > #urlbar-background,
+#urlbar[breakout][breakout-extend][open] > #urlbar-background {
+  background-color: #1c1c1c !important;
+  box-shadow: none !important;
+  filter: none !important;
+  outline: none !important;
+  outline-color: transparent !important;
+  border-color: #1c1c1c !important;
+}
+
+
+#urlbar[breakout][breakout-extend],
+#urlbar-input-container,
+.urlbarView {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+
+#urlbar[breakout][breakout-extend] > #urlbar-background,
+#urlbar[open] > #urlbar-background,
+#urlbar[focused] > #urlbar-background {
+  background: #1c1c1c !important;
+  border: 1px solid #1c1c1c !important;
+  box-shadow: none !important;
+  filter: none !important;
+  outline: none !important;
+}
+
+
+#urlbar[breakout-extend] .urlbarView,
+#urlbar[breakout-extend] .urlbarView-body-outer,
+#urlbar[breakout-extend] .urlbarView-body-inner,
+#urlbar[breakout-extend] .urlbarView-results,
+#urlbar[breakout-extend] #urlbar-input-container {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+
+:root {
+  --toolbar-field-focus-background-color: #1c1c1c !important;
+  --toolbar-field-focus-border-color: #1c1c1c !important;
+  --urlbar-box-focus-bgcolor: #1c1c1c !important;
+}
+
+#urlbar,
+#urlbar *,
+#urlbar::before,
+#urlbar::after,
+#urlbar-container,
+#urlbar-container * {
+  box-shadow: none !important;
+  
+}
+
+
+
+
+#urlbar :not(
+  .urlbar-icon,
+  .urlbar-icon-wrapper,
+  .urlbarView-favicon,
+  .urlbarView-type-icon,
+  .urlbarView-icon,
+  .urlbarView-action-btn,
+  .searchmode-switcher-icon,
+  .urlbar-go-button,
+  image,
+  img
+) {
+  background-color: #1c1c1c !important;
+  
+}
+
+
+#urlbar .urlbarView-row:hover > .urlbarView-row-inner,
+#urlbar .urlbarView-row[selected] > .urlbarView-row-inner {
+  background-color: #4e4743 !important;
+  
+}
+
+#urlbar .urlbarView-row .urlbarView-row-inner *:not(
+  .urlbarView-favicon,
+  .urlbarView-type-icon,
+  .urlbarView-icon,
+  .urlbarView-action-btn,
+  image,
+  img
+) {
+  background-color: transparent !important;
+}
+
+#urlbar * {
+  color: #c1ae8c !important;
+}
+
+
+
+
+
+
+:root,
+:root:-moz-window-inactive {
+  
+  --toolbar-color: #c1ae8c !important;
+  --toolbarbutton-icon-fill: #c1ae8c !important;
+  --toolbar-field-color: #c1ae8c !important;
+  --toolbar-field-focus-color: #c1ae8c !important;
+  --tab-selected-textcolor: #c1ae8c !important;
+  --lwt-text-color: #c1ae8c !important;
+  --urlbar-icon-fill-opacity: 1 !important;
+}
+
+
+#nav-bar toolbarbutton .toolbarbutton-icon,
+#TabsToolbar toolbarbutton .toolbarbutton-icon,
+.urlbar-icon,
+.tab-close-button {
+  fill: #c1ae8c !important;
+  color: #c1ae8c !important;
+  opacity: 1 !important;
+}
+
+
+#back-button[disabled] .toolbarbutton-icon,
+#forward-button[disabled] .toolbarbutton-icon,
+#back-button:disabled .toolbarbutton-icon,
+#forward-button:disabled .toolbarbutton-icon {
+  fill: #6b6253 !important;
+  opacity: 1 !important;
+}
+
+
+#urlbar-input {
+  color: #c1ae8c !important;
+}
+#urlbar-input::placeholder {
+  color: #a6967a !important;
+  opacity: 1 !important;
+}
+
+
+.tab-label {
+  color: #c1ae8c !important;
+}
+
+
+:root {
+  --border-radius-small: 18px !important;
+  --border-radius-medium: 18px !important;
+  --border-radius-large: 18px !important;
+  --toolbarbutton-border-radius: 18px !important;
+  --arrowpanel-border-radius: 18px !important;
+  --arrowpanel-menuitem-border-radius: 18px !important;
+  --tab-border-radius: 18px !important;
+}
+
+
+toolbarbutton,
+.toolbarbutton-1,
+.subviewbutton,
+.tab-background,
+.tab-icon-overlay,
+.tab-close-button,
+#urlbar-background,
+.urlbarView-row,
+.urlbarView-row-inner,
+.urlbar-page-action,
+.urlbar-icon,
+#identity-box,
+.panel-arrowcontent,
+menupopup,
+panel,
+menuitem,
+menu,
+button,
+.search-one-offs button {
+  border-radius: 18px !important;
+}
+
+
+:root #urlbar[open] .urlbarView,
+:root #urlbar:focus-within .urlbarView {
+  border-radius: 0 0 18px 18px !important;
+}
+
+
+#pageAction-urlbar-shareURL,
+#pageAction-panel-shareURL,
+#share-button,
+#urlbar-share-button,
+#urlbar .urlbar-page-action[id*="share" i] {
+  display: none !important;
+}
+
+
+#sidebar-button,
+#sidebar-button-container {
+  display: none !important;
+}
+
+
+#alltabs-button,
+#TabsToolbar #alltabs-button {
+  display: none !important;
+}
+
+
+#fxa-toolbar-menu-button,
+#appMenu-fxa-label2 {
+  display: none !important;
+}
+
+
+#nav-bar [id*="vpn" i],
+#nav-bar [class*="vpn" i],
+#TabsToolbar [id*="vpn" i] {
+  display: none !important;
+}
+
+
+#ipprotection-button,
+toolbarbutton[widget-id="ipprotection-button"],
+#nav-bar toolbarbutton[id^="ipprotection"] {
+  display: none !important;
+}
+
+  
+  
+#tabbrowser-tabs {
+  margin-left: 28px !important;
+}
+
+
+#fullscreen-warning,
+.pointerlockfswarning {
+  display: none !important;
+}
+
+
+:root[inFullscreen] #navigator-toolbox,
+:root[inFullscreen] #navigator-toolbox[fullscreenShouldAnimate],
+:root[inFullscreen] #nav-bar,
+:root[inFullscreen] #TabsToolbar,
+:root[inFullscreen] #titlebar {
+  transition: none !important;
+  animation: none !important;
+}
+
+
+:root {
+  --sidebar-background-color: #282828 !important;
+  --sidebar-border-color: transparent !important;
+}
+
+#browser,
+#sidebar-main,
+sidebar-main,
+#sidebar-splitter,
+#sidebar-launcher-splitter {
+  background-color: #282828 !important;
+  border-color: transparent !important;
+}
+
+#browser vbox#appcontent tabbrowser,
+#content,
+#tabbrowser-tabpanels,
+.browserContainer,
+browser[type="content-primary"],
+browser[type="content"] {
+  background-color: #282828 !important;
+}
+
+
+
+
+
+
+
+
+#tabs-newtab-button:hover > .toolbarbutton-icon,
+#new-tab-button:hover > .toolbarbutton-icon {
+  background-color: #222222 !important;
+}
+
+
+#tabs-newtab-button:hover:active > .toolbarbutton-icon,
+#new-tab-button:hover:active > .toolbarbutton-icon {
+  background-color: #222222 !important;
+}

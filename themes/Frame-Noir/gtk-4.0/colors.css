@@ -7,8 +7,9 @@
    Loaded by the Frame-Noir theme (plain GTK 4 apps) and, while Noir is the shell's theme,
    by ~/.config/gtk-4.0/gtk.css (libadwaita apps, which ignore themes; scripts/theme.sh
    points it here). Made by themes/make-themes.py from themes/Frame (what each rule is
-   for: see the comments there): change the palette in make-themes.py and run it again
-   (an edit here is lost then). Restart an app to see a change. */
+   for: see the comments there): change the theme's colours in Config.qml (Noir's: its
+   palette in make-themes.py) and run it again (an edit here is lost then). Restart an
+   app to see a change. */
 
 @define-color accent_bg_color #ffffff;
 @define-color accent_fg_color #000000;

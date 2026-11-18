@@ -23,23 +23,48 @@ Singleton {
     // `terminal` line in hyprland.lua).
     property string terminal: "kitty"
 
-    // Wallpapers, drawn by the shell itself (no hyprpaper needed). SUPER + CTRL + Left /
-    // Right switches between the pictures in this folder (in the order of their
-    // file names; add your own there). `wallpaper` is the one used until you pick
-    // another. The login and lock screen show the same picture.
+    // Wallpapers, drawn by the shell itself (no hyprpaper needed). Each colour theme
+    // has its own: the pictures in its folder of this one, named like the theme without
+    // spaces (wallpapers/Default, wallpapers/TokyoNight ...; themeWallpaperDir()).
+    // SUPER + CTRL + Left / Right switches between the current theme's pictures (in the order
+    // of their file names; add your own there, or in the Settings app). A theme without
+    // pictures of its own uses Default's. Each theme starts with its picture in
+    // `themeWallpapers` (below; `wallpaper` is Default's) until you pick another. The
+    // login and lock screen show the same picture.
     property string wallpaperDir: Quickshell.env("HOME") + "/.local/share/frameshell/wallpapers"
-    property string wallpaper: wallpaperDir + "/meadow.png"
+    property string wallpaper: wallpaperDir + "/Default/meadow.png"
+    // the folder of a theme's wallpapers (its name without spaces, like its GTK theme's)
+    function themeWallpaperDir(name) {
+        return wallpaperDir + "/" + String(name).replace(/\s+/g, "");
+    }
+    // each theme's wallpaper until you pick another for it (a theme not here, or whose
+    // picture is gone: its first picture)
+    readonly property var themeWallpapers: ({
+            "Default": "meadow.png",
+            "Noir": "dark-bloom.png",
+            "Catppuccin Mocha": "night-clouds.png",
+            "Everblush": "everblush-5.png",
+            "Everforest": "everforest.png",
+            "Rose Pine": "rose-pine1.png",
+            "Gruvbox": "gruvbox.png",
+            "Kanagawa": "kanagawa.png",
+            "Nord": "nord.png",
+            "Tokyo Night": "tokyo-night.png"
+        })
+    function themeWallpaper(name) {
+        const f = themeWallpapers[name];
+        return f ? themeWallpaperDir(name) + "/" + f : "";
+    }
 
     // ── Look ───────────────────────────────────────────────────────────────
 
-    // Width of the border round the frame, the island, the panels and the pop-ups
-    // (frameBorder), and of the ring round every window (windowBorder: Hyprland's
-    // border_size), in REAL pixels (not scaled with the screen), 0 = none. Set them
-    // with the sliders in the Settings app (Appearance, 0 - 4 px; 2 until you do):
-    // they are kept in ~/.local/state/frameshell/appearance.json (below), which
-    // Hyprland reads when it starts (hyprland.lua), and the shell hands a change to
-    // the windows right away (modules/HyprSync.qml).
-    property alias frameBorder: appearance.frameBorder
+    // Width of the ring round every window (windowBorder: Hyprland's border_size), in
+    // REAL pixels (not scaled with the screen), 0 = none. Set it with the slider in the
+    // Settings app (Appearance, 0 - 4 px; 2 until you do): it is kept in
+    // ~/.local/state/frameshell/appearance.json (below), which Hyprland reads when it
+    // starts (hyprland.lua), and the shell hands a change to the windows right away
+    // (modules/HyprSync.qml). The frame, the island, the panels and the pop-ups have a
+    // fixed 1 px edge (Theme.border).
     property alias windowBorder: appearance.windowBorder
 
     // The space round every window - to the frame and between two windows (Hyprland's
@@ -65,6 +90,67 @@ Singleton {
     // only the defaults
     property bool appearanceRead: false
 
+    // Switches of the Settings app kept in ~/.local/state/frameshell/experimental.json (below) -
+    // the Appearance page's (Frame overlay and its cards for the media / sliders and the
+    // island's icons), the Island page's (10 workspaces, Island popups), the Dock page's (Clean dock)
+    // and the Experimental page's (Click to expand). dynamicPopups is on until you switch it off, the
+    // others off until you switch them on:
+    //   frameOverlay      "Frame overlay": a dark frame round the left, top and right edges of
+    //                     the screen (Theme.frame), the island and the panels growing out of
+    //                     it. Off (framelessOutline below): no frame - the wallpaper reaches
+    //                     those edges and only the screen's four corners stay rounded off;
+    //                     the island moves up into the frame's place and keeps its shape
+    //                     (Theme.notchShift), and so do the panels on the left, top and
+    //                     right edges (Theme.frameShift). Switched, the frame glides away / back
+    //                     (Theme.frameless)
+    //   tenWorkspaces     workspaces up to 10: SUPER + Left / Right go on past the 5th, SUPER + 6 ... 9
+    //                     and 0 go to 6 ... 10. The island keeps five pills: the 5th, always the
+    //                     lighter grey of a workspace without tiling, stands for 5 ... 10 and is
+    //                     the big white one on any of them (services/Spaces.qml). hyprland.lua
+    //                     reads it when Hyprland starts; the shell hands a change to Hyprland
+    //                     right away (modules/HyprSync.qml)
+    //   dynamicPopups     the pop-ups (launcher, app switcher, Wi-Fi / Bluetooth card, "Shut
+    //                     down?", the password dialog, the emoji picker) grow out of the
+    //                     island; off: cards in the middle of the screen (components/IslandSheet.qml)
+    //   cleanDock         the bar's power button (bottom left) and date (bottom right) only show
+    //                     while the pointer is on their corner (or their panel is open); a click
+    //                     opens the power menu / calendar as always (modules/BottomBar.qml)
+    //   detailedMedia     the open island's media with the times beside the progress bar, a
+    //                     longer bar and bigger buttons (at first: no times) (modules/Island.qml)
+    //   flatSliders       the sliders' filled part square at its right end (at first it is
+    //                     round at both ends) (components/FSlider.qml)
+    //   detailedBattery   the island's battery with a gap inside its outline and the charge as
+    //                     a bar in it (at first: no gap, the charge fills the outline)
+    //                     (components/BatteryIcon.qml)
+    //   minimalSliders    the sound / brightness block (top left) without the round icons on
+    //                     the left: just the names, values and sliders (modules/SliderPanel.qml)
+    //   glowingIcons      the white parts of the closed island (the workspace you are on,
+    //                     signal + battery) softly glow (modules/Island.qml, NotchGlow)
+    //   noButtonOutline   "No outline buttons" (the Appearance page): without the thin, slightly
+    //                     lighter outline round the dark buttons and fields (buttonOutline
+    //                     below is the other way round; Theme.outlineW / outlineColor)
+    //   clickToExpand     "Click to expand" (the Experimental page): the blocks that come out
+    //                     when the pointer touches them - the island, the sound / brightness
+    //                     block, the quick note, the clipboard, the colour picker - only peek out
+    //                     a little; a click on one opens it all the way, until the pointer leaves
+    //                     it (components/Panel.qml, modules/Island.qml). Not the dock (auto hide)
+    //                     and its pieces: the corner blocks of notch mode, Clean dock's buttons
+    property alias frameOverlay: experimental.frameOverlay
+    readonly property bool framelessOutline: !frameOverlay        // no frame (what the shapes go by)
+    property alias tenWorkspaces: experimental.tenWorkspaces
+    property alias dynamicPopups: experimental.dynamicPopups
+    property alias cleanDock: experimental.cleanDock
+    property alias detailedMedia: experimental.detailedMedia
+    property alias flatSliders: experimental.flatSliders
+    property alias detailedBattery: experimental.detailedBattery
+    property alias minimalSliders: experimental.minimalSliders
+    property alias glowingIcons: experimental.glowingIcons
+    property alias noButtonOutline: experimental.noButtonOutline
+    property alias clickToExpand: experimental.clickToExpand
+    readonly property bool buttonOutline: !noButtonOutline        // the outline is drawn
+    // true once experimental.json is read (or found missing)
+    property bool experimentalRead: false
+
     // The focus and the pointer (the Settings app's Devices page, Mouse; kept in
     // ~/.local/state/frameshell/system.json, below, which Hyprland reads when it
     // starts, hyprland.lua; the shell hands a change to Hyprland right away,
@@ -82,19 +168,15 @@ Singleton {
     // change to Hyprland right away, modules/HyprSync.qml):
     //   windowBlur      Hyprland blurs what is behind see-through windows (it makes
     //                   no window see-through itself: e.g. kitty's background_opacity)
-    //   shellBlur       the frame, the island, the panels and the pop-ups become
-    //                   see-through (shellOpacity) with a blur behind them; their
-    //                   text and icons stay solid
-    //   blurSize, blurPasses, blurBrightness, blurContrast   Hyprland's blur, for both
+    //   blurSize, blurPasses, blurBrightness, blurContrast   Hyprland's blur
     property alias windowBlur: blur.windowBlur
-    property alias shellBlur: blur.shellBlur
     property alias blurSize: blur.blurSize
     property alias blurPasses: blur.blurPasses
     property alias blurBrightness: blur.blurBrightness
     property alias blurContrast: blur.blurContrast
-    property alias shellOpacity: blur.shellOpacity
-    // how solid the shell's surfaces are now: 1 without the shell's blur
-    readonly property real shellAlpha: shellBlur ? Math.max(0.3, Math.min(1, shellOpacity)) : 1
+    // how solid the shell's surfaces are: always 1 - the shell is never see-through
+    // (there was an "Apply blur to shell" setting; what still reads this keeps working)
+    readonly property real shellAlpha: 1
 
     // The keyboard, the mouse and the touchpad (the Settings app's Devices page; kept in
     // ~/.local/state/frameshell/input.json, below, which Hyprland reads when it starts,
@@ -216,8 +298,8 @@ Singleton {
 
     // The lock screen is the Pixie login screen, drawn by the shell. It takes
     // the wallpaper and fonts from this SDDM theme folder (install.sh puts Pixie
-    // there) and, like the login screen, the colours of the colour theme in use
-    // (loginBackground ... in `themes` below: the shell writes them into the
+    // there) and, like the login screen, the login colours - the same in every
+    // colour theme (loginCard ... below: the shell writes them into the
     // folder's theme.conf.user, which wins over its theme.conf). Without the
     // folder: the desktop wallpaper and those colours.
     property string lockTheme: "/usr/share/sddm/themes/pixie"
@@ -231,9 +313,15 @@ Singleton {
     // and goes through them in this order (Up = the next one, to the right);
     // Enter uses the one in the middle (Esc: no change). Your
     // pick is kept in ~/.local/state/frameshell/theme.
-    // Every colour the shell draws with is here (Default lists what each one is
-    // for). Change a theme's colours, or add a theme: a name and the colours it
-    // changes - a colour it leaves out is Default's.
+    // Every colour the shell draws with is here; Default's entry says what each one
+    // is for (in groups: surfaces, text, icons and controls, windows, status). The
+    // screenshot screen (Print) is in Noir's colours in every theme, unless "Follow
+    // theme" is on (the Settings app's Screenshot page: modules/Screenshot.qml).
+    // Change a theme's colours, or add a theme: a name and the
+    // colours it changes - a colour it leaves out is Default's. The frame, the island,
+    // the bar and the panels that slide out of them take only `text`, `notificationText` and `sliderFill`
+    // from a theme: the rest of their colours are the same in every theme (frameBase,
+    // below the themes).
     // GTK and Qt apps switch along (scripts/theme.sh): Default uses the GTK theme
     // Frame and the Kvantum theme Frame, the others Frame-<name> / Frame<name>
     // (made by themes/make-themes.py and themes/Kvantum/make-frame.py in the
@@ -241,179 +329,404 @@ Singleton {
     readonly property var themes: [
         {
             name: "Default",
-            frame: "#1a1a1a",        // main colour: frame, island, panels
-            outline: "#313131",      // the border colour
-            divider: "#313131",      // the thin lines between the power menu's rows and under the calendar's weekdays
-            selected: "#2a2a2a",     // selected / pressed row, buttons (Cancel, Done ...)
-            hover: "#222222",        // hovered row
-            buttonHover: "#313131",  // Done / Cancel buttons under the pointer
-            buttonPrimaryHover: "#ffffff", // Authenticate / Shut down / Log out under the pointer (Config.text when not)
-            buttonDisabled: "#3a3a3a", // Wi-Fi's Join button before a password is typed
-            text: "#ffffff",
-            textDim: "#8c8c8c",
-            textFaint: "#575757",
-            textSelection: "#3e3e3e", // selected text in the shell's text fields (kitty's selection_background and the GTK / Qt themes use the same)
-            notificationText: "#e8e8e8", // the text of a notification
-            fieldFocus: "#4a4a4a",   // the outline of the Wi-Fi password field while you type
-            iconDim: "#494949",      // the grey part of icons (empty battery, unlit bars ...)
-            pillUntiled: "#696969",  // the small workspace pill of a workspace with tiling off (SUPER + Page Down)
-            dockLine: "#494949",     // the line in the dock between the pinned apps and the other open apps
-            iconTile: "#ffffff",     // the tile shown for an app without an icon
-            pickerIcon: "#d6d6d6",   // the colour picker's icon (Config.text under the pointer)
-            slider: "#ffffff",       // the filled part and knob of the sliders (volume, brightness)
-            scrollbar: "#3a3a3a",    // the thin scroll bar of the Wi-Fi / Bluetooth lists
-            thumbOutline: "#ffffff", // the outline of the picture / theme in the middle of the switchers (the others: inactiveHint)
-            shotOutline: "#ffffff",  // the line round the area picked on the screenshot screen (Print)
-            shotDim: "#bd000000",    // the screenshot screen around that area: black at 74 % (#AARRGGBB)
-            activeHint: "#c4c4c4",   // the border round the focused window (Hyprland's active border), and one of the dots on the theme's card
-            inactiveHint: "#313131", // the border round the other windows, and the outline of the pictures / cards beside the middle in the switchers
-            accent: "#ffb454",       // battery while charging
-            warning: "#ff6b6b",      // battery below 15 %, wrong password
-            // the login screen (SDDM, Pixie) and the lock screen
-            loginBackground: "#1a1a1a", // the card (the password field: a little lighter)
-            loginText: "#e3e3e3",    // its text
-            loginAccent: "#c4c4c4",  // the avatar letter, the session icon
-            loginHours: "#ffffff",   // the clock's hours
-            loginMinutes: "#ffffff", // the clock's minutes
-            loginCorners: "#c4c4c4", // the date and the power icons and labels in the top corners
-            loginField: "#c4c4c4",   // the password field's border and the round button
-            loginAccentText: "#1a1a1a", // the arrow on the round button
-            loginError: "#442222"    // the card after a wrong password (it shakes)
+            // surfaces
+            background: "#1a1a1a",            // the Settings app's window, and the pop-ups and panels drawn in the theme's colours; the dark text on white buttons
+            cardBackground: "#222222",        // the Settings app's cards and search field; a row or button under the pointer
+            controlBackground: "#2a2a2a",     // buttons (Cancel, Done ...), text fields, round icons, a switch when off, a selected row
+            controlHover: "#313131",          // a button under the pointer
+            controlDisabled: "#3a3a3a",       // a button that cannot be used yet (Wi-Fi's Join before a password is typed)
+            border: "#313131",                // the edge of the frame's shapes, the on-screen keyboard and the screenshot screen's menu (with Follow theme); the big icon on a Settings page
+            divider: "#313131",               // the thin lines between rows (the power menu, the calendar's weekdays, the emoji picker)
+            // text
+            text: "#ffffff",                  // text and icons
+            textSecondary: "#8c8c8c",         // the second line: descriptions, values, "Connected", the date
+            textTertiary: "#575757",          // the faintest text: placeholders ("Search"), days outside the month, buttons you cannot use
+            selectionBackground: "#3e3e3e",   // selected text in the shell's text fields (kitty, GTK and Qt apps use the same)
+            notificationText: "#e8e8e8",      // the text of a notification
+            fieldFocusBorder: "#4a4a4a",      // the outline of a password or name field while you type in it
+            // icons and controls
+            inactive: "#494949",              // the unlit parts: empty battery, unlit Wi-Fi / signal bars, slider tracks, switches when off
+            sliderFill: "#ffffff",            // the filled part of the sliders (volume, brightness, the island's progress bar)
+            scrollbar: "#3a3a3a",             // the thin scroll bars (the Settings app, the Wi-Fi / Bluetooth lists)
+            appIconFallback: "#ffffff",       // the tile drawn for an app that has no icon
+            colorPickerIcon: "#d6d6d6",       // the colour picker's icon (`text` under the pointer)
+            workspaceUntiled: "#696969",      // the island's pill of a workspace with tiling off (SUPER + PageDown)
+            dockSeparator: "#494949",         // the line in the dock between the pinned apps and the other open apps
+            previewSelectedBorder: "#ffffff", // the ring round the picture in the middle of the wallpaper / theme switchers, and round the preset in use
+            // windows (Hyprland's borders)
+            windowBorderActive: "#c4c4c4",    // the focused window (also a dot on the theme's card, and the line round the screenshot's area with Follow theme)
+            windowBorderInactive: "#313131",  // the other windows (also the outline of the side pictures in the switchers)
+            // status
+            batteryCharging: "#ffb454",       // the battery while charging
+            warning: "#ff6b6b"                // the battery below 15 %, a wrong password, errors, Shut down in the power menu
         },
         {
             name: "Noir",
-            frame: "#000000",
-            outline: "#000000",
+            background: "#000000",
+            cardBackground: "#060606",
+            controlBackground: "#060606",
+            controlHover: "#0c0c0c",
+            controlDisabled: "#3a3a3a",
+            border: "#000000",
             divider: "#060606",
-            selected: "#060606",
-            hover: "#060606",
-            buttonHover: "#0c0c0c",
-            buttonPrimaryHover: "#ffffff",
-            buttonDisabled: "#3a3a3a",
             text: "#ffffff",
-            textDim: "#8c8c8c",
-            textFaint: "#575757",
-            textSelection: "#222222",
+            textSecondary: "#8c8c8c",
+            textTertiary: "#575757",
+            selectionBackground: "#222222",
             notificationText: "#e8e8e8",
-            fieldFocus: "#4a4a4a",
-            iconDim: "#1a1a1a",
-            pillUntiled: "#3a3a3a",
-            dockLine: "#3a3a3a",
-            iconTile: "#ffffff",
-            pickerIcon: "#d6d6d6",
-            slider: "#ffffff",
+            fieldFocusBorder: "#4a4a4a",
+            inactive: "#1a1a1a",
+            sliderFill: "#ffffff",
             scrollbar: "#3a3a3a",
-            thumbOutline: "#ffffff",
-            shotOutline: "#ffffff",
-            shotDim: "#bd000000",
-            activeHint: "#7d7d7d",
-            inactiveHint: "#060606",
-            accent: "#ffb454",
-            warning: "#ff6b6b",
-            loginBackground: "#000000",
-            loginText: "#ffffff",
-            loginAccent: "#ffffff",
-            loginHours: "#ffffff",
-            loginMinutes: "#ffffff",
-            loginCorners: "#c4c4c4",
-            loginField: "#060606",
-            loginAccentText: "#ffffff",
-            loginError: "#0e0606"
+            appIconFallback: "#ffffff",
+            colorPickerIcon: "#d6d6d6",
+            workspaceUntiled: "#3a3a3a",
+            dockSeparator: "#3a3a3a",
+            previewSelectedBorder: "#ffffff",
+            windowBorderActive: "#7d7d7d",
+            windowBorderInactive: "#060606",
+            batteryCharging: "#ffb454",
+            warning: "#ff6b6b"
         },
         {
-            name: "Mocha",           // Catppuccin Mocha
-            frame: "#181825",        // Mantle
-            outline: "#45475a",      // Surface1
-            divider: "#45475a",      // Surface1
-            selected: "#313244",     // Surface0
-            hover: "#1e1e2e",        // Base
-            buttonHover: "#45475a",  // Surface1
-            buttonPrimaryHover: "#ffffff",
-            buttonDisabled: "#3a3a3a",
-            text: "#cdd6f4",         // Text
-            textDim: "#9399b2",      // Overlay2
-            textFaint: "#6c7086",    // Overlay0
-            textSelection: "#474859",
-            notificationText: "#e8e8e8",
-            fieldFocus: "#4a4a4a",
-            iconDim: "#585b70",      // Surface2
-            pillUntiled: "#6c7086",  // Overlay0
-            dockLine: "#585b70",     // Surface2
-            iconTile: "#ffffff",
-            pickerIcon: "#d6d6d6",
-            slider: "#ffffff",
-            scrollbar: "#3a3a3a",
-            thumbOutline: "#bac2de", // Subtext1
-            shotOutline: "#cdd6f4",  // Text
-            shotDim: "#bd000000",
-            activeHint: "#bec7e6",
-            inactiveHint: "#45475a", // Surface1
-            accent: "#fab387",       // Peach
-            warning: "#f38ba8",      // Red
-            loginBackground: "#181825", // Mantle
-            loginText: "#cdd6f4",    // Text
-            loginAccent: "#bec7e6",  // like activeHint
-            loginHours: "#2444b3",
-            loginMinutes: "#2444b3",
-            loginCorners: "#bec7e6",
-            loginField: "#bec7e6",
-            loginAccentText: "#181825", // Mantle
-            loginError: "#442222"
+            name: "Catppuccin Mocha",
+            background: "#1e1e2e",
+            cardBackground: "#262637",
+            controlBackground: "#2d2e3f",
+            controlHover: "#343546",
+            controlDisabled: "#3c3e50",
+            border: "#343546",
+            divider: "#343546",
+            text: "#cdd6f4",
+            textSecondary: "#8b90a9",
+            textTertiary: "#585b6f",
+            selectionBackground: "#45475a",
+            notificationText: "#bcc4e0",
+            fieldFocusBorder: "#4b4e61",
+            inactive: "#4a4d60",
+            sliderFill: "#89b4fa",
+            scrollbar: "#3c3e50",
+            appIconFallback: "#cdd6f4",
+            colorPickerIcon: "#aeb5d0",
+            workspaceUntiled: "#686c82",
+            dockSeparator: "#4a4d60",
+            previewSelectedBorder: "#89b4fa",
+            windowBorderActive: "#cba6f7",
+            windowBorderInactive: "#343546",
+            batteryCharging: "#f9e2af",
+            warning: "#f38ba8"
+        },
+        {
+            name: "Everblush",
+            background: "#141b1e",
+            cardBackground: "#1c2326",
+            controlBackground: "#232a2d",
+            controlHover: "#2b3235",
+            controlDisabled: "#343b3e",
+            border: "#2b3235",
+            divider: "#2b3235",
+            text: "#dadada",
+            textSecondary: "#8a8d8e",
+            textTertiary: "#54595b",
+            selectionBackground: "#383f42",
+            notificationText: "#c6c7c7",
+            fieldFocusBorder: "#444b4e",
+            inactive: "#434a4d",
+            sliderFill: "#67b0e8",
+            scrollbar: "#343b3e",
+            appIconFallback: "#dadada",
+            colorPickerIcon: "#b6b8b8",
+            workspaceUntiled: "#65696b",
+            dockSeparator: "#434a4d",
+            previewSelectedBorder: "#67b0e8",
+            windowBorderActive: "#6cbfbf",
+            windowBorderInactive: "#2b3235",
+            batteryCharging: "#e5c76b",
+            warning: "#e57474"
+        },
+        {
+            name: "Everforest",
+            background: "#2d353b",
+            cardBackground: "#343e43",
+            controlBackground: "#3b464b",
+            controlHover: "#424e52",
+            controlDisabled: "#4a575c",
+            border: "#424e52",
+            divider: "#424e52",
+            text: "#d3c6aa",
+            textSecondary: "#a39d8a",
+            textTertiary: "#6f6f67",
+            selectionBackground: "#4e5c60",
+            notificationText: "#c2b89f",
+            fieldFocusBorder: "#58696c",
+            inactive: "#58686b",
+            sliderFill: "#7fbbb3",
+            scrollbar: "#4a575c",
+            appIconFallback: "#d3c6aa",
+            colorPickerIcon: "#b5ac96",
+            workspaceUntiled: "#8a8679",
+            dockSeparator: "#58686b",
+            previewSelectedBorder: "#7fbbb3",
+            windowBorderActive: "#7fbbb3",
+            windowBorderInactive: "#424e52",
+            batteryCharging: "#dbbc7f",
+            warning: "#e67e80"
+        },
+        {
+            name: "Rose Pine",
+            background: "#191724",
+            cardBackground: "#211e2d",
+            controlBackground: "#282636",
+            controlHover: "#2f2c3e",
+            controlDisabled: "#373548",
+            border: "#2f2c3e",
+            divider: "#2f2c3e",
+            text: "#e0def4",
+            textSecondary: "#8c8a9c",
+            textTertiary: "#585665",
+            selectionBackground: "#403d52",
+            notificationText: "#cccadf",
+            fieldFocusBorder: "#47435a",
+            inactive: "#464359",
+            sliderFill: "#ebbcba",
+            scrollbar: "#373548",
+            appIconFallback: "#e0def4",
+            colorPickerIcon: "#bcbacf",
+            workspaceUntiled: "#676575",
+            dockSeparator: "#464359",
+            previewSelectedBorder: "#ebbcba",
+            windowBorderActive: "#ebbcba",
+            windowBorderInactive: "#2f2c3e",
+            batteryCharging: "#f6c177",
+            warning: "#eb6f92"
+        },
+        {
+            name: "Gruvbox",
+            background: "#282828",
+            cardBackground: "#31302f",
+            controlBackground: "#3b3836",
+            controlHover: "#433e3c",
+            controlDisabled: "#4e4743",
+            border: "#433e3c",
+            divider: "#433e3c",
+            text: "#d4be98",
+            textSecondary: "#a6967a",
+            textTertiary: "#6b6253",
+            selectionBackground: "#504945",
+            notificationText: "#c3af8d",
+            fieldFocusBorder: "#605751",
+            inactive: "#5f5650",
+            sliderFill: "#7daea3",
+            scrollbar: "#4e4743",
+            appIconFallback: "#d4be98",
+            colorPickerIcon: "#b5a384",
+            workspaceUntiled: "#867a65",
+            dockSeparator: "#5f5650",
+            previewSelectedBorder: "#7daea3",
+            windowBorderActive: "#7daea3",
+            windowBorderInactive: "#433e3c",
+            batteryCharging: "#d8a657",
+            warning: "#ea6962"
+        },
+        {
+            name: "Kanagawa",
+            background: "#1f1f28",
+            cardBackground: "#262631",
+            controlBackground: "#2e2e3b",
+            controlHover: "#343443",
+            controlDisabled: "#3c3c4e",
+            border: "#343443",
+            divider: "#343443",
+            text: "#dcd7ba",
+            textSecondary: "#959283",
+            textTertiary: "#5e5c59",
+            selectionBackground: "#404053",
+            notificationText: "#c9c5ab",
+            fieldFocusBorder: "#4b4b61",
+            inactive: "#4a4a60",
+            sliderFill: "#dcd7ba",
+            scrollbar: "#3c3c4e",
+            appIconFallback: "#dcd7ba",
+            colorPickerIcon: "#bab6a0",
+            workspaceUntiled: "#75736b",
+            dockSeparator: "#4a4a60",
+            previewSelectedBorder: "#dcd7ba",
+            windowBorderActive: "#dcd7ba",
+            windowBorderInactive: "#343443",
+            batteryCharging: "#e6c384",
+            warning: "#e82424"
+        },
+        {
+            name: "Nord",
+            background: "#2e3440",
+            cardBackground: "#353c4a",
+            controlBackground: "#3b4353",
+            controlHover: "#414a5c",
+            controlDisabled: "#495366",
+            border: "#414a5c",
+            divider: "#414a5c",
+            text: "#d8dee9",
+            textSecondary: "#a2a8b3",
+            textTertiary: "#696f7a",
+            selectionBackground: "#4c576b",
+            notificationText: "#c7cdd8",
+            fieldFocusBorder: "#56627a",
+            inactive: "#556178",
+            sliderFill: "#81a1c1",
+            scrollbar: "#495366",
+            appIconFallback: "#d8dee9",
+            colorPickerIcon: "#b9bfcb",
+            workspaceUntiled: "#7d838f",
+            dockSeparator: "#556178",
+            previewSelectedBorder: "#81a1c1",
+            windowBorderActive: "#81a1c1",
+            windowBorderInactive: "#414a5c",
+            batteryCharging: "#ebcb8b",
+            warning: "#bf616a"
+        },
+        {
+            name: "Tokyo Night",
+            background: "#1a1b26",
+            cardBackground: "#202231",
+            controlBackground: "#262a3c",
+            controlHover: "#2b3045",
+            controlDisabled: "#313851",
+            border: "#2b3045",
+            divider: "#2b3045",
+            text: "#c0caf5",
+            textSecondary: "#868dac",
+            textTertiary: "#54596f",
+            selectionBackground: "#343c57",
+            notificationText: "#a9b1d6",
+            fieldFocusBorder: "#3d4767",
+            inactive: "#3c4666",
+            sliderFill: "#7aa2f7",
+            scrollbar: "#313851",
+            appIconFallback: "#c0caf5",
+            colorPickerIcon: "#a2aad0",
+            workspaceUntiled: "#626780",
+            dockSeparator: "#3c4666",
+            previewSelectedBorder: "#7aa2f7",
+            windowBorderActive: "#7aa2f7",
+            windowBorderInactive: "#2b3045",
+            batteryCharging: "#ff9e64",
+            warning: "#f7768e"
         }
     ]
 
     // the theme in use: the one picked in the switcher (services/Themes.qml sets
     // it, scripts/theme.sh keeps it), else the first one
     property string themeName: ""
-    readonly property var theme: themes.find(t => t.name === themeName) || themes[0]
+    // ("Mocha", the theme of earlier versions, is Catppuccin Mocha now)
+    readonly property var theme: themes.find(t => t.name === (themeName === "Mocha" ? "Catppuccin Mocha" : themeName)) || themes[0]
 
     // a colour of a theme (an entry of `themes`); one it does not set is Default's
     function themeColor(t, key) {
         return t && t[key] !== undefined ? t[key] : themes[0][key];
     }
 
-    readonly property color frame: themeColor(theme, "frame")
-    // the frame colour of a pop-up card (switcher, launcher ...): see-through with the
-    // shell's blur (shellAlpha), else the same as frame
-    readonly property color surface: Qt.rgba(frame.r, frame.g, frame.b, shellAlpha)
-    readonly property color outline: themeColor(theme, "outline")
+    readonly property color background: themeColor(theme, "background")
+    // the fill of a pop-up card (switcher, launcher ...): the same as background
+    // (shellAlpha is always 1 now)
+    readonly property color surface: Qt.rgba(background.r, background.g, background.b, shellAlpha)
+    readonly property color border: themeColor(theme, "border")
     readonly property color divider: themeColor(theme, "divider")
-    readonly property color selected: themeColor(theme, "selected")
-    readonly property color hover: themeColor(theme, "hover")
-    readonly property color buttonHover: themeColor(theme, "buttonHover")
-    readonly property color buttonPrimaryHover: themeColor(theme, "buttonPrimaryHover")
-    readonly property color buttonDisabled: themeColor(theme, "buttonDisabled")
+    readonly property color controlBackground: themeColor(theme, "controlBackground")
+    readonly property color cardBackground: themeColor(theme, "cardBackground")
+    readonly property color controlHover: themeColor(theme, "controlHover")
+    readonly property color controlDisabled: themeColor(theme, "controlDisabled")
     readonly property color text: themeColor(theme, "text")
-    readonly property color textDim: themeColor(theme, "textDim")
-    readonly property color textFaint: themeColor(theme, "textFaint")
-    readonly property color textSelection: themeColor(theme, "textSelection")
+    readonly property color textSecondary: themeColor(theme, "textSecondary")
+    readonly property color textTertiary: themeColor(theme, "textTertiary")
+    readonly property color selectionBackground: themeColor(theme, "selectionBackground")
     readonly property color notificationText: themeColor(theme, "notificationText")
-    readonly property color fieldFocus: themeColor(theme, "fieldFocus")
-    readonly property color iconDim: themeColor(theme, "iconDim")
-    readonly property color pillUntiled: themeColor(theme, "pillUntiled")
-    readonly property color dockLine: themeColor(theme, "dockLine")
-    readonly property color iconTile: themeColor(theme, "iconTile")
-    readonly property color pickerIcon: themeColor(theme, "pickerIcon")
-    readonly property color slider: themeColor(theme, "slider")
+    readonly property color fieldFocusBorder: themeColor(theme, "fieldFocusBorder")
+    readonly property color inactive: themeColor(theme, "inactive")
+    readonly property color workspaceUntiled: themeColor(theme, "workspaceUntiled")
+    readonly property color dockSeparator: themeColor(theme, "dockSeparator")
+    readonly property color appIconFallback: themeColor(theme, "appIconFallback")
+    readonly property color colorPickerIcon: themeColor(theme, "colorPickerIcon")
+    readonly property color sliderFill: themeColor(theme, "sliderFill")
     readonly property color scrollbar: themeColor(theme, "scrollbar")
-    readonly property color thumbOutline: themeColor(theme, "thumbOutline")
-    readonly property color shotOutline: themeColor(theme, "shotOutline")
-    readonly property color shotDim: themeColor(theme, "shotDim")
+    readonly property color previewSelectedBorder: themeColor(theme, "previewSelectedBorder")
     // the window borders: hyprland.lua reads them from here when Hyprland starts, the shell hands
     // them to Hyprland when the theme changes (modules/HyprSync.qml)
-    readonly property color activeHint: themeColor(theme, "activeHint")
-    readonly property color inactiveHint: themeColor(theme, "inactiveHint")
-    readonly property color accent: themeColor(theme, "accent")
+    readonly property color windowBorderActive: themeColor(theme, "windowBorderActive")
+    readonly property color windowBorderInactive: themeColor(theme, "windowBorderInactive")
+    readonly property color batteryCharging: themeColor(theme, "batteryCharging")
     readonly property color warning: themeColor(theme, "warning")
-    readonly property color loginBackground: themeColor(theme, "loginBackground")
-    readonly property color loginText: themeColor(theme, "loginText")
-    readonly property color loginAccent: themeColor(theme, "loginAccent")
-    readonly property color loginCorners: themeColor(theme, "loginCorners")
-    readonly property color loginField: themeColor(theme, "loginField")
-    readonly property color loginHours: themeColor(theme, "loginHours")
-    readonly property color loginMinutes: themeColor(theme, "loginMinutes")
-    readonly property color loginError: themeColor(theme, "loginError")
-    readonly property color loginAccentText: themeColor(theme, "loginAccentText")
+    // the login screen (SDDM, Pixie) and the lock screen: the same in every colour theme
+    // (Noir's); the shell writes them into the Pixie folder's theme.conf.user
+    readonly property color loginCard: "#000000"            // the card (the password field: a little lighter)
+    readonly property color loginText: "#ffffff"            // its text
+    readonly property color loginAccent: "#ffffff"          // the avatar letter, the session icon
+    readonly property color loginClockHours: "#ffffff"      // the clock's hours
+    readonly property color loginClockMinutes: "#ffffff"    // the clock's minutes
+    readonly property color loginCornerText: "#c4c4c4"      // the date and the power icons and labels in the top corners
+    readonly property color loginField: "#060606"           // the password field's border and the round button
+    readonly property color loginButtonArrow: "#ffffff"     // the arrow on the round button
+    readonly property color loginErrorCard: "#0e0606"       // the card after a wrong password (it shakes)
+
+    // ── the frame's colours ──────────────────────────────────────────────
+    // The frame, the island, the bar and the panels that slide out of them (Overlay.qml:
+    // the quick note, the clipboard, the sliders, the notifications, the power menu, the
+    // calendar ...) are one colour in every theme: #000000, their edge too (no border of
+    // another colour). In them #060606 is the buttons, fields and rows (and the thin lines)
+    // and #1a1a1a the unlit parts of icons - Noir's. Only their text and icons (`text`), a
+    // notification's text (`notificationText`) and the sliders (`sliderFill`) follow the theme. So do the launcher and the app switcher,
+    // which grow out of the island (components/IslandSheet.qml). Everything else - the
+    // Settings app, the pop-ups - keeps the theme's colours. The keys are the themes' (see
+    // Default's comments).
+    readonly property var frameBase: ({
+            background: "#000000",
+            border: "#000000",                // the same: the overlay is all one colour
+            divider: "#060606",
+            controlBackground: "#060606",
+            cardBackground: "#060606",
+            controlHover: "#0c0c0c",
+            controlDisabled: "#3a3a3a",
+            textSecondary: "#8c8c8c",
+            textTertiary: "#575757",
+            selectionBackground: "#222222",
+            notificationText: "#e8e8e8",
+            fieldFocusBorder: "#4a4a4a",
+            inactive: "#1a1a1a",
+            workspaceUntiled: "#3a3a3a",
+            dockSeparator: "#3a3a3a",
+            appIconFallback: "#ffffff",
+            colorPickerIcon: "#d6d6d6",
+            sliderFill: "#ffffff",
+            scrollbar: "#3a3a3a",
+            previewSelectedBorder: "#ffffff",
+            windowBorderInactive: "#060606",
+            batteryCharging: "#ffb454",
+            warning: "#ff6b6b"
+        })
+    // the frame's colours: those, and the theme's text, notification text and slider colour
+    readonly property var frameColors: Object.assign({}, frameBase, {
+        text: themeColor(theme, "text"),
+        notificationText: themeColor(theme, "notificationText"),   // a notification's text follows the theme like its title
+        sliderFill: themeColor(theme, "sliderFill")       // the sliders' filled part follows the theme too
+    })
+    // the same colours of the theme in use (for the pieces that are in both: components/)
+    readonly property var themeColors: {
+        const o = {};
+        for (const k in frameBase)
+            o[k] = themeColor(theme, k);
+        o.text = themeColor(theme, "text");
+        return o;
+    }
+    // the colours for something in `window`: the frame's in the frame (Overlay.qml's window
+    // says so: framePalette), the theme's anywhere else - components/ use it as
+    //    readonly property var pal: Config.paletteFor(QsWindow.window)
+    // the cards in the middle of the screen (Wi-Fi / Bluetooth, "Shut down?", the password
+    // dialog, the emoji picker) are black like the frame, in every theme: their fill, see-through
+    // with the shell's blur like Config.surface
+    readonly property color frameSurface: Qt.rgba(0, 0, 0, shellAlpha)
+
+    function paletteFor(window) {
+        return window && window.framePalette === true ? frameColors : themeColors;
+    }
 
     // the theme you picked, read before anything is drawn (no flash of the first
     // theme at start); `themeRead` once it is known
@@ -440,8 +753,8 @@ Singleton {
         blurFile.writeAdapter();
     }
 
-    // the border widths, the window gap and the corner rounding of the Settings app
-    // (Appearance): frameBorder / windowBorder / windowGap / cornerRounding above
+    // the window border, the window gap and the corner rounding of the Settings app
+    // (Appearance): windowBorder / windowGap / cornerRounding above
     FileView {
         id: appearanceFile
         path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/frameshell/appearance.json"
@@ -457,10 +770,47 @@ Singleton {
 
         adapter: JsonAdapter {
             id: appearance
-            property int frameBorder: 2
             property int windowBorder: 2
             property int windowGap: -1
             property int cornerRounding: -1
+        }
+    }
+
+    // the switches above (Appearance, Island, Dock): frameOverlay /
+    // tenWorkspaces ... above
+    FileView {
+        path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/frameshell/experimental.json"
+        printErrors: false
+        // read before anything is drawn: the frame and the notch never change shape at start
+        blockLoading: true
+        atomicWrites: true
+        onAdapterUpdated: writeAdapter()
+        onLoaded: {
+            // the switch used to be the other way round ("Frameless overlay", on at first):
+            // switched off back then, the frame is kept - once (framelessOutline is then put
+            // back to its old default, so it never does it again)
+            if (!experimental.framelessOutline) {
+                experimental.framelessOutline = true;
+                experimental.frameOverlay = true;
+            }
+            config.experimentalRead = true;
+        }
+        onLoadFailed: config.experimentalRead = true
+
+        adapter: JsonAdapter {
+            id: experimental
+            property bool frameOverlay: false
+            property bool framelessOutline: true        // only read: the old switch (onLoaded)
+            property bool tenWorkspaces: false
+            property bool dynamicPopups: true
+            property bool cleanDock: false
+            property bool detailedMedia: false
+            property bool flatSliders: false
+            property bool detailedBattery: false
+            property bool minimalSliders: false
+            property bool glowingIcons: false
+            property bool noButtonOutline: false
+            property bool clickToExpand: false
         }
     }
 
@@ -555,7 +905,7 @@ Singleton {
         }
     }
 
-    // the blur of the Settings app (Blur): windowBlur ... shellOpacity above
+    // the blur of the Settings app (Blur): windowBlur ... blurContrast above
     FileView {
         id: blurFile
         path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/frameshell/blur.json"
@@ -570,12 +920,10 @@ Singleton {
         adapter: JsonAdapter {
             id: blur
             property bool windowBlur: true
-            property bool shellBlur: false
             property int blurSize: 7
             property int blurPasses: 2
             property real blurBrightness: 1.0
             property real blurContrast: 0.9
-            property real shellOpacity: 0.8
         }
     }
 }

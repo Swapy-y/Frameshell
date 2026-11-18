@@ -23,9 +23,11 @@ import qs.components
 //  (frameshell_switcher). So does a click anywhere outside it (SUPER held: Hyprland's
 //  SUPER + drag is off meanwhile).
 //
-//  The panel fits its content: with 2 open apps it shows 2 rows, with more
-//  than Config.switcherMaxRows the list scrolls (Space, Tab, arrow keys or the
-//  mouse wheel). Its width follows the longest app name.
+//  The island grows into it (components/IslandSheet.qml): its clock row becomes
+//  the title, the apps come out under it (with Island popups off,
+//  Config.dynamicPopups: a card in the middle of the screen, the title on top). It fits its content: with 2 open apps
+//  it shows 2 rows, with more than Config.switcherMaxRows the list scrolls (Space,
+//  Tab, arrow keys or the mouse wheel). Its width follows the longest app name.
 // ═══════════════════════════════════════════════════════════════════════════
 Scope {
     id: root
@@ -134,19 +136,16 @@ Scope {
         }
     }
 
-    // geometry of the panel (the window itself has a fixed size, see below):
-    // the launcher's - the same padding, rows and corners - with a compact title row
+    // geometry: the launcher's rows and sides; the title sits where the island's clock is
     readonly property real rowH: Theme.pop(52)
     readonly property real rowGap: Theme.pop(4)
-    readonly property real pad: Theme.pop(16)
-    readonly property real headerH: Theme.pop(30)
-    readonly property real gap: Theme.pop(8)           // title row - first row
-    readonly property real minW: Theme.pop(380)
-    readonly property real maxW: Theme.pop(580)        // the launcher's width
+    readonly property real pad: Theme.pop(14)          // the sides and the bottom
+    readonly property real gap: Theme.pop(6)           // title row - first row
+    readonly property real minW: Theme.pop(420)
+    readonly property real maxW: Theme.pop(620)        // the launcher's width
     function listHeight(rows) {
         return rows * rowH + (rows - 1) * rowGap;
     }
-    readonly property real maxH: pad + headerH + gap + listHeight(Config.switcherMaxRows) + pad
 
     FontMetrics {
         id: fm
@@ -164,6 +163,10 @@ Scope {
     }
     readonly property real shownRows: Math.max(1, Math.min(items.length, Config.switcherMaxRows))
 
+    // The island grows into it (components/IslandSheet.qml): its clock row becomes the
+    // title, the open apps come out under it, and it shrinks back into the notch. In its
+    // own window above everything (it also opens over a fullscreen app), with the
+    // island's colours (framePalette).
     Variants {
         model: Quickshell.screens
 
@@ -172,8 +175,11 @@ Scope {
             required property var modelData
             screen: modelData
 
-            // stays alive until the fade-out has finished
-            visible: root.open || panel.opacity > 0.01
+            // the island's colours for its pieces (Config.paletteFor)
+            readonly property bool framePalette: true
+
+            // stays alive until it has shrunk back into the notch
+            visible: root.open || sheet.shown
 
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.namespace: "frame-switcher"
@@ -181,8 +187,8 @@ Scope {
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"
 
-            // the whole screen, the panel in the middle; while open everything outside the
-            // panel is a click-catcher that closes it (without switching), like the launcher's
+            // the whole screen; while open everything outside it is a click-catcher that
+            // closes it (without switching), like the launcher's
             anchors {
                 top: true
                 bottom: true
@@ -190,7 +196,7 @@ Scope {
                 right: true
             }
             mask: Region {
-                item: root.open ? backdrop : panel
+                item: root.open ? backdrop : sheet.area
             }
 
             Item {
@@ -234,59 +240,32 @@ Scope {
                 }
             }
 
-            Rectangle {
-                id: panel
-                anchors.centerIn: parent
-                width: root.wantedW
-                height: root.pad + root.headerH + root.gap + root.listHeight(root.shownRows) + root.pad
-                radius: Theme.pop(24)
-                color: Config.surface               // see-through with the shell's blur
-                border.width: Theme.border
-                border.color: Config.outline
+            IslandSheet {
+                id: sheet
 
-                // swallow clicks on the panel so they do not reach the backdrop
-                MouseArea {
-                    anchors.fill: parent
-                    acceptedButtons: Qt.AllButtons
-                }
+                // the title's row: out of the island, the island's clock row (what you see of the
+                // closed notch); as a card in the middle (Island popups off), its own row on top
+                readonly property real titleRowH: centered ? Theme.pop(48) : Theme.notchH - Theme.notchShift
+                readonly property real titleY: centered ? Theme.pop(24) : Theme.notchH / 2 - Theme.notchShift
+                readonly property real listTop: titleRowH + root.gap
 
-                // soft shadow (follows the panel while it fades and scales)
-                Loader {
-                    z: -1
-                    anchors.fill: parent
-                    active: Config.shadows && Config.shadowStrength > 0
-                    source: "../components/CardShadow.qml"
-                }
+                open: root.open
+                sheetW: root.wantedW
+                sheetH: listTop + root.listHeight(root.shownRows) + root.pad
 
-                opacity: root.open ? 1 : 0
-                scale: root.open ? 1 : 0.94
-                // opening: a quick fade + grow (Theme.durPop); closing as before
-                Behavior on opacity {
-                    Anim {
-                        curve: root.open ? Theme.curveDecel : Theme.curveStandard
-                        duration: root.open ? Theme.durPopFade : Theme.durFast
-                    }
-                }
-                Behavior on scale {
-                    Anim {
-                        curve: root.open ? Theme.curveDecel : Theme.curveAccel
-                        duration: root.open ? Theme.durPop : Theme.durClose
-                    }
-                }
-
-                // the title, in the middle
+                // the title, where the island's clock is (or on top of the card)
                 Txt {
                     x: Math.round((parent.width - width) / 2)
-                    y: Math.round(root.pad + (root.headerH - height) / 2)
+                    y: Math.round(sheet.titleY - height / 2)
                     text: "Switch app"
-                    font.pixelSize: Theme.pop(20)
+                    font.pixelSize: Theme.fsClock
                     font.weight: Font.DemiBold
                 }
 
                 ListView {
                     id: list
                     x: root.pad
-                    y: root.pad + root.headerH + root.gap
+                    y: sheet.listTop
                     width: parent.width - 2 * root.pad
                     height: root.listHeight(root.shownRows)
                     interactive: root.items.length > Config.switcherMaxRows     // wheel / drag scrolling

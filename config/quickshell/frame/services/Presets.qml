@@ -7,7 +7,9 @@ import qs
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  Presets.qml - your look saved under a name (the Settings app's Presets page):
-//  the island's and the dock's switches (Auto hide, Notch mode), the wallpaper,
+//  the island's and the dock's switches (Auto hide, Notch mode, 10 workspaces,
+//  Island popups, Clean dock), the Appearance page's switches for the media, the
+//  sliders and the island's icons, the wallpaper,
 //  the colour theme, the Appearance page (the borders, the corner rounding, the
 //  window gap, the power button and the app icons) and the Blur page. A click on
 //  one sets all of them at once. The pinned apps, the devices and the
@@ -30,15 +32,36 @@ Singleton {
 
     // ── what a preset holds ───────────────────────────────────────────────
     //   islandAutoHide, dockAutoHide, dockNotch, powerLogo   Store (switches)
+    //   islandDisabled, dockDisabled                        Store (Disable island / dock)
     //   iconPack                                            Store ("" = the shell's own, YAMIS)
     //   wallpaper                                           a picture of the wallpapers folder by its
-    //                                                       file name (any other: its whole path)
+    //                                                       path in it ("Noir/dark-bloom.png"; any
+    //                                                       other: its whole path) - one of the
+    //                                                       preset's theme's (services/Wallpapers.qml)
     //   theme                                               the name of a theme in Config.themes
-    //   frameBorder, windowBorder, windowGap, cornerRounding  Config (px)
-    //   windowBlur, shellBlur, shellOpacity, blurSize, blurPasses, blurBrightness, blurContrast
+    //   windowBorder, windowGap, cornerRounding             Config (px) (a frameBorder of an
+    //                                                       older preset is left alone: the frame's
+    //                                                       edge is fixed now, Theme.border)
+    //   frameOverlay                                        Config (the Appearance page's
+    //                                                       "Frame overlay"; a preset saved
+    //                                                       before it has framelessOutline,
+    //                                                       the other way round: frame())
+    //   tenWorkspaces, dynamicPopups, cleanDock             Config (the Island page's "10
+    //                                                       workspaces" and "Island popups", the
+    //                                                       Dock page's "Clean dock")
+    //   detailedMedia, flatSliders, minimalSliders,         Config (the Appearance page's cards:
+    //   detailedBattery, glowingIcons                       Detailed media controls, Flat sliders,
+    //                                                       Minimalistic sliders block, Detailed
+    //                                                       battery icon, Glowing icons)
+    //   noButtonOutline                                     Config (the Appearance page's "No
+    //                                                       outline buttons")
+    //   clickToExpand                                       Config (the Experimental page's
+    //                                                       "Click to expand")
+    //   windowBlur, blurSize, blurPasses, blurBrightness, blurContrast
     //                                                       Config (the Blur page)
-    readonly property var storeKeys: ["islandAutoHide", "dockAutoHide", "dockNotch", "powerLogo"]
-    readonly property var blurKeys: ["windowBlur", "shellBlur", "shellOpacity", "blurSize", "blurPasses", "blurBrightness", "blurContrast"]
+    readonly property var storeKeys: ["islandAutoHide", "dockAutoHide", "dockNotch", "powerLogo", "islandDisabled", "dockDisabled"]
+    readonly property var switchKeys: ["frameOverlay", "tenWorkspaces", "dynamicPopups", "cleanDock", "detailedMedia", "flatSliders", "minimalSliders", "detailedBattery", "glowingIcons", "noButtonOutline", "clickToExpand"]
+    readonly property var blurKeys: ["windowBlur", "blurSize", "blurPasses", "blurBrightness", "blurContrast"]
 
     // the shell as it is installed: the defaults of Store.qml and Config.qml (the window gap
     // and the corner rounding: WINDOW_GAP in hyprland.lua and cornerRadius, as before you
@@ -48,16 +71,26 @@ Singleton {
             dockAutoHide: false,
             dockNotch: false,
             powerLogo: true,
+            islandDisabled: false,
+            dockDisabled: false,
             iconPack: "",
             wallpaper: wallKey(Config.wallpaper),
             theme: "Default",
-            frameBorder: 2,
             windowBorder: 2,
             windowGap: Config.hyprWindowGap,
             cornerRounding: Config.cornerRadius,
+            frameOverlay: false,
+            tenWorkspaces: false,
+            dynamicPopups: true,
+            cleanDock: false,
+            detailedMedia: false,
+            flatSliders: false,
+            minimalSliders: false,
+            detailedBattery: false,
+            glowingIcons: false,
+            noButtonOutline: false,
+            clickToExpand: false,
             windowBlur: true,
-            shellBlur: false,
-            shellOpacity: 0.8,
             blurSize: 7,
             blurPasses: 2,
             blurBrightness: 1.0,
@@ -75,10 +108,10 @@ Singleton {
             name: "Swapy",
             builtIn: true,
             values: Object.assign({}, defaults, {
-                frameBorder: 1,
-                wallpaper: "blue-waves.png",
+                wallpaper: "Noir/dark-bloom.png",          // Noir's wallpaper
                 theme: "Noir",
                 iconPack: "Papirus-Dark",
+                cleanDock: true,
                 blurPasses: 1,
                 blurBrightness: 0.75,
                 blurContrast: 1.0
@@ -96,17 +129,20 @@ Singleton {
     readonly property var list: builtIn.concat(saved)
 
     // the icon pack as a preset keeps it: "" for the shell's own
+    // (a pack no longer offered - Adwaita - too: the shell shows its own then)
     function packKey(pack) {
         const p = pack || "";
-        return p === IconPacks.qtTheme ? "" : p;
+        return p === IconPacks.qtTheme || !IconPacks.packs.some(k => k.name === p) ? "" : p;
     }
 
-    // the wallpaper as a preset keeps it: a picture of the wallpapers folder by its file
-    // name (so it still works if the folder moves), any other by its path - and back
+    // the wallpaper as a preset keeps it: a picture of the wallpapers folder by its path in
+    // there ("Default/meadow.png": still right if the folder moves), any other by its whole
+    // path - and back. (A preset from before each theme had its folder says "meadow.png":
+    // Wallpapers.find() takes the picture of that name among the theme's.)
     function wallKey(path) {
         const dir = Config.wallpaperDir + "/";
         const p = path || "";
-        return p.startsWith(dir) && p.indexOf("/", dir.length) < 0 ? p.slice(dir.length) : p;
+        return p.startsWith(dir) ? p.slice(dir.length) : p;
     }
     function wallPath(key) {
         const k = key || "";
@@ -119,16 +155,26 @@ Singleton {
             dockAutoHide: Store.dockAutoHide,
             dockNotch: Store.dockNotch,
             powerLogo: Store.powerLogo,
+            islandDisabled: Store.islandDisabled,
+            dockDisabled: Store.dockDisabled,
             iconPack: packKey(Store.iconPack),
             wallpaper: wallKey(Wallpapers.current),
             theme: Config.theme.name,
-            frameBorder: Config.frameBorder,
             windowBorder: Config.windowBorder,
             windowGap: Config.windowGap,
             cornerRounding: Config.cornerRounding,
+            frameOverlay: Config.frameOverlay,
+            tenWorkspaces: Config.tenWorkspaces,
+            dynamicPopups: Config.dynamicPopups,
+            cleanDock: Config.cleanDock,
+            detailedMedia: Config.detailedMedia,
+            flatSliders: Config.flatSliders,
+            minimalSliders: Config.minimalSliders,
+            detailedBattery: Config.detailedBattery,
+            glowingIcons: Config.glowingIcons,
+            noButtonOutline: Config.noButtonOutline,
+            clickToExpand: Config.clickToExpand,
             windowBlur: Config.windowBlur,
-            shellBlur: Config.shellBlur,
-            shellOpacity: Config.shellOpacity,
             blurSize: Config.blurSize,
             blurPasses: Config.blurPasses,
             blurBrightness: Config.blurBrightness,
@@ -138,16 +184,31 @@ Singleton {
     // every setting a preset has is the same now (numbers: to a thousandth - the
     // sliders' steps of 0.05 are not exact; the icon pack: "" and YAMIS are one; a
     // wallpaper no longer in the folder doesn't count)
+    // a preset's values with "Frame overlay" in them: one saved while the switch was
+    // "Frameless overlay" has framelessOutline (the other way round) instead
+    function frame(values) {
+        if (typeof values.frameOverlay !== "boolean" && typeof values.framelessOutline === "boolean")
+            return Object.assign({}, values, {
+                frameOverlay: !values.framelessOutline
+            });
+        return values;
+    }
+
     function matches(p) {
         if (!p || !p.values)
             return false;
-        const v = p.values;
+        const v = frame(p.values);
         const cur = now;
         for (const k in cur) {
             if (v[k] === undefined)
                 continue;
-            if (k === "wallpaper" && Wallpapers.files.indexOf(wallPath(v[k])) < 0)
+            if (k === "wallpaper") {
+                // a picture no longer there (or not one of the theme's) doesn't count
+                const w = Wallpapers.find(wallPath(v[k]));
+                if (w !== "" && w !== Wallpapers.current)
+                    return false;
                 continue;
+            }
             const a = k === "iconPack" ? packKey(v[k]) : v[k];
             const b = cur[k];
             if (typeof a === "number" && typeof b === "number") {
@@ -170,7 +231,7 @@ Singleton {
         Store.holdWrites = true;
         Config.holdWrites = true;
         try {
-            setValues(p.values);
+            setValues(frame(p.values));
         } finally {
             Store.holdWrites = false;
             Config.holdWrites = false;
@@ -186,20 +247,24 @@ Singleton {
         }
         if (typeof v.iconPack === "string" && Store.iconPack !== packKey(v.iconPack))
             Store.iconPack = packKey(v.iconPack);
-        // only a picture still in the folder (Wallpapers.set() checks); it fades in as when you
-        // pick it, and the lock and login screens get it too
-        if (typeof v.wallpaper === "string" && v.wallpaper !== "")
-            Wallpapers.set(wallPath(v.wallpaper));
+        // the theme first: the wallpaper is one of its pictures (Wallpapers.request() waits for
+        // them to be listed; only a picture still there counts). It fades in as when you pick
+        // it, and the lock and login screens get it too
         if (typeof v.theme === "string")
             Themes.set(v.theme);
-        if (isNum(v.frameBorder) && Config.frameBorder !== Math.max(0, Math.round(v.frameBorder)))
-            Config.frameBorder = Math.max(0, Math.round(v.frameBorder));
+        if (typeof v.wallpaper === "string" && v.wallpaper !== "")
+            Wallpapers.request(wallPath(v.wallpaper));
         if (isNum(v.windowBorder) && Config.windowBorder !== Math.max(0, Math.round(v.windowBorder)))
             Config.windowBorder = Math.max(0, Math.round(v.windowBorder));
         if (isNum(v.windowGap) && Config.windowGap !== Math.max(0, Math.round(v.windowGap)))
             Config.setWindowGap(v.windowGap);
         if (isNum(v.cornerRounding) && Config.cornerRounding !== Math.max(0, Math.round(v.cornerRounding)))
             Config.setCornerRounding(v.cornerRounding);
+        // Config's switches (a preset saved before it had one leaves it as it is)
+        for (const k of switchKeys) {
+            if (typeof v[k] === "boolean" && Config[k] !== v[k])
+                Config[k] = v[k];
+        }
         for (const k of blurKeys) {
             const x = v[k];
             if (typeof Config[k] === "boolean" ? typeof x === "boolean" : isNum(x)) {

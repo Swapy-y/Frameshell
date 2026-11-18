@@ -5,8 +5,8 @@ import qs.components
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  PowerMenu.qml - panel that opens from the bottom-left corner when the power
-//  button is pressed: Shut down (asks first) · Restart · Lock · Log out (asks first).
-//  Each row: the icon on a soft grey circle, the label (Clarity City Medium),
+//  button is pressed: Shut down (asks first) · Restart (asks first) · Lock · Log out (asks first).
+//  Each row: the icon on a soft grey circle, the label (the shell font, Medium),
 //  a thin line under it; Shut down in red. Under the pointer a rounded
 //  highlight lights up behind the circle and the label, and the circle fills
 //  (white, red for Shut down) with the icon dark on it.
@@ -57,7 +57,7 @@ Panel {
     readonly property real gap: Theme.px(12)                // between the ring and the label
     // about 15 px all round: from the edge of the screen to the circles, from the
     // lines' ends to the border, from the top to the first circle
-    readonly property real padLeft: Theme.frame + Theme.px(12)
+    readonly property real padLeft: Theme.edge + Theme.px(12)
     readonly property real padRight: Theme.px(15)
     readonly property real padTop: Theme.px(9)
 
@@ -73,7 +73,9 @@ Panel {
     readonly property real rowW: ringSize + gap + labelW + Theme.px(16)
 
     contentW: padLeft + rowW + padRight
-    contentH: padTop + actions.length * rowH + Theme.px(4) + Theme.bar
+    // the bar's height under the rows: its power button sits there (notch mode: the corner
+    // block). Disable dock (Store.dockDisabled): no button - the frame and as much room as above
+    contentH: padTop + actions.length * rowH + Theme.px(4) + (Store.dockDisabled ? Theme.frame + padTop : Theme.bar)
 
     Column {
         x: root.padLeft
@@ -88,7 +90,7 @@ Panel {
                 required property var modelData
                 required property int index
 
-                readonly property color tint: modelData.red ? Config.warning : Config.text
+                readonly property color tint: modelData.red ? Config.frameColors.warning : Config.text
 
                 width: root.rowW
                 height: root.rowH
@@ -105,7 +107,7 @@ Panel {
                     width: parent.width
                     height: row.cellH - 2 * root.hoverGap
                     radius: Theme.px(10)
-                    color: Config.selected
+                    color: Config.frameColors.controlBackground
                     opacity: area.containsMouse ? 1 : 0
 
                     Behavior on opacity {
@@ -128,7 +130,8 @@ Panel {
                     onColor: row.tint
                     fillOnHover: true
                     outline: false
-                    offColor: Config.selected
+                    edge: true                       // the outline (not while filled)
+                    offColor: Config.frameColors.controlBackground
                     interactive: false
                     hot: area.containsMouse
                     down: area.pressed
@@ -150,7 +153,7 @@ Panel {
                     anchors.bottom: parent.bottom
                     width: parent.width
                     height: 1
-                    color: Config.divider
+                    color: Config.frameColors.divider
                 }
 
                 MouseArea {
@@ -160,9 +163,9 @@ Panel {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                         Ui.powerOpen = false;
-                        // shutting down and logging out ask first (modules/PowerConfirm.qml)
+                        // shutting down, restarting and logging out ask first (modules/PowerConfirm.qml)
                         const action = row.modelData.action;
-                        if (action === "shutdown" || action === "logout")
+                        if (action === "shutdown" || action === "reboot" || action === "logout")
                             Ui.ask(action);
                         else
                             PowerActions.run(action);

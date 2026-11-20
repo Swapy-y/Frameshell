@@ -289,6 +289,7 @@ Scope {
                         name: inf.name
                         icon: inf.icon
                         selected: index === root.index
+                        faded: Apps.isMinimized(modelData)      // minimized (SUPER + H): faded, as on the dock
                         onClicked: {
                             root.index = row.index;
                             root.confirm();

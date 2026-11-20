@@ -8,6 +8,8 @@ import qs
 //  name (a faint card under the pointer).
 //
 //    name, icon   what to show           selected   highlighted by the keyboard
+//    faded        a minimized window (the app switcher): its icon and name faded,
+//                 like on the dock - also while selected, so you see what you pick
 //    clicked()    emitted on a mouse click
 // ═══════════════════════════════════════════════════════════════════════════
 Item {
@@ -19,6 +21,7 @@ Item {
     property string name: ""
     property string icon: ""
     property bool selected: false
+    property bool faded: false
     property real iconSize: Theme.pop(32)
     property real fontSize: Theme.pop(17)
 
@@ -52,6 +55,7 @@ Item {
         source: root.icon
         label: root.name
         fallbackRadius: Theme.pop(8)
+        opacity: root.faded ? 0.4 : 1           // (the dock's minimized windows: 0.4 too)
     }
 
     Txt {
@@ -62,6 +66,7 @@ Item {
         font.pixelSize: root.fontSize
         font.weight: Font.Medium
         color: root.selected ? Config.text : root.pal.textSecondary
+        opacity: root.faded ? 0.4 : 1
         elide: Text.ElideRight
 
         Behavior on color {

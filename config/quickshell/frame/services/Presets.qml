@@ -63,13 +63,13 @@ Singleton {
     //                                                       outline buttons")
     //   clickToExpand                                       Config (the Experimental page's
     //                                                       "Click to expand")
-    //   switcherWindowInfo                                  Config (the Experimental page's
-    //                                                       "More window info in app switcher";
+    //   lessSwitcherInfo                                    Config (the Appearance page's
+    //                                                       "Less app switcher info";
     //                                                       a preset saved before it leaves it as is)
     //   windowBlur, blurSize, blurPasses, blurBrightness, blurContrast
     //                                                       Config (the Blur page)
     readonly property var storeKeys: ["islandAutoHide", "dockAutoHide", "dockNotch", "powerLogo", "islandDisabled", "dockDisabled", "showAllWallpapers"]
-    readonly property var switchKeys: ["frameOverlay", "tenWorkspaces", "dynamicPopups", "cleanDock", "detailedMedia", "flatSliders", "minimalSliders", "detailedBattery", "glowingIcons", "noButtonOutline", "clickToExpand", "switcherWindowInfo"]
+    readonly property var switchKeys: ["frameOverlay", "tenWorkspaces", "dynamicPopups", "cleanDock", "detailedMedia", "flatSliders", "minimalSliders", "detailedBattery", "glowingIcons", "noButtonOutline", "lessSwitcherInfo", "clickToExpand"]
     readonly property var blurKeys: ["windowBlur", "blurSize", "blurPasses", "blurBrightness", "blurContrast"]
 
     // the shell as it is installed: the defaults of Store.qml and Config.qml (the window gap
@@ -100,7 +100,7 @@ Singleton {
             glowingIcons: false,
             noButtonOutline: false,
             clickToExpand: false,
-            switcherWindowInfo: false,
+            lessSwitcherInfo: false,
             windowBlur: true,
             blurSize: 7,
             blurPasses: 2,
@@ -186,7 +186,7 @@ Singleton {
             glowingIcons: Config.glowingIcons,
             noButtonOutline: Config.noButtonOutline,
             clickToExpand: Config.clickToExpand,
-            switcherWindowInfo: Config.switcherWindowInfo,
+            lessSwitcherInfo: Config.lessSwitcherInfo,
             windowBlur: Config.windowBlur,
             blurSize: Config.blurSize,
             blurPasses: Config.blurPasses,

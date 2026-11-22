@@ -28,8 +28,8 @@ import qs.components
 //  Config.dynamicPopups: a card in the middle of the screen, the title on top). It fits its content: with 2 open apps
 //  it shows 2 rows, with more than Config.switcherMaxRows the list scrolls (Space,
 //  Tab, arrow keys or the mouse wheel). Its width follows the longest app name.
-//  With "More window info in app switcher" (Config.switcherWindowInfo, the Settings
-//  app's Experimental page) each row also has its window's title under the name.
+//  Each row also has its window's title under the name - unless "Less app switcher
+//  info" is on (Config.lessSwitcherInfo, the Settings app's Appearance page).
 // ═══════════════════════════════════════════════════════════════════════════
 Scope {
     id: root
@@ -138,9 +138,9 @@ Scope {
         }
     }
 
-    // "More window info in app switcher" (the Settings app's Experimental page): each row
-    // shows its window's title in smaller text under the app name (Apps.windowDetail), so two
-    // windows of one app (two Firefox windows: the tab each is on) can be told apart
+    // each row shows its window's title in smaller text under the app name (Apps.windowDetail),
+    // so two windows of one app (two Firefox windows: the tab each is on) can be told apart -
+    // unless "Less app switcher info" is on (the Settings app's Appearance page)
     readonly property bool windowInfo: Config.switcherWindowInfo
     function detailOf(t) {
         return windowInfo ? Apps.windowDetail(t, Apps.info(t).name) : "";

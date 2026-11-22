@@ -97,8 +97,8 @@ Singleton {
         };
     }
 
-    // What tells a window apart from others of its app (the app switcher's "More window info
-    // in app switcher", Config.switcherWindowInfo): its title, without the app's name tacked on
+    // What tells a window apart from others of its app (the app switcher, unless "Less app
+    // switcher info" is on: Config.lessSwitcherInfo): its title, without the app's name tacked on
     // at the end ("GitHub — Mozilla Firefox" -> "GitHub"). "" when the title says nothing more
     // than the app's name (or there is none). `name`: the app's name as info() gives it.
     function windowDetail(t, name) {

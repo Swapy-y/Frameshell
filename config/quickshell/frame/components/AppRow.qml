@@ -10,8 +10,8 @@ import qs
 //    name, icon   what to show           selected   highlighted by the keyboard
 //    faded        a minimized window (the app switcher): its icon and name faded,
 //                 like on the dock - also while selected, so you see what you pick
-//    detail       smaller text under the name, e.g. the window's title (the app switcher's
-//                 "More window info in app switcher", Config.switcherWindowInfo); "" = none
+//    detail       smaller text under the name, e.g. the window's title (the app switcher;
+//                 none with "Less app switcher info", Config.lessSwitcherInfo); "" = none
 //    clicked()    emitted on a mouse click
 // ═══════════════════════════════════════════════════════════════════════════
 Item {

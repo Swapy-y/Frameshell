@@ -63,7 +63,7 @@ import "../components/search.js" as Search
 //  (Config.clickToExpand - the island and the hover panels peek, a click opens them).
 //  experimental.json keeps the switches of the Appearance page's sections
 //  (Config.detailedMedia, flatSliders, minimalSliders, detailedBattery, glowingIcons,
-//  noButtonOutline), the Experimental page's (clickToExpand, switcherWindowInfo) and four
+//  noButtonOutline, lessSwitcherInfo), the Experimental page's (clickToExpand) and four
 //  more: the Appearance page's "Frame overlay" (Config.frameOverlay), the Island page's "10 workspaces"
 //  (tenWorkspaces) and "Island popups" (dynamicPopups), and the Dock page's "Clean dock"
 //  (cleanDock) - all of them are part of a preset (services/Presets.qml).
@@ -195,8 +195,8 @@ Scope {
             key: "appearance",
             name: "Appearance",
             icon: "set-appearance",
-            description: "The border round the windows, the frame, the rounding of the corners, the gap round the windows, the media controls and the sliders, the island's icons, the power button and the app icons.",
-            keywords: "border width thickness outline ring frame frameless overlay edge edges window look corner corners rounding round rounded radius gap gaps space spacing margin padding icon icons pack theme yamis adwaita papirus app apps power button logo frameshell media music player controls detailed time times length flat square sliders slider bar ends minimal minimalistic sound volume brightness block battery seamless gap signal glow glowing shine halo island icons button buttons outline outlines border edge line no",
+            description: "The border round the windows, the frame, the rounding of the corners, the gap round the windows, the media controls and the sliders, the island's icons, the power button, the app switcher and the app icons.",
+            keywords: "border width thickness outline ring frame frameless overlay edge edges window look corner corners rounding round rounded radius gap gaps space spacing margin padding icon icons pack theme yamis adwaita papirus app apps power button logo frameshell media music player controls detailed time times length flat square sliders slider bar ends minimal minimalistic sound volume brightness block battery seamless gap signal glow glowing shine halo island icons button buttons outline outlines border edge line no less app switcher alt tab window title tab info details names",
             settings: [
                 {
                     key: "windowBorder",
@@ -422,19 +422,13 @@ Scope {
             name: "Experimental",
             icon: "set-experimental",
             description: "Things still being tried out.",
-            keywords: "experimental beta labs try test click expand extend hover peek open island panel switcher app switcher window title tab info details alt tab",
+            keywords: "experimental beta labs try test click expand extend hover peek open island panel",
             settings: [
                 {
                     key: "clickToExpand",
                     owner: "config",
                     name: "Click to expand",
                     description: "The island and the blocks that come out of the edges - sound and brightness, the quick note, the clipboard, the colour picker - only peek out a little when the pointer touches them. Click one to open it all the way. Not the dock."
-                },
-                {
-                    key: "switcherWindowInfo",
-                    owner: "config",
-                    name: "More window info in app switcher",
-                    description: "Under each app's name in the app switcher, its window's title in smaller text - in Firefox the tab you are on - so you can tell two windows of the same app apart."
                 }
             ]
         }
@@ -1869,6 +1863,28 @@ Scope {
                                         key: "powerLogo",
                                         name: "Use Frameshell logo as power button",
                                         description: "The power button at the left of the bottom bar shows the Frameshell logo, else the power sign."
+                                    }
+                                ]
+                            }
+                        }
+
+                        // right over App icons: the app switcher with only the apps' names
+                        // (Config.lessSwitcherInfo; off: each window's title under its app's name)
+                        Rectangle {
+                            width: parent.width
+                            height: lessSwitcherRow.height
+                            radius: ui.cardRadius
+                            color: Config.cardBackground
+
+                            SettingRows {
+                                id: lessSwitcherRow
+                                width: parent.width
+                                settings: [
+                                    {
+                                        key: "lessSwitcherInfo",
+                                        owner: "config",
+                                        name: "Less app switcher info",
+                                        description: "The app switcher (SUPER + Space) shows only the apps' names. Off: under each name, its window's title in smaller text - in Firefox the tab you are on - so you can tell two windows of the same app apart."
                                     }
                                 ]
                             }

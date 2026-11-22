@@ -93,7 +93,7 @@ Singleton {
     // Switches of the Settings app kept in ~/.local/state/frameshell/experimental.json (below) -
     // the Appearance page's (Frame overlay and its cards for the media / sliders and the
     // island's icons), the Island page's (10 workspaces, Island popups), the Dock page's (Clean dock)
-    // and the Experimental page's (Click to expand). dynamicPopups is on until you switch it off, the
+    // and the Experimental page's (Click to expand, More window info in app switcher). dynamicPopups is on until you switch it off, the
     // others off until you switch them on:
     //   frameOverlay      "Frame overlay": a dark frame round the left, top and right edges of
     //                     the screen (Theme.frame), the island and the panels growing out of
@@ -135,6 +135,10 @@ Singleton {
     //                     a little; a click on one opens it all the way, until the pointer leaves
     //                     it (components/Panel.qml, modules/Island.qml). Not the dock (auto hide)
     //                     and its pieces: the corner blocks of notch mode, Clean dock's buttons
+    //   switcherWindowInfo "More window info in app switcher" (the Experimental page): each row of
+    //                     the app switcher shows its window's title in smaller text under the app
+    //                     name (Firefox: the tab you are on), so two windows of one app can be
+    //                     told apart (modules/Switcher.qml, components/AppRow.qml)
     property alias frameOverlay: experimental.frameOverlay
     readonly property bool framelessOutline: !frameOverlay        // no frame (what the shapes go by)
     property alias tenWorkspaces: experimental.tenWorkspaces
@@ -147,6 +151,7 @@ Singleton {
     property alias glowingIcons: experimental.glowingIcons
     property alias noButtonOutline: experimental.noButtonOutline
     property alias clickToExpand: experimental.clickToExpand
+    property alias switcherWindowInfo: experimental.switcherWindowInfo
     readonly property bool buttonOutline: !noButtonOutline        // the outline is drawn
     // true once experimental.json is read (or found missing)
     property bool experimentalRead: false
@@ -811,6 +816,7 @@ Singleton {
             property bool glowingIcons: false
             property bool noButtonOutline: false
             property bool clickToExpand: false
+            property bool switcherWindowInfo: false
         }
     }
 

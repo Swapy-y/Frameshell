@@ -1192,7 +1192,9 @@ end
 -- workspace floats - the size of one tile of four (a 2 x 2 grid) in the middle of the screen -
 -- and new windows opened there float the same way. Switch it on again to tile them. A window moved
 -- from a tiled workspace to one without tiling floats the same way, and one moved from a
--- workspace without tiling to a tiled one is tiled (move_to_workspace below).
+-- workspace without tiling to a tiled one is tiled (move_to_workspace below). There the window
+-- that gets the focus comes to the front (but not over a maximized / F11 one: "Tiling off: the
+-- focused window comes to the front" below).
 local untiled = {}                     -- workspace id -> true while tiling is off there
 
 -- The shell shows those workspaces' pills a bit lighter (services/Spaces.qml): their numbers go
@@ -2280,32 +2282,98 @@ hl.on("window.fullscreen", function(w)
     end, { timeout = 1, type = "oneshot" })
 end)
 
--- With a window maximized or covering the screen like that, a window you go to with the keys
--- (SUPER + arrow keys) or pick in the app switcher, the dock or the island comes to the front -
--- as it does over Hyprland's maximize. (Not one the pointer moves onto: that one is in front
--- already.) And a click / drag may have changed what covers a screen.
+-- Tiling off: the focused window comes to the front. On a workspace without tiling the window
+-- that gets the focus - clicked, the pointer moving onto it ("Focus on cursor"), the keys, the
+-- app switcher, the dock, the island, an app asking for it, the focus falling to it when another
+-- window closes - comes up over the other windows there. Not over a window maximized (SUPER + F)
+-- or covering the screen (F11) there: it goes right under that one, which stays in front (a
+-- maximized one under an F11 one too). Except a window you go to yourself - with the keys
+-- (SUPER + arrow keys) or picked in the app switcher, the dock or the island - and a window that
+-- has just opened: those come in front of everything, as over Hyprland's maximize. Hyprland's own
+-- fullscreen there (an app going fullscreen by itself: a game, a video's fullscreen button) is left
+-- to Hyprland, and a sticky (pinned) window is in front anyway. And a click / drag may have
+-- changed what covers a screen.
 local FOCUS_BY_KEY, FOCUS_BY_DISPATCH = 2, 3    -- Hyprland's focus reasons (keybind, focus dispatch)
+
+do  -- (in a block: the main chunk of a Lua file can have only 200 local variables)
+local RAISE_NEW_MS = 1500                        -- a window this new comes in front of everything
+local raise_new = {}                             -- [address] = true for a moment after it opens
+
+local function mark_new(w)
+    pcall(function()
+        local id = w.address
+        if not id then
+            return
+        end
+        raise_new[id] = true
+        hl.timer(function() raise_new[id] = nil end, { timeout = RAISE_NEW_MS, type = "oneshot" })
+    end)
+end
+hl.on("window.open_early", mark_new)            -- (before it takes the focus)
+hl.on("window.open", mark_new)
+hl.on("window.close", function(w)
+    pcall(function() raise_new[w.address] = nil end)
+end)
+
+local function raise(o)
+    hl.dispatch(hl.dsp.window.alter_zorder({ mode = "top", window = o }))
+end
 
 hl.on("window.active", function(w, reason)
     cover_maybe()
-    if reason ~= FOCUS_BY_KEY and reason ~= FOCUS_BY_DISPATCH then
-        return
-    end
+    local picked = reason == FOCUS_BY_KEY or reason == FOCUS_BY_DISPATCH
     pcall(hl.timer, function()
         pcall(function()
             local ws = w.workspace
             if w.mapped ~= true or not w.floating or not ws or not untiled[ws.id] then
                 return
             end
+            if w.pinned == true or w.fullscreen ~= 0 then
+                return                                  -- sticky: in front anyway; Hyprland's fullscreen: its own
+            end
+            -- still the focused one (the focus may have moved on in the meantime)
+            local a = hl.get_active_window()
+            if not a or a.address ~= w.address then
+                return
+            end
+            local over_all = picked or raise_new[w.address] == true
+            -- what stays in front of it: an F11 one over anything, a maximized one over a window
+            -- that is neither
+            local w_fs = covering(w)
+            local w_max = not w_fs and at_max_box(w)
+            local stay = {}
             for _, o in ipairs(hl.get_workspace_windows(ws.id) or {}) do
-                if at_max_box(o) or covers_screen(o) then
-                    hl.dispatch(hl.dsp.window.alter_zorder({ mode = "top", window = w }))
-                    return
+                if o.address ~= w.address and o.mapped == true and o.hidden ~= true and o.pinned ~= true then
+                    if o.fullscreen ~= 0 then
+                        return                          -- Hyprland's own fullscreen here: leave it be
+                    end
+                    if not w_fs then
+                        local o_fs = covering(o)
+                        if o_fs or (not w_max and at_max_box(o)) then
+                            stay[#stay + 1] = { win = o, fs = o_fs }
+                        end
+                    end
+                end
+            end
+            raise(w)
+            if over_all then
+                return
+            end
+            -- back in front of it: the maximized ones first, the F11 ones over them
+            for _, c in ipairs(stay) do
+                if not c.fs then
+                    raise(c.win)
+                end
+            end
+            for _, c in ipairs(stay) do
+                if c.fs then
+                    raise(c.win)
                 end
             end
         end)
     end, { timeout = 1, type = "oneshot" })
 end)
+end
 
 -- Tiling on again: the tiles come back as they were -----------------------------------
 -- When tiling goes off, the layout of the tiles is remembered (per workspace), and when it goes

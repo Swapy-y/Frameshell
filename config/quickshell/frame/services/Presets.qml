@@ -33,11 +33,17 @@ Singleton {
     // ── what a preset holds ───────────────────────────────────────────────
     //   islandAutoHide, dockAutoHide, dockNotch, powerLogo   Store (switches)
     //   islandDisabled, dockDisabled                        Store (Disable island / dock)
+    //   showAllWallpapers                                   Store (the Wallpaper page's "Show all
+    //                                                       wallpapers"; set before the wallpaper,
+    //                                                       so a preset's picture of another theme
+    //                                                       can be found)
     //   iconPack                                            Store ("" = the shell's own, YAMIS)
     //   wallpaper                                           a picture of the wallpapers folder by its
     //                                                       path in it ("Noir/dark-bloom.png"; any
     //                                                       other: its whole path) - one of the
-    //                                                       preset's theme's (services/Wallpapers.qml)
+    //                                                       preset's theme's (with Show all
+    //                                                       wallpapers: of any theme)
+    //                                                       (services/Wallpapers.qml)
     //   theme                                               the name of a theme in Config.themes
     //   windowBorder, windowGap, cornerRounding             Config (px) (a frameBorder of an
     //                                                       older preset is left alone: the frame's
@@ -57,10 +63,13 @@ Singleton {
     //                                                       outline buttons")
     //   clickToExpand                                       Config (the Experimental page's
     //                                                       "Click to expand")
+    //   switcherWindowInfo                                  Config (the Experimental page's
+    //                                                       "More window info in app switcher";
+    //                                                       a preset saved before it leaves it as is)
     //   windowBlur, blurSize, blurPasses, blurBrightness, blurContrast
     //                                                       Config (the Blur page)
-    readonly property var storeKeys: ["islandAutoHide", "dockAutoHide", "dockNotch", "powerLogo", "islandDisabled", "dockDisabled"]
-    readonly property var switchKeys: ["frameOverlay", "tenWorkspaces", "dynamicPopups", "cleanDock", "detailedMedia", "flatSliders", "minimalSliders", "detailedBattery", "glowingIcons", "noButtonOutline", "clickToExpand"]
+    readonly property var storeKeys: ["islandAutoHide", "dockAutoHide", "dockNotch", "powerLogo", "islandDisabled", "dockDisabled", "showAllWallpapers"]
+    readonly property var switchKeys: ["frameOverlay", "tenWorkspaces", "dynamicPopups", "cleanDock", "detailedMedia", "flatSliders", "minimalSliders", "detailedBattery", "glowingIcons", "noButtonOutline", "clickToExpand", "switcherWindowInfo"]
     readonly property var blurKeys: ["windowBlur", "blurSize", "blurPasses", "blurBrightness", "blurContrast"]
 
     // the shell as it is installed: the defaults of Store.qml and Config.qml (the window gap
@@ -73,6 +82,7 @@ Singleton {
             powerLogo: true,
             islandDisabled: false,
             dockDisabled: false,
+            showAllWallpapers: false,
             iconPack: "",
             wallpaper: wallKey(Config.wallpaper),
             theme: "Default",
@@ -90,6 +100,7 @@ Singleton {
             glowingIcons: false,
             noButtonOutline: false,
             clickToExpand: false,
+            switcherWindowInfo: false,
             windowBlur: true,
             blurSize: 7,
             blurPasses: 2,
@@ -157,6 +168,7 @@ Singleton {
             powerLogo: Store.powerLogo,
             islandDisabled: Store.islandDisabled,
             dockDisabled: Store.dockDisabled,
+            showAllWallpapers: Store.showAllWallpapers,
             iconPack: packKey(Store.iconPack),
             wallpaper: wallKey(Wallpapers.current),
             theme: Config.theme.name,
@@ -174,6 +186,7 @@ Singleton {
             glowingIcons: Config.glowingIcons,
             noButtonOutline: Config.noButtonOutline,
             clickToExpand: Config.clickToExpand,
+            switcherWindowInfo: Config.switcherWindowInfo,
             windowBlur: Config.windowBlur,
             blurSize: Config.blurSize,
             blurPasses: Config.blurPasses,

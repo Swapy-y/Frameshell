@@ -18,6 +18,14 @@ import qs
 //  (`files`): a theme without any uses Default's, and without those (an
 //  install from before the folders) the pictures right in the wallpapers folder.
 //
+//  "Show all wallpapers" (Store.showAllWallpapers, the Settings app's Wallpaper
+//  page): `files` is every theme's pictures instead - every folder in the wallpapers
+//  folder, the theme in use's first, then the others in the order of Config.themes
+//  (folders of no theme after those, by name), then the pictures right in the
+//  wallpapers folder. Switching the theme still switches the wallpaper to that
+//  theme's (the one you picked for it last time, else its own). Switched off: back
+//  to the theme in use's pictures (a wallpaper of another theme makes way for its).
+//
 //  Switching the theme switches the wallpaper to that theme's: the one you
 //  picked for it last time (`picks`, ~/.local/state/frameshell/wallpapers.json),
 //  else its own (Config.themeWallpapers), else its first picture.
@@ -94,6 +102,93 @@ Singleton {
         onUpdated: root.list()
     }
 
+    // ── Show all wallpapers ───────────────────────────────────────────────
+    readonly property bool showAll: Store.showAllWallpapers
+
+    // the folders in the wallpapers folder (one per theme, and any you made), read only
+    // while Show all wallpapers is on
+    FolderListModel {
+        id: themeDirs
+        property var paths: []
+        property bool done: false
+        folder: root.showAll ? "file://" + Config.wallpaperDir : ""
+        showDirs: true
+        showFiles: false
+        showDotAndDotDot: false
+        showHidden: false
+        sortField: FolderListModel.Name
+        onFolderChanged: {
+            done = false;
+            paths = [];
+        }
+        onStatusChanged: read()
+        onCountChanged: read()
+        function read() {
+            if (status !== FolderListModel.Ready || !root.showAll)
+                return;
+            const out = [];
+            for (let i = 0; i < count; i++)
+                out.push(get(i, "filePath"));
+            if (JSON.stringify(out) !== JSON.stringify(paths))
+                paths = out;
+            done = true;
+            root.list();
+        }
+    }
+
+    // each of those folders' pictures
+    Instantiator {
+        id: allFolders
+        model: root.showAll ? themeDirs.paths : []
+
+        delegate: Folder {
+            required property var modelData
+            dir: modelData
+            onUpdated: root.list()
+        }
+        onObjectAdded: root.list()
+        onObjectRemoved: root.list()
+    }
+
+    // where a folder goes in the list: the theme in use's first, then in the order of the
+    // themes (Config.themes), folders of no theme last
+    function folderRank(dir) {
+        if (dir === themeDir)
+            return -1;
+        const order = Config.themes.map(t => Config.themeWallpaperDir(t.name));
+        const i = order.indexOf(dir);
+        return i >= 0 ? i : order.length;
+    }
+
+    // every folder's pictures, or null while some are still being read
+    function allPictures() {
+        if (!themeDirs.done || !rootFolder.done || allFolders.count !== themeDirs.paths.length)
+            return null;
+        const folders = [];
+        for (let i = 0; i < allFolders.count; i++) {
+            const f = allFolders.objectAt(i);
+            if (!f || !f.done)
+                return null;
+            folders.push(f);
+        }
+        folders.sort((a, b) => (folderRank(a.dir) - folderRank(b.dir)) || (a.dir < b.dir ? -1 : a.dir > b.dir ? 1 : 0));
+        const out = [];
+        for (const f of folders)
+            for (const p of f.paths)
+                if (out.indexOf(p) < 0)
+                    out.push(p);
+        for (const p of rootFolder.paths)
+            if (out.indexOf(p) < 0)
+                out.push(p);
+        return out;
+    }
+
+    // switched on or off: the list changes at once (on: once every folder is read)
+    onShowAllChanged: {
+        missing.restart();
+        list();
+    }
+
     // a folder that is not there never says it is Ready: after a moment it counts as empty
     Timer {
         id: missing
@@ -102,17 +197,38 @@ Singleton {
         onTriggered: {
             for (const f of [themeFolder, defaultFolder, rootFolder])
                 f.done = true;
+            if (root.showAll) {
+                themeDirs.done = true;
+                for (let i = 0; i < allFolders.count; i++) {
+                    const f = allFolders.objectAt(i);
+                    if (f)
+                        f.done = true;
+                }
+            }
             root.list();
         }
     }
     onThemeDirChanged: missing.restart()
 
+    // the theme in use's own pictures (a theme without any: Default's)
+    function themeOwn() {
+        if (themeFolder.paths.length > 0 || root.themeDir === root.defaultDir)
+            return themeFolder.paths;
+        return defaultFolder.paths;
+    }
+
     function list() {
         if (!themeFolder.done)
             return;                                       // the theme's folder first
-        let out = themeFolder.paths;
-        if (out.length === 0 && root.themeDir !== root.defaultDir)
-            out = defaultFolder.paths;
+        let out = [];
+        if (showAll) {
+            const all = allPictures();
+            if (all === null)
+                return;                                   // not all read yet: the list stays as it is
+            out = all;
+        }
+        if (out.length === 0)
+            out = themeOwn();
         if (out.length === 0)
             out = rootFolder.paths;
         if (JSON.stringify(out) !== JSON.stringify(files))
@@ -183,7 +299,7 @@ Singleton {
     readonly property string legacy: Quickshell.env("HOME") + "/.local/share/frameshell/wallpaper.png"
 
     // a picture of the list: that path, else one of the same file name (a preset kept
-    // from before each theme had its folder: "meadow.png"); "" if none
+    // from before each theme had its folder: "meadow.png"; the theme in use's first); "" if none
     function find(path) {
         const p = path || "";
         if (p === "")
@@ -191,7 +307,8 @@ Singleton {
         if (files.indexOf(p) >= 0)
             return p;
         const name = p.slice(p.lastIndexOf("/") + 1);
-        return files.find(f => f.slice(f.lastIndexOf("/") + 1) === name) || "";
+        const same = f => f.slice(f.lastIndexOf("/") + 1) === name;
+        return themeOwn().filter(f => files.indexOf(f) >= 0).find(same) || files.find(same) || "";
     }
 
     // a wallpaper asked for before its theme's pictures are listed (a preset switches
@@ -233,6 +350,16 @@ Singleton {
             current = picked;
             save.restart();
             return;
+        }
+        // Show all wallpapers: every picture is in the list, so the one on screen would always
+        // stay - but a new theme still brings its own (when you never picked one for it)
+        if (themeChanged && showAll && picked === "") {
+            const own = themeOwn();
+            if (own.length > 0 && own.indexOf(current) < 0) {
+                current = own.indexOf(Config.themeWallpaper(themeName)) >= 0 ? Config.themeWallpaper(themeName) : own[0];
+                save.restart();
+                return;
+            }
         }
         if (files.indexOf(current) >= 0)
             return;                                       // still there: keep it

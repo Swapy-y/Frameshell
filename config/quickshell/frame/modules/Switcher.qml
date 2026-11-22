@@ -28,6 +28,8 @@ import qs.components
 //  Config.dynamicPopups: a card in the middle of the screen, the title on top). It fits its content: with 2 open apps
 //  it shows 2 rows, with more than Config.switcherMaxRows the list scrolls (Space,
 //  Tab, arrow keys or the mouse wheel). Its width follows the longest app name.
+//  With "More window info in app switcher" (Config.switcherWindowInfo, the Settings
+//  app's Experimental page) each row also has its window's title under the name.
 // ═══════════════════════════════════════════════════════════════════════════
 Scope {
     id: root
@@ -136,8 +138,17 @@ Scope {
         }
     }
 
+    // "More window info in app switcher" (the Settings app's Experimental page): each row
+    // shows its window's title in smaller text under the app name (Apps.windowDetail), so two
+    // windows of one app (two Firefox windows: the tab each is on) can be told apart
+    readonly property bool windowInfo: Config.switcherWindowInfo
+    function detailOf(t) {
+        return windowInfo ? Apps.windowDetail(t, Apps.info(t).name) : "";
+    }
+
     // geometry: the launcher's rows and sides; the title sits where the island's clock is
-    readonly property real rowH: Theme.pop(52)
+    // (the rows a little taller with the window info under the names)
+    readonly property real rowH: Theme.pop(windowInfo ? 58 : 52)
     readonly property real rowGap: Theme.pop(4)
     readonly property real pad: Theme.pop(14)          // the sides and the bottom
     readonly property real gap: Theme.pop(6)           // title row - first row
@@ -153,12 +164,22 @@ Scope {
         font.pixelSize: Theme.pop(17)
         font.weight: Font.Medium
     }
+    FontMetrics {
+        id: fmDetail
+        font.family: Theme.font
+        font.pixelSize: Theme.pop(13)
+        font.weight: Font.Normal
+    }
 
-    // width: icon + longest name + paddings (as AppRow lays them out)
+    // width: icon + longest name (or window title under it) + paddings (as AppRow lays them
+    // out); a long title is cut off with "…" at the launcher's width
     readonly property real wantedW: {
         let longest = 0;
-        for (let i = 0; i < items.length; i++)
+        for (let i = 0; i < items.length; i++) {
             longest = Math.max(longest, fm.advanceWidth(Apps.info(items[i]).name));
+            if (windowInfo)
+                longest = Math.max(longest, fmDetail.advanceWidth(detailOf(items[i])));
+        }
         return Math.min(maxW, Math.max(minW, Math.ceil(2 * pad + Theme.pop(13 + 32 + 16 + 16) + longest)));
     }
     readonly property real shownRows: Math.max(1, Math.min(items.length, Config.switcherMaxRows))
@@ -288,6 +309,8 @@ Scope {
                         height: root.rowH
                         name: inf.name
                         icon: inf.icon
+                        // the window's title (live: a tab switch in Firefox changes it)
+                        detail: root.windowInfo ? Apps.windowDetail(modelData, inf.name) : ""
                         selected: index === root.index
                         faded: Apps.isMinimized(modelData)      // minimized (SUPER + H): faded, as on the dock
                         onClicked: {

@@ -63,7 +63,7 @@ import "../components/search.js" as Search
 //  (Config.clickToExpand - the island and the hover panels peek, a click opens them).
 //  experimental.json keeps the switches of the Appearance page's sections
 //  (Config.detailedMedia, flatSliders, minimalSliders, detailedBattery, glowingIcons,
-//  noButtonOutline), the Experimental page's (clickToExpand) and four
+//  noButtonOutline), the Experimental page's (clickToExpand, switcherWindowInfo) and four
 //  more: the Appearance page's "Frame overlay" (Config.frameOverlay), the Island page's "10 workspaces"
 //  (tenWorkspaces) and "Island popups" (dynamicPopups), and the Dock page's "Clean dock"
 //  (cleanDock) - all of them are part of a preset (services/Presets.qml).
@@ -156,9 +156,15 @@ Scope {
             key: "wallpaper",
             name: "Wallpaper",
             icon: "set-wallpaper",
-            description: "The picture on the desktop, the lock screen and the login screen. Each colour theme has its own pictures: these are the current theme's.",
-            keywords: "background picture image add drop remove delete theme",
-            settings: [],
+            description: "The picture on the desktop, the lock screen and the login screen. Each colour theme has its own pictures: these are the current theme's, unless Show all wallpapers is on.",
+            keywords: "background picture image add drop remove delete theme show all every themes",
+            settings: [
+                {
+                    key: "showAllWallpapers",
+                    name: "Show all wallpapers",
+                    description: "Choose from the pictures of every theme, not only the current theme's - here and in the wallpaper switcher (SUPER + CTRL + Left / Right). The current theme's come first. Pictures you add still go to the current theme."
+                }
+            ],
             extra: "wallpapers"
         },
         {
@@ -416,13 +422,19 @@ Scope {
             name: "Experimental",
             icon: "set-experimental",
             description: "Things still being tried out.",
-            keywords: "experimental beta labs try test click expand extend hover peek open island panel",
+            keywords: "experimental beta labs try test click expand extend hover peek open island panel switcher app switcher window title tab info details alt tab",
             settings: [
                 {
                     key: "clickToExpand",
                     owner: "config",
                     name: "Click to expand",
                     description: "The island and the blocks that come out of the edges - sound and brightness, the quick note, the clipboard, the colour picker - only peek out a little when the pointer touches them. Click one to open it all the way. Not the dock."
+                },
+                {
+                    key: "switcherWindowInfo",
+                    owner: "config",
+                    name: "More window info in app switcher",
+                    description: "Under each app's name in the app switcher, its window's title in smaller text - in Firefox the tab you are on - so you can tell two windows of the same app apart."
                 }
             ]
         }
@@ -1306,8 +1318,10 @@ Scope {
                 }
 
                 // ── Wallpaper: the pictures ──────────────────────────────
-                // One tile per picture of the theme in use (its wallpaper folder), in the
-                // order of the switcher (SUPER + CTRL + Left / Right); added pictures go to it too. The wallpaper has a ring round it; a
+                // One tile per picture of the theme in use (its wallpaper folder; with "Show
+                // all wallpapers", Store.showAllWallpapers: every theme's, the theme in use's
+                // first), in the order of the switcher (SUPER + CTRL + Left / Right); added pictures
+                // go to the theme in use's folder. The wallpaper has a ring round it; a
                 // click on another makes it the wallpaper. Under the pointer, a picture
                 // you added shows a bin in its corner: a click on it removes the picture
                 // (to the trash; the ones that come with frameshell stay). The last tile
@@ -1341,9 +1355,21 @@ Scope {
                             id: tiles
                         }
 
+                        // Show all wallpapers as the tiles last followed it: a list changed because
+                        // the switch was flipped is laid out at once - no tiles fading in, no
+                        // "Add" tile gliding across the card
+                        // (a plain value, not a binding: set when the card is made, then by sync())
+                        property bool syncedShowAll: false
+
                         function sync() {
                             const want = Wallpapers.files;
                             let changed = false;
+                            if (syncedShowAll !== Wallpapers.showAll) {
+                                syncedShowAll = Wallpapers.showAll;
+                                reflowEnd.stop();
+                                reflow = false;
+                                instant = true;
+                            }
                             for (let i = tiles.count - 1; i >= 0; i--) {
                                 if (want.indexOf(tiles.get(i).path) < 0) {
                                     if (!changed)
@@ -1372,8 +1398,12 @@ Scope {
                                         path: want[i]
                                     });
                             }
+                            instant = false;
                         }
-                        Component.onCompleted: sync()
+                        Component.onCompleted: {
+                            syncedShowAll = Wallpapers.showAll;
+                            sync();
+                        }
                         Connections {
                             target: Wallpapers
 
@@ -1386,7 +1416,10 @@ Scope {
                         // "Add" tile) glide over to make room; one removed: they glide back.
                         // Only then - not when the window changes size, nor when the page opens.
                         property bool reflow: false
+                        property bool instant: false        // this sync: no animation (sync())
                         function startReflow() {
+                            if (instant)
+                                return;
                             reflow = true;
                             reflowEnd.restart();
                         }

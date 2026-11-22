@@ -97,6 +97,34 @@ Singleton {
         };
     }
 
+    // What tells a window apart from others of its app (the app switcher's "More window info
+    // in app switcher", Config.switcherWindowInfo): its title, without the app's name tacked on
+    // at the end ("GitHub — Mozilla Firefox" -> "GitHub"). "" when the title says nothing more
+    // than the app's name (or there is none). `name`: the app's name as info() gives it.
+    function windowDetail(t, name) {
+        let title = t && t.title ? String(t.title).trim() : "";
+        if (title.length === 0 || isSettings(t))
+            return "";
+        const app = (name || "").trim().toLowerCase();
+        if (app.length > 0) {
+            // the last " — ", " – ", " - " or " | ": what follows it is the app's name
+            const m = title.match(/^(.*\S)\s+[—–\-|·]\s+([^—–\-|·]+)$/);
+            let stripped = false;
+            if (m) {
+                const tail = m[2].trim().toLowerCase();
+                if (tail.indexOf(app) >= 0 || app.indexOf(tail) >= 0) {
+                    title = m[1].trim();
+                    stripped = true;
+                }
+            }
+            // nothing but the app's name ("Firefox", "Mozilla Firefox" of an empty window)
+            const low = title.toLowerCase();
+            if (low === app || (!stripped && low.endsWith(app) && low.length <= app.length + 12))
+                return "";
+        }
+        return title;
+    }
+
     function prettify(id) {
         if (!id)
             return "";

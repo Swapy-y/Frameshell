@@ -36,6 +36,9 @@ import qs
 //                      shell ("" = the shell's own, YAMIS; services/IconPacks.qml)
 //    powerLogo         the Settings app's Appearance page: the bottom bar's power button
 //                      shows the Frameshell logo (off: the power sign)
+//    showAllWallpapers the Settings app's Wallpaper page ("Show all wallpapers"): the wallpaper
+//                      switcher and the Wallpaper page list the pictures of every theme, not
+//                      only the theme in use's (services/Wallpapers.qml)
 // ═══════════════════════════════════════════════════════════════════════════
 Singleton {
     id: root
@@ -56,6 +59,7 @@ Singleton {
     property alias emojiRecent: adapter.emojiRecent
     property alias iconPack: adapter.iconPack
     property alias powerLogo: adapter.powerLogo
+    property alias showAllWallpapers: adapter.showAllWallpapers
 
     // While holdWrites is true a change is not written at once: a preset sets several of them in
     // one go (services/Presets.qml), then calls write() - see Config.holdWrites for why.
@@ -97,6 +101,7 @@ Singleton {
             property var emojiRecent: []
             property string iconPack: ""
             property bool powerLogo: true
+            property bool showAllWallpapers: false
         }
     }
 }

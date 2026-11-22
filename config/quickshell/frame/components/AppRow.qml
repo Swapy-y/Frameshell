@@ -10,6 +10,8 @@ import qs
 //    name, icon   what to show           selected   highlighted by the keyboard
 //    faded        a minimized window (the app switcher): its icon and name faded,
 //                 like on the dock - also while selected, so you see what you pick
+//    detail       smaller text under the name, e.g. the window's title (the app switcher's
+//                 "More window info in app switcher", Config.switcherWindowInfo); "" = none
 //    clicked()    emitted on a mouse click
 // ═══════════════════════════════════════════════════════════════════════════
 Item {
@@ -24,6 +26,8 @@ Item {
     property bool faded: false
     property real iconSize: Theme.pop(32)
     property real fontSize: Theme.pop(17)
+    property string detail: ""                  // smaller text under the name ("" = none)
+    property real detailSize: Theme.pop(13)
 
     signal clicked
 
@@ -58,9 +62,15 @@ Item {
         opacity: root.faded ? 0.4 : 1           // (the dock's minimized windows: 0.4 too)
     }
 
+    // the name, and the detail (if any) under it: the two centred together
+    readonly property bool hasDetail: detail.length > 0
+    readonly property real textGap: Theme.pop(1)
+    readonly property real textBlockH: nameText.height + (hasDetail ? textGap + detailText.height : 0)
+
     Txt {
+        id: nameText
         x: appIcon.x + appIcon.width + Theme.pop(16)
-        y: Math.round((parent.height - height) / 2)
+        y: Math.round((parent.height - root.textBlockH) / 2)
         width: parent.width - x - Theme.pop(16)
         text: root.name
         font.pixelSize: root.fontSize
@@ -72,6 +82,22 @@ Item {
         Behavior on color {
             CAnim {}
         }
+    }
+
+    Txt {
+        id: detailText
+        visible: root.hasDetail
+        x: nameText.x
+        y: nameText.y + nameText.height + root.textGap
+        width: nameText.width
+        text: root.detail
+        font.pixelSize: root.detailSize
+        font.weight: Font.Normal
+        color: root.pal.textSecondary
+        opacity: (root.faded ? 0.4 : 1) * (root.selected ? 0.9 : 0.7)
+        elide: Text.ElideRight
+        maximumLineCount: 1
+        textFormat: Text.PlainText
     }
 
     MouseArea {

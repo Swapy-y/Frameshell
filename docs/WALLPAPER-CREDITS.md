@@ -31,5 +31,6 @@ Each colour theme has its own folder in `wallpapers/`.
 | `TokyoNight/0-winding-road.png` | TODO | TODO |
 | `TokyoNight/3-sunset-lake.png` | TODO | TODO |
 | `TokyoNight/tokyo-night.png` | TODO | TODO |
+| `TokyoNight/violet-river.png` | TODO | TODO |
 
 If you made one of these or know where it comes from, please open an issue so it can be credited (or removed).

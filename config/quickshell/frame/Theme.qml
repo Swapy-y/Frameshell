@@ -134,6 +134,13 @@ Singleton {
     readonly property int clipW: px(300)        // clipboard panel (left edge), like the note
     readonly property int pickerW: px(44)       // colour picker block (top right corner)
     readonly property int pickerH: px(41)
+    // Click to expand (Config.clickToExpand): how far every block that peeks (sound /
+    // brightness, quick note, clipboard, colour picker) stands out past the frame, each way
+    // - one size for all of them (components/Panel.qml), a chevron in the middle of it.
+    // The blocks in the middle of an edge (the quick note, the clipboard) are peekLength
+    // long along it: taller, the chevron in the middle with black space above and below it.
+    readonly property int peekSize: px(28)
+    readonly property int peekLength: px(64)
 
     // ── typography ─────────────────────────────────────────────────────────
     // Apple's SF Pro when it is installed, else Inter - the free font closest to

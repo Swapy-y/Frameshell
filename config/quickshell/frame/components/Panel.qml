@@ -22,9 +22,10 @@ import "shapes.js" as Shapes
 //  instead of `open`, `hovering`: the pointer is on it or on its hot zone (or
 //  something keeps it out - typing, a slider being dragged). It is open while
 //  `hovering` is. With "Click to expand" (Config.clickToExpand, the Settings
-//  app's Experimental page) it only peeks out of the frame then (`peeking`: its
-//  smaller side stands peekDepth out of it, none of its content shows yet); a
-//  click on it opens it all the way, until `hovering` ends.
+//  app's Experimental page) it only peeks out of the frame then (`peeking`: a
+//  small block, the same size for every one of them - Theme.peekSize past the
+//  frame each way - with a chevron in it pointing the way it opens, none of its
+//  content showing yet); a click on it opens it all the way, until `hovering` ends.
 // ═══════════════════════════════════════════════════════════════════════════
 Item {
     id: root
@@ -55,17 +56,33 @@ Item {
     // content goes into the body
     default property alias content: body.data
 
-    // 0 = closed, 1 = fully open (peeking: peekP - its smaller side as long as
-    // peekDepth: the frame's width and 14 px past it; frameless, where it moves a frame's
-    // width off the screen, 14 px from the edge of the screen)
-    readonly property real peekDepth: Theme.edge + Theme.px(14)
-    readonly property real peekP: Math.min(0.45, peekDepth / Math.max(1, Math.min(w, h)))
-    property real p: open ? 1 : (peeking ? peekP : 0)
-    Behavior on p {
+    // Peeking (Click to expand) it is a small block of the same size whatever the panel:
+    // Theme.peekSize past the frame each way - on a side it sits against, the frame's width
+    // more (frameless, where it moves a frame's width off the screen: Theme.peekSize from
+    // the edge of the screen). Never more than the open panel. Centred on an axis (the quick
+    // note, the clipboard: up and down) it is Theme.peekLength long there - taller than the
+    // corner blocks - and keeps the screen's odd/even-ness, like `w` / `h` below, so it sits
+    // on whole pixels.
+    readonly property real peekW: Math.min(w, attachLeft || attachRight ? Theme.peekSize + Theme.edge : Shapes.sameParity(Theme.peekLength, parent.width))
+    readonly property real peekH: Math.min(h, attachTop ? Theme.peekSize + Theme.edge : (attachBottom ? Theme.peekSize : Shapes.sameParity(Theme.peekLength, parent.height)))
+    // How far open it is across (pw) and down (ph): 0 = closed, 1 = fully open. Apart from
+    // peeking the two are the same; peeking each is its own share of the panel, so the block
+    // is peekW x peekH whatever shape the open panel has.
+    property real pw: open ? 1 : (peeking ? peekW / Math.max(1, w) : 0)
+    property real ph: open ? 1 : (peeking ? peekH / Math.max(1, h) : 0)
+    Behavior on pw {
         PanelAnim {
             opening: root.open || root.peeking
         }
     }
+    Behavior on ph {
+        PanelAnim {
+            opening: root.open || root.peeking
+        }
+    }
+    // the larger of the two: how far it is out (peekP: the peek's share)
+    readonly property real peekP: Math.max(peekW / Math.max(1, w), peekH / Math.max(1, h))
+    readonly property real p: Math.max(pw, ph)
 
     // the size the panel is heading for; follows contentW / contentH smoothly.
     // Whole numbers at rest (sharp edges); a panel that is centred on an axis
@@ -88,8 +105,8 @@ Item {
 
     // The exact rectangle (fractional while animating). The shape is drawn from
     // this, so its edges glide smoothly. The item itself uses whole pixels.
-    readonly property real rw: w * p
-    readonly property real rh: h * p
+    readonly property real rw: w * pw
+    readonly property real rh: h * ph
     // Frameless (Theme.frameShift) the panel moves a frame's width out towards the left /
     // top / right edge it sits on - partly off the screen, like the island - so it keeps
     // the shape it has against the frame. (Not towards the bottom: that is the bar.)
@@ -137,8 +154,37 @@ Item {
         y: Math.round(root.bodyY) - root.y
         // (Click to expand: nothing of it while it only peeks - a small panel's peek is more
         // than 0.3 of it)
-        readonly property real fadeFrom: root.clickToExpand ? Math.max(0.3, root.peekP) : 0.3
+        readonly property real fadeFrom: root.clickToExpand ? Shapes.clamp(root.peekP, 0.3, 0.9) : 0.3
         opacity: Shapes.clamp((root.p - fadeFrom) / (1 - fadeFrom), 0, 1)
+    }
+
+    // Click to expand: a chevron in the middle of the peeking block (the part past the
+    // frame), pointing the way the panel opens - into the screen, slanted from a corner - so
+    // it is clear a click opens it. It fades in once the block is out and away as it opens.
+    Icon {
+        id: chevron
+        readonly property real dx: root.attachLeft ? 1 : (root.attachRight ? -1 : 0)
+        readonly property real dy: root.attachTop ? 1 : (root.attachBottom ? -1 : 0)
+        // the middle of the block past the frame, measured from the sides it sits against
+        // (so it stays put while the panel grows round it)
+        readonly property real half: Theme.peekSize / 2
+        readonly property real cx: root.attachLeft ? Theme.edge + half : (root.attachRight ? root.width - Theme.edge - half : root.width / 2)
+        readonly property real cy: root.attachTop ? Theme.edge + half : (root.attachBottom ? root.height - half : root.height / 2)
+
+        visible: root.clickToExpand && opacity > 0.01
+        name: "chev-right"
+        size: Theme.px(12)
+        color: Config.frameColors.colorPickerIcon
+        rotation: Math.atan2(dy, dx) * 180 / Math.PI
+        x: Math.round(cx - size / 2)
+        y: Math.round(cy - size / 2)
+        opacity: root.peeking ? 1 : 0
+
+        Behavior on opacity {
+            Anim {
+                duration: Theme.durSmall
+            }
+        }
     }
 
     // Click to expand: the click that opens a peeking panel - over its content, which

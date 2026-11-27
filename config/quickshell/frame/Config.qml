@@ -133,7 +133,9 @@ Singleton {
     //   clickToExpand     "Click to expand" (the Experimental page): the blocks that come out
     //                     when the pointer touches them - the island, the sound / brightness
     //                     block, the quick note, the clipboard, the colour picker - only peek out
-    //                     a little; a click on one opens it all the way, until the pointer leaves
+    //                     a little (the blocks all as one small block with a chevron in it,
+    //                     Theme.peekSize; the island a little taller, its top row in the middle
+    //                     of it); a click on one opens it all the way, until the pointer leaves
     //                     it (components/Panel.qml, modules/Island.qml). Not the dock (auto hide)
     //                     and its pieces: the corner blocks of notch mode, Clean dock's buttons
     //   lessSwitcherInfo  "Less app switcher info" (the Appearance page): the app switcher shows

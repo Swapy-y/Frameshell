@@ -23,7 +23,8 @@ import "../components/shapes.js" as Shapes
 //
 //  Click to expand (Config.clickToExpand, the Settings app's Experimental page):
 //  the pointer on it only lets it grow a little (`peeking`; with auto hide a
-//  small block out of the top edge), none of the open island showing yet; a click
+//  small block out of the top edge) - its top row moving down to stay in the middle
+//  of it - none of the open island showing yet; a click
 //  on it (not on a workspace pill: that still goes to the workspace) opens it,
 //  until the pointer leaves it.
 //
@@ -140,6 +141,14 @@ Item {
     readonly property real peekP: Shapes.clamp((peekH - notchHeight) / Math.max(1, fullH - notchHeight), 0, 0.45)
     property real p: expanded ? 1 : (peeking ? peekP : 0)      // 0 = notch, 1 = full island
     Behavior on p {
+        PanelAnim {
+            opening: root.expanded || root.peeking
+        }
+    }
+    // ... and its top row (workspaces, clock, signal + battery) moves down with it, so it
+    // stays in the middle of the taller notch; back up to its place as it opens (or closes)
+    property real peekShift: peeking ? Math.max(0, peekH - notchHeight) / 2 : 0
+    Behavior on peekShift {
         PanelAnim {
             opening: root.expanded || root.peeking
         }
@@ -272,6 +281,9 @@ Item {
             // Bluetooth + Wi-Fi buttons and the notifications capsule
             readonly property real slotOffset: Shapes.lerp(Theme.px(91), root.sideOffset, root.p)
             readonly property real rowCenter: Theme.notchH / 2
+            // Click to expand: how far the top row is moved down while the island peeks
+            // (whole pixels, so it stays sharp while it moves)
+            readonly property int rowShift: Math.round(root.peekShift)
             readonly property real lower: Shapes.clamp((root.p - 0.35) / 0.65, 0, 1)   // fades in the lower area
             // the top row (workspaces, clock, signal + battery): hidden with the island
             // (auto hide), fading in while it grows open; away while a sheet grows out of it
@@ -286,7 +298,7 @@ Item {
                 width: Theme.px(110)
                 height: Theme.notchH
                 x: Math.round(body.cx - body.slotOffset - width / 2)
-                y: 0
+                y: body.rowShift
                 opacity: body.topRow
                 visible: opacity > 0.01
 
@@ -475,7 +487,7 @@ Item {
             Row {
                 id: clockRow
                 x: Math.round((body.width - width) / 2)
-                y: Math.round(body.rowCenter - height / 2)
+                y: Math.round(body.rowCenter - height / 2) + body.rowShift
                 spacing: 0
                 opacity: body.topRow
                 visible: opacity > 0.01
@@ -509,7 +521,7 @@ Item {
                 // (open, 1 px further right: the row's 1 px nudge below is for the notch;
                 // open, the row lines up with the notifications pill under it)
                 x: Math.round(body.cx + body.slotOffset + Theme.px(1) * root.p - width / 2)
-                y: 0
+                y: body.rowShift
 
                 // the glow of signal + battery (the slot already fades with the top row)
                 NotchGlow {

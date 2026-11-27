@@ -491,7 +491,7 @@ Singleton {
     // ── removing pictures ─────────────────────────────────────────────────
     // The pictures that come with frameshell (its wallpapers folder; install.sh puts
     // them here): they stay. The Settings app removes only the ones you added.
-    readonly property var bundled: ["0-winding-road.png", "3-sunset-lake.png", "arch-blue.png", "black-hole.png", "blackv2.png", "blue-waves.png", "chrome-hud.png", "crane.png", "dark-bloom.png", "everblush-5.png", "everforest.png", "fog_forest_1.png", "gruvbox.png", "kanagava1.png", "kanagawa.png", "marine-tunnel.png", "meadow.png", "night-clouds.png", "nord.png", "nord1.png", "nord2.png", "power-lines.png", "rose-pine2.png", "ship-2.png", "sky-town.png", "summer-clouds.png", "tokyo-night.png"]
+    readonly property var bundled: ["0-winding-road.png", "3-sunset-lake.png", "arch-blue.png", "black-hole.png", "blackv2.png", "blue-waves.png", "chrome-hud.png", "crane.png", "dark-bloom.png", "everblush-5.png", "everforest.png", "fog_forest_1.png", "gruvbox.png", "kanagava1.png", "kanagawa.png", "marine-tunnel.png", "meadow.png", "night-clouds.png", "nord.png", "nord1.png", "nord2.png", "power-lines.png", "rose-pine2.png", "ship-2.png", "sky-town.png", "summer-clouds.png", "tokyo-night.png", "violet-river.png"]
 
     function removable(path) {
         const name = path.slice(path.lastIndexOf("/") + 1);
